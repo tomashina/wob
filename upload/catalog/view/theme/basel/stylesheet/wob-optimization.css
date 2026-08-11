@@ -3484,44 +3484,24 @@ body[class*="information-information-"] .information-copy blockquote {
     line-height: 20px !important;
   }
 
-  /* Keep homepage product actions recognizable inside two-column cards. */
-  .common-home .single-product .price-wrapper > button.btn {
-    height: 44px;
-    min-height: 44px;
-    padding: 7px 6px !important;
-    gap: 5px;
-    color: #fff !important;
-    background: #ad974f !important;
-    border: 1px solid #ad974f !important;
+  /* Keep product carousel actions light and legible on compact cards. */
+  .single-product .price-wrapper > .btn {
+    color: #231f20 !important;
+    background: #fff !important;
+    border: 1px solid #231f20 !important;
     box-shadow: none !important;
-    font-size: 12px !important;
-    line-height: 16px;
-    white-space: nowrap;
   }
 
-  .common-home .single-product .price-wrapper > button.btn .wob-cart-label {
-    position: static;
-    width: auto;
-    height: auto;
-    padding: 0;
-    margin: 0;
-    overflow: visible;
-    clip: auto;
-    white-space: nowrap;
+  .single-product .price-wrapper > .btn i,
+  .single-product .price-wrapper > .btn [class^="fa-"],
+  .single-product .price-wrapper > .btn [class*=" fa-"] {
+    color: #231f20 !important;
   }
 
-  .common-home .single-product .price-wrapper > button.btn i,
-  .common-home .single-product .price-wrapper > button.btn [class^="fa-"],
-  .common-home .single-product .price-wrapper > button.btn [class*=" fa-"] {
-    margin: 0;
-    color: #fff !important;
-    font-size: 14px;
-  }
-
-  .common-home .single-product .price-wrapper > button.btn:hover,
-  .common-home .single-product .price-wrapper > button.btn:focus-visible {
-    color: #fff !important;
-    background: #231f20 !important;
+  .single-product .price-wrapper > .btn:hover,
+  .single-product .price-wrapper > .btn:focus-visible {
+    color: #231f20 !important;
+    background: #fbfaf6 !important;
     border-color: #231f20 !important;
   }
 }
@@ -3801,15 +3781,6 @@ body[class*="information-information-"] .information-copy blockquote {
     padding-left: 12px;
   }
 
-  .common-home .single-product .price-wrapper > button.btn {
-    padding-right: 4px !important;
-    padding-left: 4px !important;
-    font-size: 11px !important;
-  }
-
-  .common-home .single-product .price-wrapper > button.btn .fa-bag-shopping {
-    display: none;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
