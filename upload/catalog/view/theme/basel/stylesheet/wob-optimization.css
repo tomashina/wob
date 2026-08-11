@@ -3484,24 +3484,44 @@ body[class*="information-information-"] .information-copy blockquote {
     line-height: 20px !important;
   }
 
-  /* Keep product carousel actions light and legible on compact cards. */
-  .single-product .price-wrapper > .btn {
-    color: #231f20 !important;
-    background: #fff !important;
-    border: 1px solid #231f20 !important;
+  /* Keep homepage product actions recognizable inside two-column cards. */
+  .common-home .single-product .price-wrapper > button.btn {
+    height: 44px;
+    min-height: 44px;
+    padding: 7px 6px !important;
+    gap: 5px;
+    color: #fff !important;
+    background: #ad974f !important;
+    border: 1px solid #ad974f !important;
     box-shadow: none !important;
+    font-size: 12px !important;
+    line-height: 16px;
+    white-space: nowrap;
   }
 
-  .single-product .price-wrapper > .btn i,
-  .single-product .price-wrapper > .btn [class^="fa-"],
-  .single-product .price-wrapper > .btn [class*=" fa-"] {
-    color: #231f20 !important;
+  .common-home .single-product .price-wrapper > button.btn .wob-cart-label {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: nowrap;
   }
 
-  .single-product .price-wrapper > .btn:hover,
-  .single-product .price-wrapper > .btn:focus-visible {
-    color: #231f20 !important;
-    background: #fbfaf6 !important;
+  .common-home .single-product .price-wrapper > button.btn i,
+  .common-home .single-product .price-wrapper > button.btn [class^="fa-"],
+  .common-home .single-product .price-wrapper > button.btn [class*=" fa-"] {
+    margin: 0;
+    color: #fff !important;
+    font-size: 14px;
+  }
+
+  .common-home .single-product .price-wrapper > button.btn:hover,
+  .common-home .single-product .price-wrapper > button.btn:focus-visible {
+    color: #fff !important;
+    background: #231f20 !important;
     border-color: #231f20 !important;
   }
 }
@@ -3688,72 +3708,72 @@ body[class*="information-information-"] .information-copy blockquote {
   }
 
   .wob-salon-card {
-    display: block;
-    min-height: 330px;
+    display: grid;
+    min-height: 240px;
+    grid-template-columns: minmax(0, 63%) minmax(0, 37%);
   }
 
   .wob-salon-card__content {
-    min-height: 330px;
-    padding: 26px 22px 24px;
+    min-height: 240px;
+    padding: 24px 0 22px 20px;
+    justify-content: center;
   }
 
   .wob-salon-card__title {
     max-width: 100%;
-    font-size: 26px !important;
-    line-height: 1.12 !important;
+    font-size: 22px !important;
+    line-height: 1.28 !important;
   }
 
   .wob-salon-card__rule {
     width: 46px;
-    margin: 16px 0 14px;
+    margin: 16px 0 18px;
   }
 
   .wob-salon-card__description {
-    max-width: 58%;
-    margin-bottom: 18px;
-    font-size: 14px;
-    line-height: 1.5;
+    display: none;
   }
 
   .wob-salon-card__cta {
     min-height: 44px;
-    max-width: 60%;
-    margin-top: auto;
+    max-width: none;
+    margin-top: 0;
+    align-self: flex-start;
     padding: 11px 18px;
     font-size: 12px;
     white-space: nowrap;
   }
 
   .wob-salon-card__visual {
-    position: absolute;
-    top: 22px;
-    right: -1%;
+    position: relative;
+    top: auto;
+    right: auto;
     bottom: auto;
-    width: 36%;
-    height: 52%;
+    width: auto;
+    height: auto;
     min-height: 0;
-    padding: 0 10px 0 0;
-    align-items: flex-start;
+    padding: 18px 10px 18px 0;
+    align-items: center;
     justify-content: center;
   }
 
   .wob-salon-card__image {
-    width: auto;
-    max-width: 100%;
+    width: 100%;
+    max-width: none;
     height: 100%;
-    object-position: center top;
+    object-position: center;
   }
 
   .wob-salon-card--beauty .wob-salon-card__visual {
-    top: 22px;
-    right: -2%;
-    width: 42%;
-    height: 52%;
+    top: auto;
+    right: auto;
+    width: auto;
+    height: auto;
   }
 
   .wob-salon-card--beauty .wob-salon-card__image {
-    width: 100%;
-    max-width: 100%;
+    width: 118%;
+    max-width: none;
     height: 100%;
     transform: none;
   }
@@ -3761,23 +3781,34 @@ body[class*="information-information-"] .information-copy blockquote {
 
 @media (max-width: 380px) {
   .wob-salon-card {
-    min-height: 320px;
+    min-height: 220px;
+    grid-template-columns: minmax(0, 64%) minmax(0, 36%);
   }
 
   .wob-salon-card__content {
-    min-height: 320px;
-    padding: 22px 18px 20px;
+    min-height: 220px;
+    padding: 20px 0 18px 16px;
   }
 
   .wob-salon-card__title {
-    font-size: 24px !important;
+    font-size: 22px !important;
   }
 
   .wob-salon-card__cta {
     width: auto;
-    max-width: 62%;
-    padding-right: 14px;
-    padding-left: 14px;
+    max-width: none;
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .common-home .single-product .price-wrapper > button.btn {
+    padding-right: 4px !important;
+    padding-left: 4px !important;
+    font-size: 11px !important;
+  }
+
+  .common-home .single-product .price-wrapper > button.btn .fa-bag-shopping {
+    display: none;
   }
 }
 
