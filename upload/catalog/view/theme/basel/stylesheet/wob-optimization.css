@@ -107,6 +107,25 @@ a.scroll-to-top.email {
   height: 46px;
   align-items: center;
   justify-content: center;
+  color: #fff !important;
+  background: #231f20 !important;
+  border: 1px solid rgb(255 255 255 / 28%);
+  line-height: 1;
+}
+
+a.scroll-to-top.email:hover,
+a.scroll-to-top.email:focus-visible {
+  color: #fff !important;
+  background: #ad974f !important;
+  border-color: #ad974f;
+}
+
+.wob-floating-icon {
+  display: block;
+  width: 22px;
+  height: 22px;
+  font-size: 22px;
+  font-weight: 300;
   line-height: 1;
 }
 
@@ -1060,7 +1079,42 @@ button.button-remove {
 }
 
 .header-bottom .main-menu.vertical > ul {
+  margin-top: 0 !important;
+  background: #fbfaf6;
+  border: 1px solid #d8cfb4;
+  border-top: 0;
   box-shadow: none;
+}
+
+.header-bottom .main-menu.vertical > ul > li > a {
+  position: relative;
+  min-height: 43px;
+  padding: 2px 40px 2px 22px;
+  color: #00243d;
+  background: #fbfaf6;
+  border-bottom: 1px solid #e4ddc8;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  line-height: 39px;
+  transition: color .18s ease, background .18s ease, padding-left .18s ease;
+}
+
+.header-bottom .main-menu.vertical > ul > li:last-child > a {
+  border-bottom: 0;
+}
+
+.header-bottom .main-menu.vertical > ul > li:hover > a,
+.header-bottom .main-menu.vertical > ul > li > a:hover,
+.header-bottom .main-menu.vertical > ul > li > a:focus-visible {
+  padding-left: 26px;
+  color: #826f32;
+  background: #f3efe4;
+}
+
+.header-bottom .main-menu.vertical > ul > li.dropdown-wrapper > a .fa-angle-down {
+  right: 18px;
+  color: #ad974f;
+  font-size: 12px;
 }
 
 @media (min-width: 992px) {
@@ -1926,9 +1980,14 @@ button.button-remove {
   }
 
   .wob-fa-pro-icon,
-  .gk-cookie-fab .wob-fa-pro-icon {
+  .gk-cookie-fab .wob-fa-pro-icon,
+  .wob-floating-icon {
     width: 20px;
     height: 20px;
+  }
+
+  .wob-floating-icon {
+    font-size: 20px;
   }
 
   .header6 .header-main,
