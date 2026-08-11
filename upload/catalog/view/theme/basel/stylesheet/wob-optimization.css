@@ -1385,20 +1385,20 @@ button.button-remove {
     z-index: 1200;
   }
 
-  .common-home #mod3 .dark h3.contrast-font,
-  .common-home #mod2 h2.homeb {
+  .common-home .dark h3.contrast-font,
+  .common-home .about-widget h2.homeb {
     font-size: 24px !important;
     line-height: 1.25 !important;
   }
 
-  .common-home #mod3 .dark p,
-  .common-home #mod2 p.homeb {
+  .common-home .dark p,
+  .common-home .about-widget p.homeb {
     font-size: 15px !important;
     line-height: 1.55 !important;
   }
 
-  .common-home #mod3 .btn,
-  .common-home #mod2 .btn {
+  .common-home .dark .btn,
+  .common-home .about-widget .btn {
     min-height: 44px;
     padding: 10px 18px;
     font-size: 14px;
@@ -3260,16 +3260,44 @@ body[class*="information-information-"] .information-copy blockquote {
 
 /* Keep every homepage section on one consistent heading system. */
 .common-home .widget-title .main-title,
-.common-home #mod2 h2.homeb,
-.common-home #mod3 .dark h3.contrast-font {
+.common-home .about-widget h2.homeb,
+.common-home .dark h3.contrast-font {
   font-family: "Outfit", "Manrope", sans-serif !important;
   font-weight: 700 !important;
   letter-spacing: -.015em;
 }
 
+/* Custom funding modules do not render the theme's widget-title markup.
+   Give their headings the same typography and gold rule as standard sections. */
+.common-home .about-widget h2.homeb,
+.common-home .dark h3.contrast-font {
+  margin: 0 !important;
+  color: #00243d !important;
+  font-size: 26px !important;
+  line-height: 1.2 !important;
+}
+
+.common-home .about-widget h2.homeb::after,
+.common-home .dark h3.contrast-font::after {
+  display: block;
+  width: 40px;
+  height: 2px;
+  margin: 12px auto;
+  content: "";
+  background: #ad974f;
+}
+
+.common-home .about-widget h2.homeb::after {
+  margin-left: 0;
+}
+
+.common-home .dark h3.contrast-font + p {
+  margin-top: 0;
+}
+
 /* Keep long testimonial copy readable before the full desktop layout starts. */
 @media (max-width: 1199px) {
-  .common-home #mod5 .single-testimonial .testimonial-wrap {
+  .common-home .single-testimonial .testimonial-wrap {
     width: calc(100% - 20px);
     max-width: 720px;
     margin-right: auto;
@@ -3293,7 +3321,7 @@ body[class*="information-information-"] .information-copy blockquote {
     margin-top: 20px !important;
   }
 
-  .common-home #mod3 .cm_content {
+  .common-home .cm_module:has(.dark h3.contrast-font) .cm_content {
     margin: 0 !important;
     padding: 28px 18px !important;
   }
@@ -3303,8 +3331,8 @@ body[class*="information-information-"] .information-copy blockquote {
   }
 
   .common-home .widget-title .main-title,
-  .common-home #mod2 h2.homeb,
-  .common-home #mod3 .dark h3.contrast-font {
+  .common-home .about-widget h2.homeb,
+  .common-home .dark h3.contrast-font {
     font-family: "Outfit", "Manrope", sans-serif !important;
     font-size: 24px !important;
     font-weight: 700 !important;
@@ -3357,7 +3385,7 @@ body[class*="information-information-"] .information-copy blockquote {
     margin-bottom: 24px !important;
   }
 
-  .common-home #mod3 .cm_content {
+  .common-home .cm_module:has(.dark h3.contrast-font) .cm_content {
     padding: 24px 14px !important;
   }
 
@@ -3370,8 +3398,8 @@ body[class*="information-information-"] .information-copy blockquote {
   }
 
   .common-home .widget-title .main-title,
-  .common-home #mod2 h2.homeb,
-  .common-home #mod3 .dark h3.contrast-font {
+  .common-home .about-widget h2.homeb,
+  .common-home .dark h3.contrast-font {
     font-family: "Outfit", "Manrope", sans-serif !important;
     font-size: 22px !important;
     font-weight: 700 !important;
@@ -3384,11 +3412,16 @@ body[class*="information-information-"] .information-copy blockquote {
   }
 
   .common-home .widget-title .sub-line,
-  .common-home #mod2 p.homeb,
-  .common-home #mod3 .dark p {
+  .common-home .about-widget p.homeb,
+  .common-home .dark p {
     font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif !important;
     font-size: 15px !important;
     line-height: 1.55 !important;
+  }
+
+  .common-home .about-widget h2.homeb::after {
+    margin-right: auto;
+    margin-left: auto;
   }
 
   .common-home .widget-title .sub-line {
@@ -3397,12 +3430,12 @@ body[class*="information-information-"] .information-copy blockquote {
     margin-left: auto;
   }
 
-  .common-home #mod2 .about-widget,
-  .common-home #mod2 .cm_item {
+  .common-home .cm_module:has(.about-widget) .about-widget,
+  .common-home .cm_module:has(.about-widget) .cm_item {
     text-align: center !important;
   }
 
-  .common-home #mod2 .cm_column.col-xs-11 {
+  .common-home .cm_module:has(.about-widget) .cm_column.col-xs-11 {
     float: none;
     width: 100%;
     margin-right: auto;
@@ -3410,27 +3443,26 @@ body[class*="information-information-"] .information-copy blockquote {
   }
 
   /* Equal-height columns must return to natural stacked height on phones. */
-  .common-home #mod2 .cm_column.eq_height {
+  .common-home .cm_module:has(.about-widget) .cm_column.eq_height {
     float: none;
     height: auto !important;
     min-height: 0 !important;
     margin-bottom: 0;
   }
 
-  .common-home #mod2 .cm_column:not(.type-img) .cm_item_wrapper,
-  .common-home #mod2 .cm_column:not(.type-img) .cm_item {
+  .common-home .cm_module:has(.about-widget) .cm_column:not(.type-img) .cm_item_wrapper,
+  .common-home .cm_module:has(.about-widget) .cm_column:not(.type-img) .cm_item {
     display: block;
     height: auto !important;
     min-height: 0 !important;
   }
 
-  .common-home #mod2 .about-widget .btn {
+  .common-home .about-widget .btn {
     margin-right: auto;
     margin-left: auto;
   }
 
-  .common-home #mod1 .simple-caption.contrast-font,
-  .common-home #mod4 .simple-caption.contrast-font {
+  .common-home .type-img .simple-caption.contrast-font {
     font-size: 13px !important;
     font-weight: 500 !important;
     line-height: 1.25 !important;
@@ -3657,11 +3689,11 @@ body[class*="information-information-"] .information-copy blockquote {
 
   .wob-salon-card {
     display: block;
-    min-height: 420px;
+    min-height: 330px;
   }
 
   .wob-salon-card__content {
-    min-height: 420px;
+    min-height: 330px;
     padding: 26px 22px 24px;
   }
 
@@ -3694,13 +3726,14 @@ body[class*="information-information-"] .information-copy blockquote {
 
   .wob-salon-card__visual {
     position: absolute;
-    right: 0;
-    bottom: 10px;
-    width: 52%;
-    height: 60%;
+    top: 22px;
+    right: -1%;
+    bottom: auto;
+    width: 36%;
+    height: 52%;
     min-height: 0;
     padding: 0 10px 0 0;
-    align-items: flex-end;
+    align-items: flex-start;
     justify-content: center;
   }
 
@@ -3708,13 +3741,14 @@ body[class*="information-information-"] .information-copy blockquote {
     width: auto;
     max-width: 100%;
     height: 100%;
-    object-position: center bottom;
+    object-position: center top;
   }
 
   .wob-salon-card--beauty .wob-salon-card__visual {
+    top: 22px;
     right: -2%;
-    width: 58%;
-    height: 62%;
+    width: 42%;
+    height: 52%;
   }
 
   .wob-salon-card--beauty .wob-salon-card__image {
@@ -3727,11 +3761,11 @@ body[class*="information-information-"] .information-copy blockquote {
 
 @media (max-width: 380px) {
   .wob-salon-card {
-    min-height: 400px;
+    min-height: 320px;
   }
 
   .wob-salon-card__content {
-    min-height: 400px;
+    min-height: 320px;
     padding: 22px 18px 20px;
   }
 
