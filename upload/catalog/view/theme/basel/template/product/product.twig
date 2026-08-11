@@ -344,7 +344,7 @@
             
             <div class="form-group buy catalog_hide">
 
-            <input type="number" step="1" min="{{ minimum }}" name="quantity" value="{{ minimum }}" id="input-quantity" class="form-control input-quantity" />
+            <input type="number" step="1" min="{{ minimum }}" name="quantity" value="{{ minimum }}" id="input-quantity" class="form-control input-quantity" aria-label="Količina" />
               <input type="hidden" name="product_id" value="{{ product_id }}" />
               <button type="button" {% if ((qty < 1) and (stock_badge_status)) %}{% else %} id="button-cart" {% endif %}  data-loading-text="{{ text_loading }}" class="btn btn-primary">{% if ((qty < 1) and (stock_badge_status)) %}{{ basel_text_out_of_stock }}{% else %}{{ button_cart }}{% endif %}</button>
             </div>

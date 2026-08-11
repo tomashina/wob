@@ -42,6 +42,12 @@ class ControllerCommonHeader extends Controller {
 		$data['lang'] = $this->language->get('code');
 		$data['direction'] = $this->language->get('direction');
 		$data['robots'] = $this->getRobotsDirective();
+		$requestUri = isset($this->request->server['REQUEST_URI']) ? $this->request->server['REQUEST_URI'] : '/';
+		$data['current_url'] = rtrim($server, '/') . '/' . ltrim($requestUri, '/');
+		$data['social_description'] = $data['description'] ? $data['description'] : $this->config->get('config_meta_description');
+		$data['social_image'] = $server . 'image/catalog/banner-main-category/facebook-wob.png';
+		$data['social_og_fallback'] = strpos($data['robots'], 'noindex') !== 0 && empty($data['opengraphs']);
+		$data['social_twitter_fallback'] = strpos($data['robots'], 'noindex') !== 0 && empty($data['twittercards']);
 
 		$data['name'] = $this->config->get('config_name');
 

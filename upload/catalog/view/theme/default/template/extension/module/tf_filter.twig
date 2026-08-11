@@ -25,8 +25,8 @@
             <div class="tf-filter-group-content">
               <div data-role="rangeslider"></div>
               <div class="row">
-                <div class="col-xs-6"><input type="number" class="form-control" name="tf_fp[min]" value="{{ filter['selected']['min'] }}" min="{{ filter['min_price'] }}" max="{{ filter['max_price'] - 1 }}" /></div>
-                <div class="col-xs-6"><input type="number" class="form-control" name="tf_fp[max]" value="{{ filter['selected']['max'] }}" min="{{ filter['min_price'] + 1 }}" max="{{ filter['max_price'] }}" /></div>
+                <div class="col-xs-6"><input type="number" class="form-control" name="tf_fp[min]" value="{{ filter['selected']['min'] }}" min="{{ filter['min_price'] }}" max="{{ filter['max_price'] - 1 }}" aria-label="Minimalna cijena" /></div>
+                <div class="col-xs-6"><input type="number" class="form-control" name="tf_fp[max]" value="{{ filter['selected']['max'] }}" min="{{ filter['min_price'] + 1 }}" max="{{ filter['max_price'] }}" aria-label="Maksimalna cijena" /></div>
               </div>
             </div>
           </div>

@@ -119,8 +119,8 @@
   background: #231f20;
   border: 1px solid rgb(255 255 255 / 28%);
   border-radius: 50%;
-  box-shadow: 0 5px 18px rgb(35 31 32 / 34%);
-  transition: background .2s, transform .2s, box-shadow .2s;
+  box-shadow: none;
+  transition: background .2s, transform .2s;
 }
 
 .gk-cookie-fab svg {
@@ -143,7 +143,7 @@
   color: #fff;
   background: #ad974f;
   outline: 0;
-  box-shadow: 0 8px 22px rgb(35 31 32 / 42%);
+  box-shadow: none;
   transform: translateY(-2px);
 }
 

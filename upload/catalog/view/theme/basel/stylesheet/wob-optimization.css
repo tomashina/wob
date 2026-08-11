@@ -1,6 +1,6 @@
 /* World of Beauty usability, accessibility and layout stability layer. */
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
 }
 
 main {
@@ -87,13 +87,13 @@ button.slick-arrow {
   background: #fff;
   border: 1px solid rgb(0 36 61 / 10%);
   border-radius: 50%;
-  box-shadow: 0 8px 24px rgb(0 36 61 / 12%);
-  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+  box-shadow: none;
+  transition: border-color .2s ease, transform .2s ease;
 }
 
 button.slick-arrow:hover {
   border-color: rgb(173 151 79 / 55%);
-  box-shadow: 0 10px 28px rgb(0 36 61 / 18%);
+  box-shadow: none;
   transform: translateY(-1px);
 }
 
@@ -194,11 +194,11 @@ button.button-remove {
 #main-content .btn {
   min-height: 42px;
   border-radius: 6px;
-  transition: background-color .2s ease, border-color .2s ease, box-shadow .2s ease, color .2s ease, transform .2s ease;
+  transition: background-color .2s ease, border-color .2s ease, color .2s ease, transform .2s ease;
 }
 
 #main-content .btn:hover {
-  box-shadow: 0 7px 18px rgb(0 36 61 / 12%);
+  box-shadow: none;
   transform: translateY(-1px);
 }
 
@@ -211,7 +211,7 @@ button.button-remove {
 
 .form-control:focus {
   border-color: #ad974f;
-  box-shadow: 0 0 0 3px rgb(173 151 79 / 14%);
+  box-shadow: none;
 }
 
 #product-view > .table.filter {
@@ -226,13 +226,13 @@ button.button-remove {
   overflow: hidden;
   border: 1px solid rgb(0 36 61 / 7%);
   border-radius: 9px;
-  box-shadow: 0 4px 16px rgb(0 36 61 / 4%);
-  transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease;
+  box-shadow: none;
+  transition: border-color .25s ease, transform .25s ease;
 }
 
 .single-product:hover .image {
   border-color: rgb(173 151 79 / 28%);
-  box-shadow: 0 12px 30px rgb(0 36 61 / 10%);
+  box-shadow: none;
   transform: translateY(-2px);
 }
 
@@ -295,7 +295,7 @@ body[class^="product-product-"] .product-info .table-cell.right .inner {
   border: 1px solid rgb(0 36 61 / 9%);
   border-top: 0;
   border-radius: 0 0 8px 8px;
-  box-shadow: 0 5px 20px rgb(0 36 61 / 5%);
+  box-shadow: none;
 }
 
 .table-responsive {
