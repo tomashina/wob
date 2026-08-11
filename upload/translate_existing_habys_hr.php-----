@@ -1,0 +1,359 @@
+<?php
+declare(strict_types=1);
+
+define('HABYS_IMPORT_LIBRARY_ONLY', true);
+require_once __DIR__ . '/import_habys_new_offer.php';
+
+const HABYS_TRANSLATE_GOOGLE_API_KEY = '';
+const HABYS_TRANSLATE_GOOGLE_API_URL = 'https://translation.googleapis.com/language/translate/v2';
+const WEB_DEFAULT_LIMIT_TRANSLATE = 20;
+
+[$dryRun, $limit, $start, $maxSeconds, $force, $isWeb, $autoContinue] = resolveTranslationRuntimeOptions();
+
+$root = __DIR__;
+$configPath = $root . '/config.php';
+
+if (!is_file($configPath)) {
+    fwrite(STDERR, "config.php not found in {$root}\n");
+    exit(1);
+}
+
+require_once $configPath;
+
+runExistingHabysTranslation($dryRun, $limit, $start, $maxSeconds, $force, $isWeb, $autoContinue);
+
+function resolveTranslationRuntimeOptions(): array
+{
+    if (PHP_SAPI === 'cli') {
+        $options = getopt('', ['dry-run', 'start::', 'limit::', 'max-seconds::', 'force']);
+
+        return [
+            array_key_exists('dry-run', $options),
+            isset($options['limit']) ? max(0, (int) $options['limit']) : 0,
+            isset($options['start']) ? max(0, (int) $options['start']) : 0,
+            isset($options['max-seconds']) ? max(0, (int) $options['max-seconds']) : 0,
+            array_key_exists('force', $options),
+            false,
+            false,
+        ];
+    }
+
+    $autoContinue = readBoolOption($_GET, 'auto_continue');
+    initializeWebResponse($autoContinue);
+    authorizeWebAccess();
+
+    return [
+        readBoolOption($_GET, 'dry_run'),
+        readIntOption($_GET, 'limit', WEB_DEFAULT_LIMIT_TRANSLATE),
+        readIntOption($_GET, 'start'),
+        readIntOption($_GET, 'max_seconds', resolveDefaultWebMaxSeconds(WEB_DEFAULT_MAX_SECONDS)),
+        readBoolOption($_GET, 'force'),
+        true,
+        $autoContinue,
+    ];
+}
+
+function runExistingHabysTranslation(
+    bool $dryRun,
+    int $limit,
+    int $start,
+    int $maxSeconds,
+    bool $force,
+    bool $isWeb,
+    bool $autoContinue
+): void {
+    prepareLongRunningExecution($isWeb);
+    beginManagedResponse($isWeb, $autoContinue);
+
+    $apiKey = getExistingHabysTranslationApiKey();
+    if ($apiKey === '') {
+        echo "Google API key nije postavljen.\n";
+        echo "Postavi HABYS_TRANSLATE_GOOGLE_API_KEY u fajlu ili env var HABYS_GOOGLE_TRANSLATE_API_KEY.\n";
+        finishManagedResponse($isWeb, $autoContinue, null);
+        return;
+    }
+
+    $db = openDatabaseConnection();
+    $db->set_charset('utf8mb4');
+
+    $languages = getLanguages($db);
+    $englishLanguageId = findLanguageIdByPrefix($languages, 'en');
+    $croatianLanguageId = findLanguageIdByPrefix($languages, 'hr');
+
+    if ($englishLanguageId === 0 || $croatianLanguageId === 0) {
+        throw new RuntimeException('English ili Hrvatski language ID nije pronađen.');
+    }
+
+    $rows = fetchExistingHabysTranslationRows($db, $englishLanguageId, $croatianLanguageId);
+
+    $stats = [
+        'scanned' => 0,
+        'translated' => 0,
+        'skipped' => 0,
+        'errors' => 0,
+    ];
+
+    $startedAt = microtime(true);
+    $stoppedEarly = false;
+    $nextUrl = null;
+
+    echo 'Mode: ' . ($dryRun ? 'DRY RUN' : 'LIVE TRANSLATE') . PHP_EOL;
+    echo 'Force: ' . ($force ? 'yes' : 'no') . PHP_EOL;
+    echo 'Start: ' . $start . PHP_EOL;
+    echo 'Limit: ' . ($limit > 0 ? $limit : 'none') . PHP_EOL;
+    if ($maxSeconds > 0) {
+        echo 'Max seconds: ' . $maxSeconds . PHP_EOL;
+    }
+    echo 'English language id: ' . $englishLanguageId . PHP_EOL;
+    echo 'Croatian language id: ' . $croatianLanguageId . PHP_EOL;
+    echo PHP_EOL;
+
+    foreach ($rows as $index => $row) {
+        if ($index < $start) {
+            continue;
+        }
+
+        if (shouldStopForTimeBudget($startedAt, $maxSeconds)) {
+            $stoppedEarly = true;
+            echo PHP_EOL . "Stopped before timeout after {$stats['scanned']} scanned rows." . PHP_EOL;
+            break;
+        }
+
+        $stats['scanned']++;
+
+        $needsNameTranslation = shouldTranslateExistingField($row['en_name'], $row['hr_name'], $force);
+        $needsDescriptionTranslation = shouldTranslateExistingField($row['en_description'], $row['hr_description'], $force);
+
+        if (!$needsNameTranslation && !$needsDescriptionTranslation) {
+            $stats['skipped']++;
+            echo sprintf(
+                "[SKIP] product_id=%d | hr already translated\n",
+                $row['product_id']
+            );
+        } else {
+            try {
+                $translatedName = $needsNameTranslation
+                    ? googleTranslateText($row['en_name'], 'en', 'hr', 'text', $apiKey)
+                    : $row['hr_name'];
+
+                $translatedDescription = $needsDescriptionTranslation
+                    ? googleTranslateText($row['en_description'], 'en', 'hr', 'html', $apiKey)
+                    : $row['hr_description'];
+
+                if (!$dryRun) {
+                    updateCroatianHabysDescription(
+                        $db,
+                        (int) $row['product_id'],
+                        (int) $row['hr_language_id'],
+                        $translatedName,
+                        $translatedDescription
+                    );
+                }
+
+                $stats['translated']++;
+                echo sprintf(
+                    "[TRANSLATE] product_id=%d | %s%s\n",
+                    $row['product_id'],
+                    $translatedName,
+                    $dryRun ? ' | dry-run' : ''
+                );
+            } catch (Throwable $exception) {
+                $stats['errors']++;
+                fwrite(STDERR, sprintf(
+                    "[ERROR] product_id=%d | %s\n",
+                    $row['product_id'],
+                    $exception->getMessage()
+                ));
+            }
+        }
+
+        if ($limit > 0 && $stats['scanned'] >= $limit) {
+            $stoppedEarly = true;
+            echo PHP_EOL . "Limit {$limit} reached, stopping early." . PHP_EOL;
+            break;
+        }
+
+        if (shouldStopForTimeBudget($startedAt, $maxSeconds)) {
+            $stoppedEarly = true;
+            echo PHP_EOL . "Stopped before timeout after {$stats['scanned']} scanned rows." . PHP_EOL;
+            break;
+        }
+    }
+
+    if ($stoppedEarly) {
+        $nextStart = $start + $stats['scanned'];
+        echo PHP_EOL . 'Continue with start=' . $nextStart . PHP_EOL;
+
+        if ($isWeb) {
+            $nextUrl = buildWebContinuationUrl($nextStart);
+            echo $nextUrl . PHP_EOL;
+        } else {
+            echo buildCliContinuationCommand(basename(__FILE__), $nextStart, [
+                'limit' => $limit,
+                'max-seconds' => $maxSeconds,
+                'dry-run' => $dryRun,
+                'force' => $force,
+            ]) . PHP_EOL;
+        }
+    }
+
+    echo PHP_EOL;
+    echo 'Summary:' . PHP_EOL;
+    echo '  Scanned: ' . $stats['scanned'] . PHP_EOL;
+    echo '  Translated: ' . $stats['translated'] . PHP_EOL;
+    echo '  Skipped: ' . $stats['skipped'] . PHP_EOL;
+    echo '  Errors: ' . $stats['errors'] . PHP_EOL;
+
+    finishManagedResponse($isWeb, $autoContinue, $nextUrl);
+}
+
+function getExistingHabysTranslationApiKey(): string
+{
+    $env = getenv('HABYS_GOOGLE_TRANSLATE_API_KEY');
+    if ($env !== false && trim($env) !== '') {
+        return trim($env);
+    }
+
+    return trim(HABYS_TRANSLATE_GOOGLE_API_KEY);
+}
+
+function findLanguageIdByPrefix(array $languages, string $prefix): int
+{
+    $prefix = strtolower($prefix);
+
+    foreach ($languages as $language) {
+        $code = strtolower((string) ($language['code'] ?? ''));
+        $locale = strtolower((string) ($language['locale'] ?? ''));
+
+        if (strpos($code, $prefix) === 0 || strpos($locale, $prefix) === 0) {
+            return (int) $language['language_id'];
+        }
+    }
+
+    return 0;
+}
+
+function fetchExistingHabysTranslationRows(mysqli $db, int $englishLanguageId, int $croatianLanguageId): array
+{
+    $productTable = DB_PREFIX . 'product';
+    $descriptionTable = DB_PREFIX . 'product_description';
+
+    $sql = "
+        SELECT
+            p.product_id,
+            p.location,
+            en.language_id AS en_language_id,
+            en.name AS en_name,
+            en.description AS en_description,
+            hr.language_id AS hr_language_id,
+            hr.name AS hr_name,
+            hr.description AS hr_description
+        FROM `{$productTable}` p
+        INNER JOIN `{$descriptionTable}` en
+            ON en.product_id = p.product_id
+           AND en.language_id = {$englishLanguageId}
+        INNER JOIN `{$descriptionTable}` hr
+            ON hr.product_id = p.product_id
+           AND hr.language_id = {$croatianLanguageId}
+        WHERE p.location LIKE '" . SOURCE_PREFIX . ":%'
+        ORDER BY p.product_id ASC
+    ";
+
+    $result = $db->query($sql);
+    $rows = [];
+
+    while ($row = $result->fetch_assoc()) {
+        $rows[] = $row;
+    }
+
+    return $rows;
+}
+
+function shouldTranslateExistingField(string $englishValue, string $croatianValue, bool $force): bool
+{
+    if ($force) {
+        return true;
+    }
+
+    if (trim($croatianValue) === '') {
+        return true;
+    }
+
+    return normalizeComparableText($englishValue) === normalizeComparableText($croatianValue);
+}
+
+function normalizeComparableText(string $value): string
+{
+    $value = preg_replace('/\s+/u', ' ', trim($value));
+    return (string) $value;
+}
+
+function googleTranslateText(string $text, string $source, string $target, string $format, string $apiKey): string
+{
+    if (trim($text) === '') {
+        return '';
+    }
+
+    if (!function_exists('curl_init')) {
+        throw new RuntimeException('cURL extension nije dostupna za Google Translate API.');
+    }
+
+    $payload = http_build_query([
+        'q' => $text,
+        'source' => $source,
+        'target' => $target,
+        'format' => $format,
+        'key' => $apiKey,
+    ]);
+
+    $ch = curl_init(HABYS_TRANSLATE_GOOGLE_API_URL);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => $payload,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CONNECTTIMEOUT => CURL_CONNECT_TIMEOUT,
+        CURLOPT_TIMEOUT => CURL_TIMEOUT,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/x-www-form-urlencoded'],
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_SSL_VERIFYHOST => 2,
+    ]);
+
+    $response = curl_exec($ch);
+    $error = curl_error($ch);
+    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($response === false || $httpCode >= 400) {
+        throw new RuntimeException('Google Translate API error: ' . ($error ?: 'HTTP ' . $httpCode));
+    }
+
+    $decoded = json_decode($response, true);
+
+    if (!isset($decoded['data']['translations'][0]['translatedText'])) {
+        throw new RuntimeException('Google Translate API response nije valjan.');
+    }
+
+    return html_entity_decode((string) $decoded['data']['translations'][0]['translatedText'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+}
+
+function updateCroatianHabysDescription(
+    mysqli $db,
+    int $productId,
+    int $languageId,
+    string $name,
+    string $description
+): void {
+    $descriptionTable = DB_PREFIX . 'product_description';
+    $nameEscaped = $db->real_escape_string($name);
+    $descriptionEscaped = $db->real_escape_string($description);
+
+    $db->query(
+        "UPDATE `{$descriptionTable}` SET
+            name = '{$nameEscaped}',
+            description = '{$descriptionEscaped}',
+            meta_title = '{$nameEscaped}',
+            meta_description = '{$nameEscaped}'
+         WHERE product_id = {$productId}
+           AND language_id = {$languageId}"
+    );
+}

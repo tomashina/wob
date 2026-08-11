@@ -1,0 +1,35 @@
+.DS_Store
+._*
+__MACOSX/
+.ftpquota
+.idea/
+.vscode/
+
+# Environment-specific configuration and credentials
+upload/config.php
+upload/admin/config.php
+upload/env.php
+
+# The production image library is transferred separately
+upload/image/
+
+# Runtime and generated data
+upload/error_log
+upload/admin/error_log
+upload/system/storage/cache/
+upload/system/storage/logs/
+upload/system/storage/session/
+upload/system/storage/upload/
+storagedijana/storagedijana/cache/
+storagedijana/storagedijana/logs/
+storagedijana/storagedijana/session/
+storagedijana/storagedijana/upload/
+
+# Local exports, backups and editor artefacts
+*.log
+*.sql
+*.sql.gz
+*.zip
+*.bak
+*.backup
+*~
