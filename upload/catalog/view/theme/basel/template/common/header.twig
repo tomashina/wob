@@ -90,6 +90,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <script src="catalog/view/theme/basel/js/basel_common.js"></script>
 <!-- Main stylesheet -->
 <link href="catalog/view/theme/basel/stylesheet/stylesheet.css" rel="stylesheet">
+<link href="catalog/view/theme/basel/stylesheet/wob-optimization.css?v=1.0" rel="stylesheet">
 <link href="catalog/view/javascript/cookieconsent/cookieconsent.css?v=3.1" rel="stylesheet" media="print" onload="this.media='all'">
 <link href="catalog/view/javascript/cookieconsent/wob-consent.css?v=1.0" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="catalog/view/javascript/cookieconsent/cookieconsent.css?v=3.1" rel="stylesheet"><link href="catalog/view/javascript/cookieconsent/wob-consent.css?v=1.0" rel="stylesheet"></noscript>
@@ -111,6 +112,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 {% for link in links %}
 {% if link.rel == 'image' %}
 
+{% elseif link.rel == 'preload' %}
+<link href="{{ link.href }}" rel="preload" as="image" fetchpriority="high" />
 {% else %}
 <link href="{{ link.href }}" rel="{{ link.rel }}" />
 {% endif %}
@@ -141,6 +144,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 {% endif %}
 </head>
 <body class="{{ class }}{{ basel_body_class }}">
+<a class="wob-skip-link" href="#main-content">{{ text_skip_content }}</a>
 {% if gtm_id %}
 <!-- Google Tag Manager (noscript) -->
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ gtm_id }}"
@@ -157,7 +161,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="table-cell w100"><div class="ellipsis-wrap">{{ top_promo_text }}</div></div>
     {% if top_promo_close %}
     <div class="table-cell text-right">
-    <a onClick="addCookie('basel_top_promo', 1, 30);$(this).closest('.top_notificaiton').slideUp();" class="top_promo_close">&times;</a>
+    <button type="button" aria-label="{{ text_close_menu }}" onClick="addCookie('basel_top_promo', 1, 30);$(this).closest('.top_notificaiton').slideUp();" class="top_promo_close">&times;</button>
     </div>
     {% endif %}
     </div>
@@ -170,10 +174,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <div class="container">
 <span id="title-holder">&nbsp;</span>
 <div class="links-holder">
-<a class="basel-back-btn" onClick="history.go(-1); return false;"><i></i></a><span>&nbsp;</span>
+<button type="button" class="basel-back-btn" aria-label="{{ text_back }}" onClick="history.go(-1); return false;"><i aria-hidden="true"></i></button><span>&nbsp;</span>
 </div>
 </div>
 </div>
+<main id="main-content" tabindex="-1">
+{% if 'common-home' in class %}
+<h1 class="wob-home-title-sr">{{ home_heading_title }}</h1>
+{% endif %}
 <div class="container">
 {{ position_top }}
 </div>

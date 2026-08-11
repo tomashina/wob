@@ -136,6 +136,158 @@ function seoConfigureStructuredData(mysqli $database)
     }
 }
 
+function seoFixHomepageHeadingHierarchy(mysqli $database)
+{
+    $table = DB_PREFIX . 'module';
+    $select = $database->prepare(
+        "SELECT `module_id`, `setting` FROM `{$table}` WHERE `code` = 'basel_content' AND `name` = 'Grenke' LIMIT 1"
+    );
+    $select->execute();
+    $select->bind_result($moduleId, $rawSetting);
+
+    if (!$select->fetch()) {
+        $select->close();
+        return false;
+    }
+    $select->close();
+
+    $setting = json_decode($rawSetting, true);
+    if (!is_array($setting) || empty($setting['columns'])) {
+        return false;
+    }
+
+    $encoded = json_encode($setting);
+    $fixed = str_ireplace(
+        array('&lt;h1', '&lt;/h1&gt;', '<h1', '</h1>'),
+        array('&lt;h2', '&lt;/h2&gt;', '<h2', '</h2>'),
+        $encoded
+    );
+
+    if ($fixed === $encoded) {
+        return false;
+    }
+
+    $update = $database->prepare("UPDATE `{$table}` SET `setting` = ? WHERE `module_id` = ?");
+    $update->bind_param('si', $fixed, $moduleId);
+    $update->execute();
+    return true;
+}
+
+function seoCreateWebpAsset($source, $destination, $maxWidth, $maxHeight)
+{
+    if (!function_exists('imagewebp') || !is_file($source)) {
+        return false;
+    }
+
+    if (is_file($destination) && filemtime($destination) >= filemtime($source) && filesize($destination) > 0) {
+        return true;
+    }
+
+    $info = @getimagesize($source);
+    if (!$info || empty($info[0]) || empty($info[1])) {
+        return false;
+    }
+
+    if ($info[2] === IMAGETYPE_PNG) {
+        $original = @imagecreatefrompng($source);
+    } elseif ($info[2] === IMAGETYPE_JPEG) {
+        $original = @imagecreatefromjpeg($source);
+    } elseif ($info[2] === IMAGETYPE_WEBP) {
+        $original = @imagecreatefromwebp($source);
+    } else {
+        return false;
+    }
+
+    if (!$original) {
+        return false;
+    }
+
+    $scale = min(1, $maxWidth / $info[0], $maxHeight / $info[1]);
+    $width = max(1, (int)round($info[0] * $scale));
+    $height = max(1, (int)round($info[1] * $scale));
+    $canvas = imagecreatetruecolor($width, $height);
+    imagealphablending($canvas, false);
+    imagesavealpha($canvas, true);
+    $transparent = imagecolorallocatealpha($canvas, 255, 255, 255, 127);
+    imagefilledrectangle($canvas, 0, 0, $width, $height, $transparent);
+    imagecopyresampled($canvas, $original, 0, 0, 0, 0, $width, $height, $info[0], $info[1]);
+
+    $directory = dirname($destination);
+    if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
+        imagedestroy($original);
+        imagedestroy($canvas);
+        return false;
+    }
+
+    $saved = imagewebp($canvas, $destination, 82);
+    imagedestroy($original);
+    imagedestroy($canvas);
+    return $saved;
+}
+
+function seoOptimizeHomepageImages(mysqli $database)
+{
+    $table = DB_PREFIX . 'module';
+    $result = $database->query(
+        "SELECT `module_id`, `setting` FROM `{$table}` WHERE `code` IN ('basel_layerslider', 'basel_content')"
+    );
+    $optimized = 0;
+    $updatedModules = 0;
+
+    while ($row = $result->fetch_assoc()) {
+        $setting = json_decode($row['setting'], true);
+        if (!is_array($setting)) {
+            continue;
+        }
+
+        $changed = false;
+        $walker = function (&$value) use (&$walker, &$changed, &$optimized) {
+            if (is_array($value)) {
+                foreach ($value as &$child) {
+                    $walker($child);
+                }
+                unset($child);
+                return;
+            }
+
+            if (!is_string($value) || !preg_match('#^catalog/(sllider|banner-main-category|banneri)/.+\.(png|jpe?g)$#i', $value)) {
+                return;
+            }
+
+            if (strpos($value, 'catalog/sllider/') === 0) {
+                $maxWidth = 1360;
+                $maxHeight = 580;
+            } elseif (strpos($value, 'catalog/banneri/') === 0) {
+                $maxWidth = 1140;
+                $maxHeight = 760;
+            } else {
+                $maxWidth = 900;
+                $maxHeight = 900;
+            }
+
+            $pathInfo = pathinfo($value);
+            $optimizedRelative = ($pathInfo['dirname'] !== '.' ? $pathInfo['dirname'] . '/' : '') . $pathInfo['filename'] . '-optimized.webp';
+            if (seoCreateWebpAsset(DIR_IMAGE . $value, DIR_IMAGE . $optimizedRelative, $maxWidth, $maxHeight)) {
+                $value = $optimizedRelative;
+                $changed = true;
+                $optimized++;
+            }
+        };
+        $walker($setting);
+
+        if ($changed) {
+            $encoded = json_encode($setting, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            $moduleId = (int)$row['module_id'];
+            $update = $database->prepare("UPDATE `{$table}` SET `setting` = ? WHERE `module_id` = ?");
+            $update->bind_param('si', $encoded, $moduleId);
+            $update->execute();
+            $updatedModules++;
+        }
+    }
+
+    return array('images' => $optimized, 'modules' => $updatedModules);
+}
+
 function seoRepairCategoryMeta(mysqli $database, array $languages)
 {
     $table = DB_PREFIX . 'category_description';
@@ -292,12 +444,16 @@ try {
     $languages = seoLanguages($database);
     seoConfigureSearchMeta($database, $languages);
     seoConfigureStructuredData($database);
+    $headingFixed = seoFixHomepageHeadingHierarchy($database);
+    $imageOptimization = seoOptimizeHomepageImages($database);
     $categoryUpdates = seoRepairCategoryMeta($database, $languages);
     $productUpdates = seoRepairProductMeta($database, $languages);
     $database->commit();
 
     echo 'UPDATED search and pagination metadata' . PHP_EOL;
     echo 'UPDATED Open Graph, Twitter Cards and structured data settings' . PHP_EOL;
+    echo ($headingFixed ? 'UPDATED' : 'CHECKED') . ' homepage heading hierarchy' . PHP_EOL;
+    echo 'OPTIMIZED ' . $imageOptimization['images'] . ' homepage images in ' . $imageOptimization['modules'] . ' modules' . PHP_EOL;
     echo 'REPAIRED ' . $categoryUpdates . ' category metadata records' . PHP_EOL;
     echo 'REPAIRED ' . $productUpdates . ' product metadata records' . PHP_EOL;
 

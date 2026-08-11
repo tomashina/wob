@@ -5,10 +5,10 @@
 {% if currency.code == code %}
 <p><span class="anim-underline active">{{ currency.title }}</span></p>
 {% else %}
-<p><a class="anim-underline" onclick="$('input[name=\'code\']').attr('value', '{{ currency.code }}'); $('#form-currency').submit();">{{ currency.title }}</a></p>
+<p><button type="button" class="anim-underline wob-link-button" onclick="$('input[name=\'code\']').attr('value', '{{ currency.code }}'); $('#form-currency').submit();">{{ currency.title }}</button></p>
 {% endif %}
 {% endfor %}
-<select name="currency-select" id="currency-select">
+<select name="currency-select" id="currency-select" aria-label="{{ text_currency }}">
 {% for currency in currencies %}
 {% if currency.code == code %}
 <option value="{{ currency.code }}" selected="selected">{{ currency.code }}</option>

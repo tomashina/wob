@@ -2,12 +2,12 @@
 </div>
 {% endif %}
 <div class="widget" style="margin-top:25px;margin-bottom:{{ margin_bottom }};">
-<div id="masterslider{{ module }}" class="master-slider widget {{ nav_buttons }}" >
+<div id="masterslider{{ module }}" class="master-slider widget {{ nav_buttons }}" role="region" aria-roledescription="carousel" aria-label="World of Beauty izdvojena ponuda" style="aspect-ratio:{{ width }}/{{ height }};min-height:{{ minheight }}px">
 {% for section in sections %}
 {% if section.sort_order > 0 %}
 <div class="ms-slide {% if section.slide_kenburn is defined %} kenburn {{ section.slide_kenburn }}{% endif %}" data-delay="{{ section.duration }}" {% if section.bg_color|length %} style="background-color:{{ section.bg_color }}"{% endif %}>
 {% if section.is_bg %}
-<img src="{{ section.thumb_image }}" data-src="{{ section.thumb_image }}" class="slide-bg" alt="">
+<img src="{{ section.thumb_image }}" data-src="{{ section.thumb_image }}" class="slide-bg" width="{{ width }}" height="{{ height }}" alt="" decoding="async" {% if loop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %}>
 {% endif %}
 {% for key, group in section.groups %}
 {% if group.type == 'text' %}
@@ -18,7 +18,7 @@
 {% endif %}
 {% if group.type == 'image' %}
 <!-- Image layer -->
-    <img src="{{ group.image }}" alt="" data-src="{{ group.image }}" class="ms-layer image" 
+    <img src="{{ group.image }}" alt="" data-src="{{ group.image }}" class="ms-layer image" decoding="async"
     {% if group.minheight is defined %} style="min-height:{{ group.minheight }}px" {% endif %}
     data-origin = "ml" data-type = "image" data-offset-x = "{{ group.left }}" data-offset-y = "{{ group.top }}" data-parallax = "{{ group.p_index }}" data-duration = "{{ group.durationin }}" data-delay = "{{ group.start }}" data-effect = "{{ group.transitionin }}" data-ease = "{{ group.easingin }}" data-hide-effect = "{{ group.transitionout }}" data-hide-duration = "{{ group.durationout }}" data-hide-ease = "{{ group.easingout }}" data-hide-time = "{{ group.end }}" />
 {% endif %}
@@ -30,7 +30,7 @@
 {% endif %}
 {% endfor %}<!-- foreach groups -->
 {% if section.link %}
-<a href="{{ section.link }}" class="ls-link {% if section.link_new_window %} external{% endif %}"></a>
+<a href="{{ section.link }}" class="ls-link {% if section.link_new_window %} external{% endif %}" aria-label="Pogledajte izdvojenu ponudu {{ loop.index }}"></a>
 {% endif %}
 </div><!-- .ls-slide ends -->
 {% endif %}

@@ -89,7 +89,7 @@
         <span class="badge out_of_stock_badge"><i>{{ basel_text_out_of_stock}}</i></span>
         {% endif %}
 
-        <a class="{% if not images %}link cloud-zoom{% endif %} {% if product_layout == 'full-width' %}link{% else %}cloud-zoom{% endif %}" id="main-image" href="{{ popup }}" rel="position:'inside', showTitle: false"><img src="{{ thumb }}" title="{{ heading_title }}" alt="{{ heading_title }}" /></a>
+        <a class="{% if not images %}link cloud-zoom{% endif %} {% if product_layout == 'full-width' %}link{% else %}cloud-zoom{% endif %}" id="main-image" href="{{ popup }}" rel="position:'inside', showTitle: false"><img src="{{ thumb }}" title="{{ heading_title }}" alt="{{ heading_title }}" width="{{ img_w }}" height="{{ img_h }}" fetchpriority="high" decoding="async" /></a>
         </div>
         {% endif %}
 		
@@ -97,7 +97,7 @@
         <ul class="image-additional">
         {% for image in images %}
         <li>
-        <a class="link {% if product_layout != 'full-width' %}cloud-zoom-gallery locked{% endif %}" href="{{ image.popup }}" rel="useZoom: 'main-image', smallImage: '{{ image.thumb_lg }}'"><img src="{{ image.thumb }}" title="{{ heading_title }}" alt="{{ heading_title }}" /></a>
+        <a class="link {% if product_layout != 'full-width' %}cloud-zoom-gallery locked{% endif %}" href="{{ image.popup }}" rel="useZoom: 'main-image', smallImage: '{{ image.thumb_lg }}'"><img src="{{ image.thumb }}" title="{{ heading_title }}" alt="{{ heading_title }}" width="{{ img_a_w }}" height="{{ img_a_h }}" loading="lazy" decoding="async" /></a>
         </li>
         {% endfor %}
             {% if thumb and (product_layout != "full-width") %}
@@ -124,7 +124,7 @@
     <i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i>
     </span>
     </div>
-    <span class="review_link">(<a class="hover_uline to_tabs" onclick="$('a[href=\'#tab-review\']').trigger('click'); return false;">{{ reviews }}</a>)</span>
+    <span class="review_link">(<button type="button" class="hover_uline to_tabs wob-link-button" onclick="$('a[href=\'#tab-review\']').trigger('click'); return false;">{{ reviews }}</button>)</span>
 	{% endif %}
 
     {% if price %}
@@ -355,10 +355,10 @@
           </div> <!-- #product ends -->
 
 
-	<p class="info is_wishlist"><a onclick="wishlist.add('{{ product_id }}');"><i class="icon-heart"></i> {{ button_wishlist }}</a></p>
-	<p class="info is_compare"><a onclick="compare.add('{{ product_id }}');"><i class="icon-refresh"></i> {{ button_compare }}</a></p>
+	<p class="info is_wishlist"><button type="button" class="wob-link-button" onclick="wishlist.add('{{ product_id }}');"><i class="icon-heart" aria-hidden="true"></i> {{ button_wishlist }}</button></p>
+	<p class="info is_compare"><button type="button" class="wob-link-button" onclick="compare.add('{{ product_id }}');"><i class="icon-refresh" aria-hidden="true"></i> {{ button_compare }}</button></p>
     {% if question_status %}
-    <p class="info is_ask"><a class="to_tabs" onclick="$('a[href=\'#tab-questions\']').trigger('click'); return false;"><i class="icon-question"></i> {{ basel_button_ask }}</a></p>
+    <p class="info is_ask"><button type="button" class="to_tabs wob-link-button" onclick="$('a[href=\'#tab-questions\']').trigger('click'); return false;"><i class="icon-question" aria-hidden="true"></i> {{ basel_button_ask }}</button></p>
     {% endif %}
     
     <div class="clearfix"></div>
@@ -628,8 +628,8 @@
 {% if products %}
 <script><!--
 $('.grid-holder.related').slick({
-prevArrow: "<a class=\"arrow-left icon-arrow-left\"></a>",
-nextArrow: "<a class=\"arrow-right icon-arrow-right\"></a>",
+prevArrow: "<button type=\"button\" class=\"arrow-left icon-arrow-left\" aria-label=\"Prethodno\"></button>",
+nextArrow: "<button type=\"button\" class=\"arrow-right icon-arrow-right\" aria-label=\"Sljedeće\"></button>",
 dots:true,
 {% if direction == 'rtl' %}
 rtl: true,
@@ -936,8 +936,8 @@ $('.cloud-zoom-wrap').click(function (e) {
 {% endif %}
 
 $('.image-additional').slick({
-prevArrow: "<a class=\"icon-arrow-left\"></a>",
-nextArrow: "<a class=\"icon-arrow-right\"></a>",
+prevArrow: "<button type=\"button\" class=\"icon-arrow-left\" aria-label=\"Prethodna slika\"></button>",
+nextArrow: "<button type=\"button\" class=\"icon-arrow-right\" aria-label=\"Sljedeća slika\"></button>",
 appendArrows: '.image-additional .slick-list',
 arrows:true,
 {% if direction == 'rtl' %}

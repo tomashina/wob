@@ -166,8 +166,10 @@ class ControllerExtensionModuleBaselContent extends Controller {
 				
 				if (isset($column['data2'])){
 					$data2 = $server . 'image/' . $column['data2'];
+					$data2_size = $this->getImageSize($column['data2']);
                 } else {
                     $data2 = false;
+					$data2_size = array('width' => 0, 'height' => 0);
                 }
 				
 				if (isset($column['data3'][$this->config->get('config_language_id')])){
@@ -178,8 +180,10 @@ class ControllerExtensionModuleBaselContent extends Controller {
 				
 				if (isset($column['data4'])){
 					$data4 = $server . 'image/' . $column['data4'];
+					$data4_size = $this->getImageSize($column['data4']);
                 } else {
                     $data4 = false;
+					$data4_size = array('width' => 0, 'height' => 0);
                 }
 				
 				if (isset($column['data5'])){
@@ -211,8 +215,12 @@ class ControllerExtensionModuleBaselContent extends Controller {
 					'type' => $column['type'],
 					'data1' => $data1,
 					'data2' => $data2,
+					'data2_width' => $data2_size['width'],
+					'data2_height' => $data2_size['height'],
 					'data3' => $data3,
 					'data4' => $data4,
+					'data4_width' => $data4_size['width'],
+					'data4_height' => $data4_size['height'],
 					'data5' => $data5,
 					'data6' => $data6,
 					'data7' => $data7,
@@ -225,5 +233,15 @@ class ControllerExtensionModuleBaselContent extends Controller {
 		
 		if ($this->config->get('theme_default_directory') == 'basel')
 		return $this->load->view('extension/module/basel_content', $data);
+	}
+
+	private function getImageSize($relativePath) {
+		$path = DIR_IMAGE . ltrim((string)$relativePath, '/');
+		if (!is_file($path)) {
+			return array('width' => 0, 'height' => 0);
+		}
+
+		$size = @getimagesize($path);
+		return $size ? array('width' => (int)$size[0], 'height' => (int)$size[1]) : array('width' => 0, 'height' => 0);
 	}
 }

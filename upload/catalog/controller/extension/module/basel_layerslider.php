@@ -155,6 +155,10 @@ class ControllerExtensionModuleBaselLayerslider extends Controller {
             }
 			
 			usort($data['sections'], function ($a, $b) { return $a['sort_order'] - $b['sort_order']; });
+
+			if (!empty($data['sections'][0]['thumb_image'])) {
+				$this->document->addLink($data['sections'][0]['thumb_image'], 'preload');
+			}
 				
 			//ksort($data['sections']);
 			

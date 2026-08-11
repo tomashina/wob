@@ -4,6 +4,7 @@
 <div class="container">
     {{ position_bottom }}
 </div>
+</main>
 <div id="footer">
 
 
@@ -111,10 +112,6 @@
                 </div><!-- .row ends -->
             </div><!-- .col-md-8 ends -->
 
-            <nav class="col-xs-12 text-center wob-cookie-settings-link" aria-label="{{ text_cookie_settings }}">
-                <a href="#cookie-settings" data-cookie-consent-trigger>{{ text_cookie_settings }}</a>
-            </nav>
-
             <div class="col-xs-12 text-center cards-holder" >
                 <img class="cards-img" src="image/catalog/credit-cards/visa.svg" alt="Visa" height="30" width="50"></a>
                 <img class="cards-img" src="image/catalog/credit-cards/maestro.svg" alt="Mestroa" height="30" width="50"></a>
@@ -171,7 +168,7 @@
 
 </div><!-- .outer-container ends -->
 <a class="scroll-to-top email primary-bg-color " href="mailto:info@worldofbeauty.hr"><img src="image/envelope.svg" class="ikona" alt="Pošaljite email"></a>
-<a class="scroll-to-top top primary-bg-color " onclick="$('html, body').animate({scrollTop:0});"><img src="image/up.svg" class="ikona" alt="Na vrh"></a>
+<button type="button" class="scroll-to-top top primary-bg-color" aria-label="Na vrh" onclick="$('html, body').animate({scrollTop:0});"><img src="image/up.svg" class="ikona" alt="" aria-hidden="true"></button>
 <button type="button" class="gk-cookie-fab" data-cookie-consent-trigger aria-label="{{ text_cookie_settings }}" title="{{ text_cookie_settings }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5Z"/><path d="M8.5 8.5h.01M16 15.5h.01M12 12h.01M11 17h.01M7 14h.01"/></svg></button>
 <div id="featherlight-holder"></div>
 <script>
@@ -192,4 +189,5 @@
   else{setTimeout(loadCookieConsent,100);}
 }());
 </script>
+<script src="catalog/view/theme/basel/js/wob-accessibility.js?v=1.0" defer></script>
 </body></html>

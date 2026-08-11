@@ -52,6 +52,17 @@ class ControllerCommonHeader extends Controller {
 		}
 
 		$this->load->language('common/header');
+		$data['text_search'] = $this->language->get('text_search');
+		$data['text_shopping_cart'] = $this->language->get('text_shopping_cart');
+		$data['text_account'] = $this->language->get('text_account');
+		$isCroatian = strpos(strtolower((string)$data['lang']), 'hr') === 0;
+		$data['text_menu'] = $isCroatian ? 'Izbornik' : 'Menu';
+		$data['text_close_menu'] = $isCroatian ? 'Zatvori izbornik' : 'Close menu';
+		$data['text_back'] = $isCroatian ? 'Natrag' : 'Back';
+		$data['text_skip_content'] = $isCroatian ? 'Preskoči na sadržaj' : 'Skip to content';
+		$data['home_heading_title'] = $isCroatian
+			? 'Profesionalna frizerska i kozmetička oprema za salone'
+			: 'Professional hair and beauty salon equipment';
 
 		// Wishlist
 		if ($this->customer->isLogged()) {

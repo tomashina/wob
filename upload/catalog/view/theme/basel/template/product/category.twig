@@ -25,7 +25,7 @@
       {% if (thumb and category_thumb_status) or (description) %}
         {% if thumb and category_thumb_status %}
 
-        <img class="category-main-thumb" src="{{ thumb }}" alt="{{ heading_title }}" title="{{ heading_title }}" />
+        <img class="category-main-thumb" src="{{ thumb }}" alt="{{ heading_title }}" title="{{ heading_title }}" width="500" height="500" decoding="async" />
         {% endif %}
       
       {% endif %}
@@ -35,11 +35,11 @@
         {% endif %}
       
      {% if categories and category_subs_status %}
-                <h3 class="lined-title hidden-xs"><span>{{ text_refine }}</span></h3>
+                <h2 class="lined-title hidden-xs"><span>{{ text_refine }}</span></h2>
                 <div class="grid-holder categories carousel grid-holder grid6 prod_module0 carousel mb-3">
                     {% for category in categories %}
                         <div class="item single-product">
-                            <a href="{{ category.href }}"><img src="{{ category.thumb }}" alt="{{ category.name }}" title="{{ category.name }}" /></a>
+                            <a href="{{ category.href }}"><img src="{{ category.thumb }}" alt="" title="{{ category.name }}" width="500" height="500" loading="lazy" decoding="async" /></a>
                             <a href="{{ category.href }}">{{ category.name }}</a></div>
                     {% endfor %}
                 </div>
@@ -65,12 +65,12 @@
       
       <div class="table filter">
 
-                <div class="table-cell nowrap hidden-sm hidden-md hidden-lg"><a class="filter-trigger-btn"></a></div>
+                <div class="table-cell nowrap hidden-sm hidden-md hidden-lg"><button type="button" class="filter-trigger-btn" aria-label="Filteri"></button></div>
       
           
      <div class="table-cell nowrap hidden-xs">
          <span>{{ text_limit }}</span>
-          <select id="input-limit" class="form-control input-sm inline" onchange="location = this.value;">
+          <select id="input-limit" aria-label="{{ text_limit }}" class="form-control input-sm inline" onchange="location = this.value;">
             {% for limits in limits %}
             {% if limits.value == limit %}
             <option value="{{ limits.href }}" selected="selected">{{ limits.text }}</option>
@@ -88,7 +88,7 @@
           <div class="table-cell nowrap text-right">
           <div class="sort-select">
           <span class="hidden-xs">{{ text_sort }}</span>
-          <select id="input-sort" class="form-control input-sm inline" onchange="location = this.value;">
+          <select id="input-sort" aria-label="{{ text_sort }}" class="form-control input-sm inline" onchange="location = this.value;">
             {% for sorts in sorts %}
             {% if sorts.value == '%s-%s'|format(sort, order) %}
             <option value="{{ sorts.href }}" selected="selected"> {{ sorts.text }}</option>

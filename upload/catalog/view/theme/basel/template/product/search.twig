@@ -30,7 +30,7 @@
           <input type="text" name="search" value="{{ search }}" placeholder="{{ text_keyword }}" id="input-search" class="form-control" />
         </div>
         <div class="col-sm-6 margin-b10">
-          <select name="category_id" class="form-control">
+          <select name="category_id" class="form-control" aria-label="{{ text_category }}">
             <option value="0">{{ text_category }}</option>
             {% for category_1 in categories %}
                 {% if category_1.category_id == category_id %}
@@ -81,7 +81,7 @@
       
       <div class="table filter">
       
-      	<div class="table-cell nowrap hidden-sm hidden-md hidden-lg"><a class="filter-trigger-btn"></a></div>
+        <div class="table-cell nowrap hidden-sm hidden-md hidden-lg"><button type="button" class="filter-trigger-btn" aria-label="Filteri"></button></div>
           
          <!-- <div class="table-cell nowrap hidden-xs">
           <a id="grid-view" class="view-icon grid" data-toggle="tooltip" data-title="{{ button_grid }}"><i class="fa fa-th"></i></a>
@@ -95,7 +95,7 @@
           <div class="table-cell nowrap text-right">
           <div class="sort-select">
           <span class="hidden-xs">{{ text_sort }}</span>
-          <select id="input-sort" class="form-control input-sm inline" onchange="location = this.value;">
+          <select id="input-sort" aria-label="{{ text_sort }}" class="form-control input-sm inline" onchange="location = this.value;">
             {% for sorts in sorts %}
             {% if sorts.value == '%s-%s'|format(sort, order) %}
             <option value="{{ sorts.href }}" selected="selected"> {{ sorts.text }}</option>
@@ -109,7 +109,7 @@
           
           <div class="table-cell nowrap text-right hidden-xs hidden-sm">
           <span>{{ text_limit }}</span>
-          <select id="input-limit" class="form-control input-sm inline" onchange="location = this.value;">
+          <select id="input-limit" aria-label="{{ text_limit }}" class="form-control input-sm inline" onchange="location = this.value;">
             {% for limits in limits %}
             {% if limits.value == limit %}
             <option value="{{ limits.href }}" selected="selected">{{ limits.text }}</option>

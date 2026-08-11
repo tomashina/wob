@@ -14,9 +14,9 @@
             </ul>
             {% if lang_curr_title  %}
             <div class="setting-ul">
-            <div class="setting-li dropdown-wrapper from-left lang-curr-trigger nowrap"><a>
+            <div class="setting-li dropdown-wrapper from-left lang-curr-trigger nowrap"><button type="button" class="wob-link-button" aria-label="{{ lang_curr_title }}">
             <span><img src="image/{{ lang }}.png" alt="{{ lang_curr_title }}" title="{{ lang_curr_title }}"> {{ lang_curr_title }}</span>
-            </a>
+            </button>
             <div class="dropdown-content dropdown-right lang-curr-wrapper">
             {{ language }}
             {{ currency }}
@@ -71,26 +71,26 @@
            <div class="icon-element is_wishlist">
 
                {% if logged %}
-                   <a class="shortcut-wrapper wishlist " title="Moj račun" href="{{ login }}"><i class="icon-user icon"></i></a><a class="shortcut-wrapper wishlist hidden-xs"  title="Odjava" href="{{ logout }}"> Odjava<div class="wishlist-hover"></div>
+                   <a class="shortcut-wrapper wishlist " aria-label="{{ text_account }}" title="{{ text_account }}" href="{{ login }}"><i class="icon-user icon" aria-hidden="true"></i></a><a class="shortcut-wrapper wishlist hidden-xs" aria-label="Odjava" title="Odjava" href="{{ logout }}"> Odjava<div class="wishlist-hover"></div>
                </a>
                {% else %}
-                   <a class="shortcut-wrapper wishlist" title="Moj račun" href="{{ login }}">
-                       <div class="wishlist-hover"><i class="icon-user icon"></i></div>
+                   <a class="shortcut-wrapper wishlist" aria-label="{{ text_account }}" title="{{ text_account }}" href="{{ login }}">
+                       <div class="wishlist-hover"><i class="icon-user icon" aria-hidden="true"></i></div>
                    </a>
                {% endif %}
            </div>
 
 
            <div class="icon-element is_wishlist hidden-xs">
-        <a class="shortcut-wrapper wishlist" href="{{ wishlist }}">
-        <div class="wishlist-hover"><i class="icon-heart icon"></i><span class="counter wishlist-counter">{{ wishlist_counter }}</span></div>
+        <a class="shortcut-wrapper wishlist" aria-label="{{ text_wishlist }}" href="{{ wishlist }}">
+        <div class="wishlist-hover"><i class="icon-heart icon" aria-hidden="true"></i><span class="counter wishlist-counter">{{ wishlist_counter }}</span></div>
         </a>
         </div>
         
         <div class="icon-element catalog_hide">
         <div id="cart" class="dropdown-wrapper from-top">
-        <a href="{{ shopping_cart }}" class="shortcut-wrapper cart">
-        <i id="cart-icon" class="global-cart icon"></i> <span id="cart-total" class="nowrap">
+        <a href="{{ shopping_cart }}" class="shortcut-wrapper cart" aria-label="{{ text_shopping_cart }}">
+        <i id="cart-icon" class="global-cart icon" aria-hidden="true"></i> <span id="cart-total" class="nowrap">
         <span class="counter cart-total-items">{{ cart_items }}</span>
         </a>
         <div class="dropdown-content dropdown-right hidden-sm hidden-xs">
@@ -100,9 +100,9 @@
         </div>
         
         <div class="icon-element">
-        <a class="shortcut-wrapper menu-trigger hidden-md hidden-lg">
-        <i class="icon-line-menu icon"></i>
-        </a>
+        <button type="button" class="shortcut-wrapper menu-trigger hidden-md hidden-lg" aria-label="{{ text_menu }}" aria-expanded="false">
+        <i class="icon-line-menu icon" aria-hidden="true"></i>
+        </button>
         </div>
         
        </div>

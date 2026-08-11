@@ -56,8 +56,8 @@
 <script><!--
 $('.grid-holder.blog.module{{ module }}').slick({
 {% if carousel_a %}
-prevArrow: "<a class=\"arrow-left icon-arrow-left\"></a>",
-nextArrow: "<a class=\"arrow-right icon-arrow-right\"></a>",
+prevArrow: "<button type=\"button\" class=\"arrow-left icon-arrow-left\" aria-label=\"Prethodno\"></button>",
+nextArrow: "<button type=\"button\" class=\"arrow-right icon-arrow-right\" aria-label=\"Sljedeće\"></button>",
 {% else %}
 arrows: false,
 {% endif %}
