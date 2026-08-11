@@ -681,6 +681,20 @@ function seoRefreshRuntimeCaches(mysqli $database)
     $session->bind_param('ss', $sessionId, $sessionData);
     $session->execute();
 
+    $maintenanceValue = '0';
+    $maintenance = $database->prepare(
+        "SELECT `value` FROM `" . DB_PREFIX . "setting` " .
+        "WHERE `store_id` = 0 AND `code` = 'config' AND `key` = 'config_maintenance' LIMIT 1"
+    );
+    $maintenance->execute();
+    $maintenance->bind_result($storedMaintenanceValue);
+
+    if ($maintenance->fetch()) {
+        $maintenanceValue = (string) $storedMaintenanceValue;
+    }
+
+    $maintenance->close();
+
     try {
         $server = defined('HTTPS_SERVER') ? HTTPS_SERVER : HTTP_SERVER;
         $admin = rtrim($server, '/') . '/admin/index.php';
@@ -708,8 +722,39 @@ function seoRefreshRuntimeCaches(mysqli $database)
             if ($response === false || $error !== '' || $status >= 400) {
                 throw new RuntimeException('Runtime refresh failed (HTTP ' . $status . '): ' . $error);
             }
+
+            $responseText = (string) $response;
+            $fatalMarkers = array('Fatal error', 'Uncaught Error', 'Uncaught Exception');
+
+            foreach ($fatalMarkers as $marker) {
+                if (stripos($responseText, $marker) !== false) {
+                    throw new RuntimeException('Runtime refresh returned a PHP fatal error during ' . ($index === 0 ? 'OCMOD' : 'theme') . ' refresh.');
+                }
+            }
+
+            if (preg_match('/name=["\']username["\'].*name=["\']password["\']/is', $responseText)) {
+                throw new RuntimeException('Runtime refresh was redirected to the admin login page.');
+            }
+
+            if ($index === 0) {
+                $loader = rtrim(DIR_MODIFICATION, '/\\') . '/system/engine/loader.php';
+
+                if (!is_file($loader) || filesize($loader) === 0) {
+                    throw new RuntimeException('OCMOD refresh did not rebuild system/engine/loader.php.');
+                }
+            } else {
+                $json = json_decode($responseText, true);
+
+                if (!is_array($json) || !empty($json['error']) || empty($json['success'])) {
+                    throw new RuntimeException('Theme cache refresh did not return a success response.');
+                }
+            }
         }
     } finally {
+        // The OpenCart refresh controller temporarily enables maintenance mode.
+        // Restore its original value even when the HTTP request fails midway.
+        seoUpsertSetting($database, 'config', 'config_maintenance', $maintenanceValue, 0);
+
         $delete = $database->prepare("DELETE FROM `{$sessionTable}` WHERE `session_id` = ?");
         $delete->bind_param('s', $sessionId);
         $delete->execute();
