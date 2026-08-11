@@ -3258,6 +3258,24 @@ body[class*="information-information-"] .information-copy blockquote {
   }
 }
 
+/* Keep the two homepage funding offers on one consistent heading system. */
+.common-home #mod2 h2.homeb,
+.common-home #mod3 .dark h3.contrast-font {
+  font-family: "Outfit", "Manrope", sans-serif !important;
+  font-weight: 600 !important;
+  letter-spacing: -.015em;
+}
+
+/* Keep long testimonial copy readable before the full desktop layout starts. */
+@media (max-width: 1199px) {
+  .common-home #mod5 .single-testimonial .testimonial-wrap {
+    width: calc(100% - 20px);
+    max-width: 720px;
+    margin-right: auto;
+    margin-left: auto;
+  }
+}
+
 /* Mobile homepage rhythm: one type scale, centered sliders and a compact header. */
 @media (max-width: 991px) {
   .header-wrapper > .top_line {
@@ -3283,6 +3301,7 @@ body[class*="information-information-"] .information-copy blockquote {
   .common-home .grid-holder.slick-slider .slick-dots li {
     flex: 0 0 auto;
   }
+
 }
 
 @media (max-width: 767px) {
@@ -3321,6 +3340,28 @@ body[class*="information-information-"] .information-copy blockquote {
   .common-home #mod2 .about-widget,
   .common-home #mod2 .cm_item {
     text-align: center !important;
+  }
+
+  .common-home #mod2 .cm_column.col-xs-11 {
+    float: none;
+    width: 100%;
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  /* Equal-height columns must return to natural stacked height on phones. */
+  .common-home #mod2 .cm_column.eq_height {
+    float: none;
+    height: auto !important;
+    min-height: 0 !important;
+    margin-bottom: 0;
+  }
+
+  .common-home #mod2 .cm_column:not(.type-img) .cm_item_wrapper,
+  .common-home #mod2 .cm_column:not(.type-img) .cm_item {
+    display: block;
+    height: auto !important;
+    min-height: 0 !important;
   }
 
   .common-home #mod2 .about-widget .btn {
