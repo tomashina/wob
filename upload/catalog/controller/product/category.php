@@ -104,7 +104,7 @@ class ControllerProductCategory extends Controller {
 				'href' => $this->url->link('product/category', 'path=' . $this->request->get['path'])
 			);
 
-			$category_image = $category_info['image'] ?: $this->model_catalog_category->getRepresentativeProductImage($category_id);
+			$category_image = $this->getCategoryDisplayImage($category_id, $category_info['image']);
 
 			if ($category_image) {
 				$data['thumb'] = $this->model_tool_image->resize($category_image, $this->config->get('theme_' . $this->config->get('config_theme') . '_image_category_width'), $this->config->get('theme_' . $this->config->get('config_theme') . '_image_category_height'));
@@ -143,7 +143,7 @@ class ControllerProductCategory extends Controller {
 					'filter_sub_category' => true
 				);
 
-				$representative_image = $result['image'] ?: $this->model_catalog_category->getRepresentativeProductImage($result['category_id']);
+				$representative_image = $this->getCategoryDisplayImage($result['category_id'], $result['image']);
 
 				if ($representative_image) {
 					$category_thumb = $this->model_tool_image->resize($representative_image, $this->config->get('subcat_image_width'), $this->config->get('subcat_image_height'));
@@ -456,6 +456,19 @@ class ControllerProductCategory extends Controller {
 		}
 
 		return $this->truncateMetaText($title, 65);
+	}
+
+	private function getCategoryDisplayImage($categoryId, $categoryImage) {
+		$categoryImage = trim((string) $categoryImage);
+		$genericImages = array('placeholder.png', 'no_image.png', 'test.png');
+
+		if ($categoryImage !== '' && !in_array(strtolower(basename($categoryImage)), $genericImages, true)) {
+			return $categoryImage;
+		}
+
+		$productImage = $this->model_catalog_category->getRepresentativeProductImage((int) $categoryId);
+
+		return $productImage ?: $categoryImage;
 	}
 
 	private function getCategoryMetaDescription($categoryInfo) {

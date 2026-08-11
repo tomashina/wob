@@ -24,7 +24,7 @@
      <div class="table-cell left">
      
      {% if thumb or images %}
-     <div class="image-area {% if not hover_zoom %}hover-zoom-disabled{% endif %}" id="gallery">
+     <div class="image-area{% if images %} has-product-thumbs{% endif %}{% if not hover_zoom %} hover-zoom-disabled{% endif %}" id="gallery">
             
         {% if thumb %}
         <div class="main-image product-gallery-stage carousel" aria-label="Galerija proizvoda">
@@ -42,11 +42,11 @@
         <span class="badge out_of_stock_badge"><i>{{ basel_text_out_of_stock}}</i></span>
         {% endif %}
 
-        <a class="link product-gallery-link" id="main-image" href="{{ popup }}"><img src="{{ thumb }}" alt="{{ heading_title }}" width="{{ img_w }}" height="{{ img_h }}" fetchpriority="high" decoding="async" /></a>
+        <a class="link product-gallery-link" id="main-image" href="{{ popup }}" data-pswp-width="{{ img_w }}" data-pswp-height="{{ img_h }}"><img src="{{ thumb }}" alt="{{ heading_title }}" width="{{ img_w }}" height="{{ img_h }}" fetchpriority="high" decoding="async" /></a>
         </div>
         {% for image in images %}
         <div class="product-gallery-slide">
-        <a class="link product-gallery-link" href="{{ image.popup }}"><img src="{{ image.large }}" alt="{{ heading_title }} — slika {{ loop.index + 1 }}" width="{{ img_w }}" height="{{ img_h }}" loading="lazy" decoding="async" /></a>
+        <a class="link product-gallery-link" href="{{ image.popup }}" data-pswp-width="{{ img_w }}" data-pswp-height="{{ img_h }}"><img src="{{ image.large }}" alt="{{ heading_title }} — slika {{ loop.index + 1 }}" width="{{ img_w }}" height="{{ img_h }}" loading="lazy" decoding="async" /></a>
         </div>
         {% endfor %}
         </div>
@@ -574,8 +574,6 @@
 </div> <!-- .container ends -->
 {% endif %}
 
-<script src="catalog/view/theme/basel/js/lightgallery/js/lightgallery.min.js"></script>
-<script src="catalog/view/theme/basel/js/lightgallery/js/lg-zoom.min.js"></script>
 {% if basel_price_update %}
 <script src="index.php?route=extension/basel/live_options/js&product_id={{ product_id }}"></script>
 {% endif %}
@@ -879,50 +877,34 @@ slidesToScroll:1,
 swipe:true,
 draggable:true,
 adaptiveHeight:false,
-asNavFor:'.product-gallery-thumbs',
 {% if direction == 'rtl' %}
 rtl: true,
 {% endif %}
 infinite:false
 });
 
-$('.product-gallery-thumbs').slick({
-arrows:false,
-dots:false,
-slidesToShow:{{ (img_w/img_a_w)|round }},
-slidesToScroll:1,
-swipe:true,
-draggable:true,
-focusOnSelect:true,
-asNavFor:'.product-gallery-stage',
-infinite:false,
-responsive:[{breakpoint:767,settings:{slidesToShow:4}},{breakpoint:420,settings:{slidesToShow:3}}]
+var $productThumbButtons = $('.product-gallery-thumbs button');
+
+$productThumbButtons.on('click', function() {
+	$('.product-gallery-stage').slick('slickGoTo', $(this).closest('li').index());
 });
 
 $('.product-gallery-stage').on('afterChange', function(event, slick, currentSlide) {
-	$('.product-gallery-thumbs button').attr('aria-pressed', 'false');
-	$('.product-gallery-thumbs .slick-slide[data-slick-index="' + currentSlide + '"] button').attr('aria-pressed', 'true');
+	$productThumbButtons.attr('aria-pressed', 'false').eq(currentSlide).attr('aria-pressed', 'true');
 }).slick('slickGoTo', 0);
 
+$productThumbButtons.attr('aria-pressed', 'false').first().attr('aria-pressed', 'true');
+
 $('.product-gallery-stage img').on('load', function() {
-	$('.product-gallery-stage, .product-gallery-thumbs').slick('setPosition');
+	$('.product-gallery-stage').slick('setPosition');
 });
 
 $(window).on('load resize', function() {
-	$('.product-gallery-stage, .product-gallery-thumbs').slick('setPosition');
+	$('.product-gallery-stage').slick('setPosition');
 });
 
 {% endif %}
 });
 //--></script>
-<script>
-$(document).ready(function() {
-// Image Gallery
-$("#gallery").lightGallery({
-	selector: '.product-gallery-link',
-	download:false,
-	hideBarsDelay:99999
-});
-});
-//--></script>
+<script type="module" src="catalog/view/theme/basel/js/photoswipe/wob-product-gallery.js?v=1.0"></script>
 {{ footer }}

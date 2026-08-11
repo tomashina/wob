@@ -22,7 +22,7 @@ body {
 	font-size: 16px;
 	line-height: 1.6em;
 	transition:margin-left 500ms, margin-right 500ms;
-font-family: 'Quicksand', sans-serif;
+font-family: 'Manrope', sans-serif;
 	background:#fff;
 }
 
@@ -79,7 +79,7 @@ img.ikona-black{
 	min-height: 50px !important;
 }
 .product-name.main-font, .gridlist .single-product .product-name, .gridlist .single-blog .blog-title, #title-holder #page-title {
-	font-family: 'Quicksand', sans-serif;
+	font-family: 'Manrope', sans-serif;
 }
 /* Primary color */
 .primary-color, .cm_item .primary-color, .nav-tabs.text-center.nav-tabs-sm > li.active {
@@ -129,7 +129,7 @@ p.faketitle{
 }
 
 p.footertitle{
-	font-family: 'Quicksand', sans-serif;
+	font-family: 'Manrope', sans-serif;
 	font-size: 16px;
 	font-weight: 600;
 	text-transform: none;
@@ -200,7 +200,7 @@ p.footertitle{
 	color:#179a94;
 }
 .product-name, .blog-title, .product-h1, .contrast-heading, .contrast-font {
-	font-family: 'Quicksand', sans-serif;
+	font-family: 'Manrope', sans-serif;
 }
 
 .ml-15{margin-left:15px}
@@ -223,7 +223,7 @@ h1, h2, h3, h4, h5, h6 {
 	margin-top:0;
 	line-height:1.4;
 	font-weight:600;
-	font-family: 'Quicksand', sans-serif;
+	font-family: 'Manrope', sans-serif;
 }
 h1 {
 	font-size: 34px;
@@ -647,7 +647,7 @@ div.required .control-label:after {
 	color: #F00;
 	padding-left:3px;
 	font-weight: bold;
-font-family: 'Quicksand', sans-serif;
+font-family: 'Manrope', sans-serif;
 	line-height:1.2;
 }
 @media (min-width: 768px) {
@@ -1423,7 +1423,7 @@ font-family: 'Quicksand', sans-serif;
 		line-height: 30px;
 		font-weight: 600;
 		letter-spacing: 1.5px;
-		font-family: 'Quicksand', sans-serif;
+		font-family: 'Manrope', sans-serif;
 
 		padding-left: 3px;
 	}
@@ -1510,7 +1510,7 @@ font-family: 'Quicksand', sans-serif;
 	z-index: 1;
 	font-size:9px;
 	color: #fff;
-	font-family: 'Quicksand', sans-serif;
+	font-family: 'Manrope', sans-serif;
 }
 /* Wishlist icon */
 .shortcut-wrapper.wishlist {
@@ -2241,7 +2241,7 @@ font-family: 'Quicksand', sans-serif;
 	display:inline-block;
 	line-height: 10px;
 	font-size: 7px;
-	font-family: 'Raleway', sans-serif;
+	font-family: 'Manrope', sans-serif;
 	background:#D41212;
 }
 .main-menu .dropdown-wrapper .menu-tag {
@@ -3603,7 +3603,7 @@ body.offset250 .header-bottom, .menu-style {
 .x-separator:after {
 	content:"-----";
 	font-size:14px;
-	font-family: 'Raleway', sans-serif;
+	font-family: 'Manrope', sans-serif;
 	letter-spacing:-1px;
 	opacity:0.4;
 }
@@ -5376,7 +5376,7 @@ a.button-circle {
 	font-size:15px!important;
 
 	transition:margin-top 300ms;
-	font-family: 'Montserrat', sans-serif;
+	font-family: 'Manrope', sans-serif;
 }
 
 .grid .single-product .pwrap {
@@ -6220,7 +6220,7 @@ table p{margin-bottom:0px;}
 	}
 
 	.product-info .table-cell.right h1#page-title {
-		font-family: 'Montserrat', sans-serif;
+		font-family: 'Manrope', sans-serif;
 		font-size: 21px!important;
 		font-weight: 600;
 		text-transform: none;
@@ -8245,7 +8245,7 @@ html.fl-anim .featherlight .featherlight-content {
 	width: 30px;
 	cursor: pointer;
 	text-align: center;
-	font-family: 'Raleway', sans-serif;
+	font-family: 'Manrope', sans-serif;
 	font-size:18px;
 	background: #fff;
 	background: rgba(255, 255, 255, 0.3);
@@ -8555,7 +8555,7 @@ html.fl-anim .featherlight .featherlight-content {
 }
 .top_notificaiton .table .top_promo_close {
 	font-size:15px;
-	font-family: 'Raleway', sans-serif;
+	font-family: 'Manrope', sans-serif;
 	text-decoration:none;
 }
 .top_notificaiton .table .top_promo_close:hover {
