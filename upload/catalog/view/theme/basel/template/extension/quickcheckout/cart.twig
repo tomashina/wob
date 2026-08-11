@@ -13,7 +13,7 @@
       {% for product in products %}
         <tr>
           <td class="image">{% if product.thumb %} 
-            <a href="{{ product.href }}"><img src="{{ product.thumb }}" alt="{{ product.name }}" title="{{ product.name }}" /></a>
+            <a href="{{ product.href }}"><img src="{{ product.thumb }}" alt="{{ product.name }}" title="{{ product.name }}" width="100" height="100" decoding="async" /></a>
             {% endif %}</td>
           <td class="name"><a href="{{ product.href }}">{{ product.name }}</a>
             <div>
@@ -31,10 +31,10 @@
             </div></td>
           <td class="quantity">{% if edit_cart %} 
 		    <div class="qty-block">
-		      <input type="text" name="quantity[{{ product.key }}]" size="1" value="{{ product.quantity }}" class="form-control" />
+		      <input type="number" min="1" step="1" name="quantity[{{ product.key }}]" size="1" value="{{ product.quantity }}" aria-label="{{ column_quantity }}: {{ product.name }}" class="form-control" />
 			  
-				<a data-toggle="tooltip" title="{{ button_update }}" class="button-update"><i class="fa fa-refresh"></i></a>
-				<a data-toggle="tooltip" title="{{ button_remove }}" class="button-remove" data-remove="{{ product.key }}"><i class="fa fa-times-circle"></i></a>
+				<button type="button" data-toggle="tooltip" title="{{ button_update }}" aria-label="{{ button_update }}" class="button-update"><i class="fa fa-refresh" aria-hidden="true"></i></button>
+				<button type="button" data-toggle="tooltip" title="{{ button_remove }}" aria-label="{{ button_remove }}" class="button-remove" data-remove="{{ product.key }}"><i class="fa fa-times-circle" aria-hidden="true"></i></button>
 			  
 			</div>
 			{% else %}

@@ -2,7 +2,7 @@
 <div id="coupon-heading"><i class="fa fa-ticket"></i> {{ entry_coupon }}</div>
 <div id="coupon-content">
   <div class="input-group">
-	<input type="text" name="coupon" value="" class="form-control" />
+	<input type="text" name="coupon" value="" class="form-control" aria-label="{{ entry_coupon }}" />
 	<span class="input-group-btn">
 	  <button type="button" id="button-coupon" class="btn btn-primary">{{ text_use_coupon }}</button>
 	</span>
@@ -13,7 +13,7 @@
 <div id="voucher-heading"><i class="fa fa-gift"></i> {{ entry_voucher }}</div>
 <div id="voucher-content">
   <div class="input-group">
-	<input type="text" name="voucher" value="" class="form-control" />
+	<input type="text" name="voucher" value="" class="form-control" aria-label="{{ entry_voucher }}" />
 	<span class="input-group-btn">
 	  <button type="button" id="button-voucher" class="btn btn-primary">{{ text_use_voucher }}</button>
 	</span>
@@ -24,7 +24,7 @@
 <div id="reward-heading"><i class="fa fa-star"></i> {{ entry_reward }}</div>
 <div id="reward-content">
   <div class="input-group">
-	<input type="text" name="reward" value="" class="form-control" />
+	<input type="number" min="0" step="1" name="reward" value="" class="form-control" aria-label="{{ entry_reward }}" />
 	<span class="input-group-btn">
 	  <button type="button" id="button-reward" class="btn btn-primary">{{ text_use_reward }}</button>
 	</span>

@@ -31,7 +31,7 @@
   {% endfor %}
 </table>
 {% else %}   
-  <select class="form-control" name="shipping_method">
+  <select class="form-control" name="shipping_method" aria-label="{{ text_shipping_method }}">
     {% for shipping_method in shipping_methods %} 
       {% if not shipping_method.error %} 
 		{% for quote in shipping_method.quote %} 
@@ -52,14 +52,14 @@
 {% endif %}
 {% if delivery and (not delivery_delivery_time or delivery_delivery_time == '1' or delivery_delivery_time == '3') %} 
 <div{{ delivery_required ? ' class="required"' }}>
-  <label class="control-label"><strong>{{ text_delivery }}</strong></label>
+  <label class="control-label" for="input-delivery-date"><strong>{{ text_delivery }}</strong></label>
   {% if delivery_delivery_time == '1' %} 
-  <input type="text" name="delivery_date" value="{{ delivery_date }}" class="form-control date" readonly="true" style="background:#ffffff;" />
+  <input type="text" name="delivery_date" id="input-delivery-date" value="{{ delivery_date }}" class="form-control date" readonly="true" style="background:#ffffff;" />
   {% else %}  
-  <input type="text" name="delivery_date" value="{{ delivery_date }}" class="form-control date" readonly="true" style="background:#ffffff;" />
+  <input type="text" name="delivery_date" id="input-delivery-date" value="{{ delivery_date }}" class="form-control date" readonly="true" style="background:#ffffff;" />
   {% endif %} 
   {% if delivery_delivery_time == '3' %}<br />
-    <select name="delivery_time" class="form-control">{% for quickcheckout_delivery_time in delivery_times %}
+    <select name="delivery_time" class="form-control" aria-label="{{ text_delivery }}">{% for quickcheckout_delivery_time in delivery_times %}
     {% if quickcheckout_delivery_time[language_id] %} 
       {% if delivery_time == quickcheckout_delivery_time[language_id] %} 
 	  <option value="{{ quickcheckout_delivery_time[language_id] }}" selected="selected">{{ quickcheckout_delivery_time[language_id] }}</option>

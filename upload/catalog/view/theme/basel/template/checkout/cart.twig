@@ -8,17 +8,17 @@
   
   {% if attention %}
   <div class="alert alert-info"><i class="fa fa-info-circle"></i> {{ attention }}
-    <button type="button" class="close" data-dismiss="alert">&times;</button>
+    <button type="button" class="close" data-dismiss="alert" aria-label="Zatvori">&times;</button>
   </div>
   {% endif %}
   {% if success %}
   <div class="alert alert-success"><i class="fa fa-check"></i> {{ success }}
-    <button type="button" class="close" data-dismiss="alert">&times;</button>
+    <button type="button" class="close" data-dismiss="alert" aria-label="Zatvori">&times;</button>
   </div>
   {% endif %}
   {% if error_warning %}
   <div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> {{ error_warning }}
-    <button type="button" class="close" data-dismiss="alert">&times;</button>
+    <button type="button" class="close" data-dismiss="alert" aria-label="Zatvori">&times;</button>
   </div>
   {% endif %}
   
@@ -55,11 +55,11 @@
               {% for product in products %}
               <tr>
               <td class="remove-cell hidden-xs hidden-sm text-center">
-			  <a onclick="cart.remove('{{ product.cart_id }}');" data-toggle="tooltip" title="{{ button_remove }}" class="product-remove"><i class="fa fa-times"></i></a>
+			  <button type="button" onclick="cart.remove('{{ product.cart_id }}');" data-toggle="tooltip" title="{{ button_remove }}" aria-label="{{ button_remove }}" class="product-remove"><i class="fa fa-times" aria-hidden="true"></i></button>
 			  </td>
                 <td class="image">
                 {% if product.thumb %}
-                  <a href="{{ product.href }}"><img src="{{ product.thumb }}" alt="{{ product.name }}" title="{{ product.name }}" /></a>
+                  <a href="{{ product.href }}"><img src="{{ product.thumb }}" alt="{{ product.name }}" title="{{ product.name }}" width="100" height="100" decoding="async" /></a>
                   {% endif %}
                   </td>
                 <td class="name"><a class="hover_uline" href="{{ product.href }}">{{ product.name }}</a>
@@ -82,11 +82,11 @@
                   {% endif %}
                   <small class="hidden-md hidden-lg"><br />{{ column_model }}: {{ product.model }}</small>
                   <small class="hidden-md hidden-lg"><br />{{ column_price }}: {{ product.price }}</small><br />
-				  <a class="btn btn-default btn-tiny hidden-md hidden-lg" style="margin-top:5px;" onclick="cart.remove('{{ product.cart_id }}');">{{ button_remove }}</a>
+				  <button type="button" class="btn btn-default btn-tiny hidden-md hidden-lg" style="margin-top:5px;" onclick="cart.remove('{{ product.cart_id }}');">{{ button_remove }}</button>
                   </td>
                 <td class="hidden-xs hidden-sm">{{ product.model }}</td>
                 <td>
-                <input type="number" min="1" step="1" name="quantity[{{ product.cart_id }}]" value="{{ product.quantity }}" class="form-control qty-form" />
+                <input type="number" min="1" step="1" name="quantity[{{ product.cart_id }}]" value="{{ product.quantity }}" aria-label="{{ column_quantity }}: {{ product.name }}" class="form-control qty-form" />
                     </td>
                 <td class="text-right price-cell hidden-xs hidden-sm">{{ product.price }}</td>
                 <td class="text-right total-cell">{{ product.total }}</td>
@@ -95,15 +95,15 @@
               {% for voucher in vouchers %}
               <tr>
                 <td class="text-center hidden-xs hidden-sm">
-				<a onclick="voucher.remove('{{ voucher.key }}');" data-toggle="tooltip" title="{{ button_remove }}" class="product-remove"><i class="fa fa-times"></i></a>
+				<button type="button" onclick="voucher.remove('{{ voucher.key }}');" data-toggle="tooltip" title="{{ button_remove }}" aria-label="{{ button_remove }}" class="product-remove"><i class="fa fa-times" aria-hidden="true"></i></button>
 				</td>
 				<td colspan="2" class="text-left">
 				{{ voucher.description }}<br>
-				<a class="btn btn-default btn-tiny hidden-md hidden-lg" style="margin-top:5px;" onclick="voucher.remove('{{ voucher.key }}');">{{ button_remove }}</a>
+				<button type="button" class="btn btn-default btn-tiny hidden-md hidden-lg" style="margin-top:5px;" onclick="voucher.remove('{{ voucher.key }}');">{{ button_remove }}</button>
 				</td>               
 				<td class="hidden-xs hidden-sm"></td>
 				<td class="text-left"><div class="input-group btn-block" style="max-width: 200px;">
-					<input type="number" value="1" disabled="disabled" class="form-control qty-form" />
+					<input type="number" value="1" disabled="disabled" aria-label="{{ column_quantity }}" class="form-control qty-form" />
                     </td>
 				<td class="hidden-xs hidden-sm"></td>
                 
@@ -157,4 +157,4 @@
       {{ content_bottom }}</div>
     {{ column_right }}</div>
 </div>
-{{ footer }} 
+{{ footer }}

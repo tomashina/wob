@@ -25,7 +25,7 @@
   {% endfor %}
 </table>
 {% else %}   
-  <select name="payment_method" class="form-control">
+  <select name="payment_method" class="form-control" aria-label="{{ text_payment_method }}">
   {% for payment_method in payment_methods %} 
 	{% if payment_method.code == code %} 
       <option value="{{ payment_method.code }}" selected="selected">
@@ -40,9 +40,9 @@
 {% endif %}
 {% if survey_survey %} 
 <div{{ survey_required ? ' class="required"' }}>
-  <label class="control-label">{{ text_survey }}</label>
+  <label class="control-label" for="input-payment-survey">{{ text_survey }}</label>
   {% if survey_type %} 
-  <select name="survey" class="form-control">
+  <select name="survey" class="form-control" id="input-payment-survey">
     <option value=""></option>
     {% for survey_answer in survey_answers %} 
     {% if survey_answer[language_id] %} 
@@ -54,15 +54,15 @@
 	{% endif %} 
   {% endfor %}</select><br />
   {% else %}   
-  <textarea name="survey" class="form-control" rows="1">{{ survey }}</textarea><br /><br />
+  <textarea name="survey" class="form-control" rows="1" id="input-payment-survey">{{ survey }}</textarea><br /><br />
   {% endif %}
 </div>
 {% else %}   
 <textarea name="survey" class="hide">{{ survey }}</textarea>
 {% endif %}
 {% if field_comment.display %} 
-{% if field_comment.required %}<span class="required">*</span> {% endif %}{{ text_comments }}
-<textarea name="comment" rows="4" class="form-control" placeholder="{{ field_comment.placeholder ? field_comment.placeholder }}">{{ comment ? comment : field_comment.default }}</textarea>
+<label for="input-payment-comment">{% if field_comment.required %}<span class="required">*</span> {% endif %}{{ text_comments }}</label>
+<textarea name="comment" rows="4" id="input-payment-comment" class="form-control" placeholder="{{ field_comment.placeholder ? field_comment.placeholder }}">{{ comment ? comment : field_comment.default }}</textarea>
 {% else %}   
 <textarea name="comment" class="hide"></textarea>
 {% endif %}

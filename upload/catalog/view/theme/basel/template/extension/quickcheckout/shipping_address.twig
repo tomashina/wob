@@ -5,7 +5,7 @@
   {{ text_address_existing }}</label>
 </div>
 <div id="shipping-existing">
-  <select name="address_id" class="form-control">
+  <select name="address_id" class="form-control" aria-label="{{ text_address_existing }}">
     {% for address in addresses %} 
     {% if address.address_id == address_id %} 
     <option value="{{ address.address_id }}" selected="selected">{{ address.firstname }} {{ address.lastname }} , {{ address.address_1 }} , {{ address.city }} , {{ address.postcode }} , {{ address.zone }} , {{ address.country }}</option>
@@ -28,7 +28,7 @@
   {% if field == 'country' %} 
     {% if attribute(_context, 'field_' ~ field).display %}
 	<div class="col-sm-6{{ attribute(_context, 'field_' ~ field).required ? ' required' }}">
-	  <label class="control-label">{{ entry_country }}</label>
+	  <label class="control-label" for="input-shipping-country">{{ entry_country }}</label>
 	  <select name="country_id" class="form-control" id="input-shipping-country">
 	  {% for country in countries %} 
 		{% if country.country_id == country_id %} 
@@ -53,7 +53,7 @@
   {% elseif field == 'zone' %}
     {% if attribute(_context, 'field_' ~ field).display %}
 	<div class="col-sm-6{{ attribute(_context, 'field_' ~ field).required ? ' required' }}">
-	  <label class="control-label">{{ entry_zone }}</label>
+	  <label class="control-label" for="input-shipping-zone">{{ entry_zone }}</label>
 	  <select name="zone_id" class="form-control" id="input-shipping-zone"></select>
 	</div>
 	{% else %}   
