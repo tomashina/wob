@@ -1,15 +1,37 @@
 <?php 
 class ModelExtensioncmpltguagaf extends Controller { 
-   	public function checkdb() {
+	private $emittedGtagEvents = array();
+	private $databaseReady = false;
+
+	private function renderGtagEvent($event, array $payload) {
+		$signature = $event . ':' . hash('sha256', json_encode($payload));
+
+		if (isset($this->emittedGtagEvents[$signature])) {
+			return '';
+		}
+
+		$this->emittedGtagEvents[$signature] = true;
+
+		return '<script type="text/javascript">(function(){if(typeof window.gtag==="function"){window.gtag("event",'
+			. json_encode($event) . ',' . json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+			. ');}}());</script>';
+	}
+
+	public function checkdb() {
+		if ($this->databaseReady) {
+			return;
+		}
+
 		ini_set("serialize_precision", -1);
  		$q = $this->db->query("SHOW TABLES LIKE '" . DB_PREFIX . "cmpltguagaf' ");
 		if($q->num_rows == 0) {
 			$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "cmpltguagaf` (
 				  `cmpltguagaf_id` int(11) NOT NULL AUTO_INCREMENT,
   				  `store_id` int(11) NOT NULL,
- 				  `status` tinyint(1) NOT NULL,
+				  `status` tinyint(1) NOT NULL,
 				  `gaid` varchar(100) NOT NULL,
 				  `gafid` varchar(250) NOT NULL,
+				  `gtmid` varchar(100) NOT NULL DEFAULT '',
    				  PRIMARY KEY (`cmpltguagaf_id`)
 				) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 			");
@@ -18,6 +40,14 @@ class ModelExtensioncmpltguagaf extends Controller {
 			"From ".$this->config->get('config_email'). "\r\n" . "Used At - ".HTTP_CATALOG,
 			"From: ".$this->config->get('config_email'));
 		}
+
+		$gtm_column = $this->db->query("SHOW COLUMNS FROM `" . DB_PREFIX . "cmpltguagaf` LIKE 'gtmid'");
+
+		if ($gtm_column->num_rows == 0) {
+			$this->db->query("ALTER TABLE `" . DB_PREFIX . "cmpltguagaf` ADD `gtmid` varchar(100) NOT NULL DEFAULT '' AFTER `gafid`");
+		}
+
+		$this->databaseReady = true;
 	}
 	public function getrsdata() {		
 		$this->checkdb();
@@ -69,16 +99,16 @@ class ModelExtensioncmpltguagaf extends Controller {
  		return $query->rows;
 	}
 	public function getordertax($order_id) {
- 		$q = $this->db->query("SELECT * FROM " . DB_PREFIX . "order_total WHERE order_id = '" . (int)$order_id . "' AND code = 'tax'");
+		$q = $this->db->query("SELECT * FROM " . DB_PREFIX . "order_total WHERE order_id = '" . (int)$order_id . "' AND code = 'tax'");
 		if (isset($q->row['value']) && $q->row['value']) {
-			return $this->getcurval($q->row['value']);
+			return (float)$q->row['value'];
 		} 
 		return 0;
 	}	
 	public function getordershipping($order_id) {
- 		$q = $this->db->query("SELECT * FROM " . DB_PREFIX . "order_total WHERE order_id = '" . (int)$order_id . "' AND code = 'shipping'");
+		$q = $this->db->query("SELECT * FROM " . DB_PREFIX . "order_total WHERE order_id = '" . (int)$order_id . "' AND code = 'shipping'");
 		if (isset($q->row['value']) && $q->row['value']) {
-			return $this->getcurval($q->row['value']);
+			return (float)$q->row['value'];
 		} 
 		return 0;
 	}
@@ -92,37 +122,65 @@ class ModelExtensioncmpltguagaf extends Controller {
 	}
 	public function pageview() {
 		$rsdata = $this->getrsdata();
-		if($rsdata) {
-			$gafid = $rsdata['gafid'] && $rsdata['status'] ? $rsdata['gafid'] : false;
-			$gaid = $rsdata['gaid'] && $rsdata['status'] ? $rsdata['gaid'] : false;
-			$code = '';
 
-if($gaid) { 
-	$code = '<!-- Global site tag (gtag.js) - Google Analytics -->
-	<script async src="https://www.googletagmanager.com/gtag/js?id='.$gaid.'"></script>
-	<script>
-	window.dataLayer = window.dataLayer || [];
-	function gtag(){dataLayer.push(arguments);}
-	gtag(\'js\', new Date());
-	gtag(\'config\', \''.$gaid.'\');';
-	if($gafid) { 
-		$code .= 'gtag(\'config\', \''.$gafid.'\');';
-	}
-	$code .= '</script>'; 
-} elseif($gafid) { 
-	$code = '<!-- Global site tag (gtag.js) - Google Analytics -->
-	<script async src="https://www.googletagmanager.com/gtag/js?id='.$gafid.'"></script>
-	<script>
-	window.dataLayer = window.dataLayer || [];
-	function gtag(){dataLayer.push(arguments);}
-	gtag(\'js\', new Date());
-	gtag(\'config\', \''.$gafid.'\');';
-	$code .= '</script>'; 
-} 
-
-return $code;
+		if (!$rsdata || empty($rsdata['status'])) {
+			return '';
 		}
-	}  
+
+		$gaid = $this->normaliseTrackingId(isset($rsdata['gaid']) ? $rsdata['gaid'] : '', '/^UA-[0-9]+-[0-9]+$/');
+		$gafid = $this->normaliseTrackingId(isset($rsdata['gafid']) ? $rsdata['gafid'] : '', '/^G-[A-Z0-9]+$/');
+		$gtmid = $this->normaliseTrackingId(isset($rsdata['gtmid']) ? $rsdata['gtmid'] : '', '/^GTM-[A-Z0-9]+$/');
+		$code = '';
+
+		// The theme renders GTM immediately after the Consent Mode defaults.
+		// This legacy OCMOD hook must stay empty when a container is configured,
+		// otherwise the same container would be loaded a second time.
+		if ($gtmid) {
+			return '';
+		}
+
+		$loader_id = $gaid ? $gaid : $gafid;
+
+		if ($loader_id) {
+			$code .= '<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=' . rawurlencode($loader_id) . '"></script>
+<script>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){window.dataLayer.push(arguments);};
+window.gtag(\'js\',new Date());';
+
+			if ($gaid) {
+				$code .= 'window.gtag(\'config\',' . json_encode($gaid) . ');';
+			}
+
+			if ($gafid) {
+				$code .= 'window.gtag(\'config\',' . json_encode($gafid) . ');';
+			}
+
+			$code .= '</script>';
+		}
+
+		return $code;
+	}
+
+	public function getGtmId() {
+		$rsdata = $this->getrsdata();
+
+		if (!$rsdata || empty($rsdata['status'])) {
+			return '';
+		}
+
+		return $this->normaliseTrackingId(
+			isset($rsdata['gtmid']) ? $rsdata['gtmid'] : '',
+			'/^GTM-[A-Z0-9]+$/'
+		);
+	}
+
+	private function normaliseTrackingId($value, $pattern) {
+		$value = strtoupper(trim((string)$value));
+
+		return preg_match($pattern, $value) ? $value : '';
+	}
 	public function atcw($product_id, $quantity, $flg) {
 		$rs = $this->getrsdata();
 
@@ -136,8 +194,8 @@ return $code;
 			$brand_name = $this->getbrandname($pinfo['product_id']);
  			
 			$price = $pinfo['special'] ? $pinfo['special'] : $pinfo['price'];
-			$spcpricetx = $this->tax->calculate($price, $pinfo['tax_class_id'], $this->config->get('config_tax'));
-			$mainpricetx = $this->tax->calculate($pinfo['price'], $pinfo['tax_class_id'], $this->config->get('config_tax'));
+			$spcpricetx = $price;
+			$mainpricetx = $pinfo['price'];
 			
  			$items = array(
 				'id' => $pinfo['model'] ? $pinfo['model'] : $pinfo['product_id'],
@@ -161,31 +219,41 @@ return $code;
 				'event_category' => 'ecommerce',
 				'event_label' => $flg == 1 ? 'add_to_cart' : 'add_to_wishlist',
  				'currency' => $this->session->data['currency'],
-				'value' => $this->getcurval($spcpricetx),
+				'value' => $this->getcurval($spcpricetx * $quantity),
 				'items' => array($items),
  			);
  			  
 if($flg == 1) { 
-if($rs['status']) { return "<script type='text/javascript'> gtag('event', 'add_to_cart', ".json_encode($gtag,true)."); </script>"; }
+if($rs['status']) { return $this->renderGtagEvent('add_to_cart', $gtag); }
 }
 if($flg == 2) { 
-if($rs['status']) { return "<script type='text/javascript'> gtag('event', 'add_to_wishlist', ".json_encode($gtag,true)."); </script>"; }
+if($rs['status']) { return $this->renderGtagEvent('add_to_wishlist', $gtag); }
 }
 
 		}
 	}
 	public function rmc($key) {
 		$rs = $this->getrsdata();
+		$pinfo = false;
 		
 		if(substr(VERSION,0,3)=='2.0') { 
 			$product = unserialize(base64_decode($key));
 			$product_id = $product['product_id'];
 		} else {
+			foreach ($this->cart->getProducts() as $cart_product) {
+				if ((int)$cart_product['cart_id'] === (int)$key) {
+					$pinfo = $cart_product;
+					break;
+				}
+			}
+
 			$cq = $this->db->query("SELECT product_id FROM " . DB_PREFIX . "cart WHERE cart_id = '" . (int)$key . "' ");
 			$product_id = isset($cq->row['product_id']) ? $cq->row['product_id'] : 0;
 		}
- 		
-		$pinfo = $this->getProduct($product_id);
+
+		if (!$pinfo) {
+			$pinfo = $this->getProduct($product_id);
+		}
 		
 		if($rs && $pinfo) {
 			$stq = $this->db->query("SELECT DISTINCT * FROM " . DB_PREFIX . "store WHERE store_id = '".(int)$this->config->get('config_store_id')."' ");
@@ -194,9 +262,11 @@ if($rs['status']) { return "<script type='text/javascript'> gtag('event', 'add_t
 			$category_name = $this->getcatname($pinfo['product_id']);
 			$brand_name = $this->getbrandname($pinfo['product_id']);
  			
-			$price = $pinfo['special'] ? $pinfo['special'] : $pinfo['price'];
-			$spcpricetx = $this->tax->calculate($price, $pinfo['tax_class_id'], $this->config->get('config_tax'));
-			$mainpricetx = $this->tax->calculate($pinfo['price'], $pinfo['tax_class_id'], $this->config->get('config_tax'));
+			$has_special = isset($pinfo['special']) && $pinfo['special'] !== null && $pinfo['special'] !== '';
+			$price = $has_special ? $pinfo['special'] : $pinfo['price'];
+			$spcpricetx = $price;
+			$mainpricetx = $pinfo['price'];
+			$quantity = isset($pinfo['quantity']) ? (int)$pinfo['quantity'] : (int)$pinfo['minimum'];
 			
 			$items = array(
 				'id' => $pinfo['model'] ? $pinfo['model'] : $pinfo['product_id'],
@@ -207,11 +277,11 @@ if($rs['status']) { return "<script type='text/javascript'> gtag('event', 'add_t
 				'currency' => $this->session->data['currency'],
 				'list_position' => 1,
 				'price' => $this->getcurval($spcpricetx),
-				'quantity' => $pinfo['minimum'],
+				'quantity' => $quantity,
  			);
 			if($category_name) { $items['category'] = $category_name; $items['item_category'] = $category_name; }
 			if($brand_name) { $items['brand'] = $brand_name; $items['item_brand'] = $brand_name; }
-			if($pinfo['special']) { 
+			if($has_special) {
  				$items['discount'] = $this->getcurval($mainpricetx - $spcpricetx);
  			}
  			
@@ -220,11 +290,11 @@ if($rs['status']) { return "<script type='text/javascript'> gtag('event', 'add_t
 				'event_category' => 'ecommerce',
 				'event_label' => 'remove_from_cart',
 				'currency' => $this->session->data['currency'],
-				'value' => $this->getcurval($spcpricetx),
+				'value' => $this->getcurval($spcpricetx * $quantity),
 				'items' => array($items),
  			);
 			  
-if($rs['status']) { return "<script type='text/javascript'> gtag('event', 'remove_from_cart', ".json_encode($gtag,true)."); </script>"; }
+if($rs['status']) { return $this->renderGtagEvent('remove_from_cart', $gtag); }
 		}
 	}
 	public function viewcont($product_id) {
@@ -240,8 +310,8 @@ if($rs['status']) { return "<script type='text/javascript'> gtag('event', 'remov
 			$brand_name = $this->getbrandname($pinfo['product_id']);
  			
 			$price = $pinfo['special'] ? $pinfo['special'] : $pinfo['price'];
-			$spcpricetx = $this->tax->calculate($price, $pinfo['tax_class_id'], $this->config->get('config_tax'));
-			$mainpricetx = $this->tax->calculate($pinfo['price'], $pinfo['tax_class_id'], $this->config->get('config_tax'));
+			$spcpricetx = $price;
+			$mainpricetx = $pinfo['price'];
 			
 			$items = array(
 				'id' => $pinfo['model'] ? $pinfo['model'] : $pinfo['product_id'],
@@ -265,7 +335,7 @@ if($rs['status']) { return "<script type='text/javascript'> gtag('event', 'remov
 				'event_category' => 'ecommerce',
 				'event_label' => 'product_view',
 				'currency' => $this->session->data['currency'],
-				'value' => $this->getcurval($spcpricetx),
+				'value' => $this->getcurval($spcpricetx * $pinfo['minimum']),
 				'items' => array($items),
  			);
 			
@@ -290,8 +360,8 @@ if($rs['status']) { return "<script type='text/javascript'> gtag('event', 'remov
 					$brand_name = $this->getbrandname($pinfo['product_id']);
 					
 					$price = $pinfo['special'] ? $pinfo['special'] : $pinfo['price'];
-					$spcpricetx = $this->tax->calculate($price, $pinfo['tax_class_id'], $this->config->get('config_tax'));
-					$mainpricetx = $this->tax->calculate($pinfo['price'], $pinfo['tax_class_id'], $this->config->get('config_tax'));
+					$spcpricetx = $price;
+					$mainpricetx = $pinfo['price'];
 					
 					$items = array(
 						'list_name' => 'Related Products',
@@ -332,9 +402,9 @@ if($rs['status']) { return "<script type='text/javascript'> gtag('event', 'remov
 
 $code = '';
 if($rs['status']) {
-	$code = "<script type='text/javascript'> gtag('event', 'view_item', ".json_encode($gtag,true)."); </script>";
+	$code = $this->renderGtagEvent('view_item', $gtag);
 	if($rp_flag && $rp_gtag) {
-		$code .= "<script type='text/javascript'> gtag('event', 'view_item_list', ".json_encode($rp_gtag,true)."); </script>";
+		$code .= $this->renderGtagEvent('view_item_list', $rp_gtag);
 	}
 }
 return $code;
@@ -388,8 +458,8 @@ return $code;
 					$brand_name = $this->getbrandname($pinfo['product_id']);
 					
 					$price = $pinfo['special'] ? $pinfo['special'] : $pinfo['price'];
-					$spcpricetx = $this->tax->calculate($price, $pinfo['tax_class_id'], $this->config->get('config_tax'));
-					$mainpricetx = $this->tax->calculate($pinfo['price'], $pinfo['tax_class_id'], $this->config->get('config_tax'));
+					$spcpricetx = $price;
+					$mainpricetx = $pinfo['price'];
 					
 					$items = array(
 						'id' => $pinfo['model'] ? $pinfo['model'] : $pinfo['product_id'],
@@ -419,12 +489,12 @@ return $code;
 					'event_label' => 'product_search',
 					'currency' => $this->session->data['currency'],
 					'search_term' => htmlspecialchars_decode(strip_tags($search_kywrd)),
-					'items' => array($itemsarr),
+					'items' => $itemsarr,
 				);
 			 
 $code = '';
 if($rs['status']) {
-	$code = "<script type='text/javascript'> gtag('event', 'search', ".json_encode($gtag,true)."); </script>";
+	$code = $this->renderGtagEvent('search', $gtag);
 }	
 return $code;
 			}
@@ -437,12 +507,14 @@ return $code;
 			$stq = $this->db->query("SELECT DISTINCT * FROM " . DB_PREFIX . "store WHERE store_id = '".(int)$this->config->get('config_store_id')."' ");
  			$storename = isset($stq->row['name']) ? $stq->row['name'] : $this->config->get('config_name');
 			
- 			$itemsarr = array();
+			$itemsarr = array();
+			$event_value = 0;
 			$cnt = 0;
 			foreach ($this->cart->getProducts() as $pinfo) { 
  				$category_name = $this->getcatname($pinfo['product_id']);
 				$brand_name = $this->getbrandname($pinfo['product_id']);
-  				$totalprc = $this->tax->calculate($pinfo['total'], $pinfo['tax_class_id'], $this->config->get('config_tax'));
+				$totalprc = $pinfo['price'];
+				$event_value += $this->getcurval($totalprc) * (int)$pinfo['quantity'];
  				$items = array(
 					'id' => $pinfo['model'] ? $pinfo['model'] : $pinfo['product_id'],
 					'name' => htmlspecialchars_decode(strip_tags($pinfo['name'])),
@@ -465,14 +537,14 @@ return $code;
 				'event_category' => 'ecommerce',
 				'event_label' => 'view_cart',
 				'currency' => $this->session->data['currency'],
-				'value' => $this->getcurval($this->cart->getTotal()),
+				'value' => round($event_value, 2),
 				'items' => $itemsarr,
  			);
 			if(isset($this->session->data['coupon'])) {
 				$gtag['coupon'] = $this->session->data['coupon'];
 			} 
 			  
-if($rs['status']) { return "<script type='text/javascript'> gtag('event', 'view_cart', ".json_encode($gtag,true)."); </script>"; }
+if($rs['status']) { return $this->renderGtagEvent('view_cart', $gtag); }
 		}
 	}
 	public function beginchk() {
@@ -482,12 +554,14 @@ if($rs['status']) { return "<script type='text/javascript'> gtag('event', 'view_
 			$stq = $this->db->query("SELECT DISTINCT * FROM " . DB_PREFIX . "store WHERE store_id = '".(int)$this->config->get('config_store_id')."' ");
  			$storename = isset($stq->row['name']) ? $stq->row['name'] : $this->config->get('config_name');
 			
- 			$itemsarr = array();
+			$itemsarr = array();
+			$event_value = 0;
 			$cnt = 0;
 			foreach ($this->cart->getProducts() as $pinfo) { 
  				$category_name = $this->getcatname($pinfo['product_id']);
 				$brand_name = $this->getbrandname($pinfo['product_id']);
-  				$totalprc = $this->tax->calculate($pinfo['total'], $pinfo['tax_class_id'], $this->config->get('config_tax')); 				
+				$totalprc = $pinfo['price'];
+				$event_value += $this->getcurval($totalprc) * (int)$pinfo['quantity'];
 				$items = array(
 					'id' => $pinfo['model'] ? $pinfo['model'] : $pinfo['product_id'],
 					'name' => htmlspecialchars_decode(strip_tags($pinfo['name'])),
@@ -510,14 +584,14 @@ if($rs['status']) { return "<script type='text/javascript'> gtag('event', 'view_
 				'event_category' => 'ecommerce',
 				'event_label' => 'begin_checkout',
 				'currency' => $this->session->data['currency'],
-				'value' => $this->getcurval($this->cart->getTotal()),
+				'value' => round($event_value, 2),
 				'items' => $itemsarr,
  			);
 			if(isset($this->session->data['coupon'])) {
 				$gtag['coupon'] = $this->session->data['coupon'];
 			} 
 			  
-if($rs['status']) { return "<script type='text/javascript'> gtag('event', 'begin_checkout', ".json_encode($gtag,true)."); </script>"; }
+if($rs['status']) { return $this->renderGtagEvent('begin_checkout', $gtag); }
 		}
 	}
 	public function chkfunnel($stpno) {
@@ -527,12 +601,14 @@ if($rs['status']) { return "<script type='text/javascript'> gtag('event', 'begin
 			$stq = $this->db->query("SELECT DISTINCT * FROM " . DB_PREFIX . "store WHERE store_id = '".(int)$this->config->get('config_store_id')."' ");
  			$storename = isset($stq->row['name']) ? $stq->row['name'] : $this->config->get('config_name');
 			
- 			$itemsarr = array();
+			$itemsarr = array();
+			$event_value = 0;
 			$cnt = 0;
 			foreach ($this->cart->getProducts() as $pinfo) { 
  				$category_name = $this->getcatname($pinfo['product_id']);
 				$brand_name = $this->getbrandname($pinfo['product_id']);
-  				$totalprc = $this->tax->calculate($pinfo['total'], $pinfo['tax_class_id'], $this->config->get('config_tax'));
+				$totalprc = $pinfo['price'];
+				$event_value += $this->getcurval($totalprc) * (int)$pinfo['quantity'];
  				$items = array(
 					'id' => $pinfo['model'] ? $pinfo['model'] : $pinfo['product_id'],
 					'name' => htmlspecialchars_decode(strip_tags($pinfo['name'])),
@@ -555,7 +631,7 @@ if($rs['status']) { return "<script type='text/javascript'> gtag('event', 'begin
 				'event_category' => 'ecommerce',
 				'event_label' => 'checkout_progress',				
 				'currency' => $this->session->data['currency'],
-				'value' => $this->getcurval($this->cart->getTotal()),
+				'value' => round($event_value, 2),
  				'items' => $itemsarr,
  			);
 			if(isset($this->session->data['coupon'])) {
@@ -564,7 +640,7 @@ if($rs['status']) { return "<script type='text/javascript'> gtag('event', 'begin
 			  
 $code = '';
 if($rs['status']) {
-	$code = "<script type='text/javascript'> gtag('event', 'checkout_progress', ".json_encode($gtag,true)."); </script>"; 
+	$code = $this->renderGtagEvent('checkout_progress', $gtag);
 	if($stpno == 1) {
 		$stpnm = 'Checkout Login';
 	} elseif($stpno == 2) {
@@ -584,7 +660,7 @@ if($rs['status']) {
 		'checkout_step' => $stpno,
 		'checkout_option' => $stpnm,
 	);
-	$code .= "<script type='text/javascript'> gtag('event', 'set_checkout_option', ".json_encode($gtag,true)."); </script>";
+	$code .= $this->renderGtagEvent('set_checkout_option', $gtag);
 }
 return $code;
 		}
@@ -596,12 +672,14 @@ return $code;
 			$stq = $this->db->query("SELECT DISTINCT * FROM " . DB_PREFIX . "store WHERE store_id = '".(int)$this->config->get('config_store_id')."' ");
  			$storename = isset($stq->row['name']) ? $stq->row['name'] : $this->config->get('config_name');
 			
- 			$itemsarr = array();
+			$itemsarr = array();
+			$event_value = 0;
 			$cnt = 0;
 			foreach ($this->cart->getProducts() as $pinfo) { 
  				$category_name = $this->getcatname($pinfo['product_id']);
 				$brand_name = $this->getbrandname($pinfo['product_id']);
-  				$totalprc = $this->tax->calculate($pinfo['total'], $pinfo['tax_class_id'], $this->config->get('config_tax'));
+				$totalprc = $pinfo['price'];
+				$event_value += $this->getcurval($totalprc) * (int)$pinfo['quantity'];
  				$items = array(
 					'id' => $pinfo['model'] ? $pinfo['model'] : $pinfo['product_id'],
 					'name' => htmlspecialchars_decode(strip_tags($pinfo['name'])),
@@ -624,15 +702,30 @@ return $code;
 				'event_category' => 'ecommerce',
 				'event_label' => htmlspecialchars_decode(strip_tags($this->session->data['payment_method']['title'])),
 				'currency' => $this->session->data['currency'],
-				'value' => $this->getcurval($this->cart->getTotal()),
+				'value' => round($event_value, 2),
 				'payment_type' => htmlspecialchars_decode(strip_tags($this->session->data['payment_method']['title'])),
 				'items' => $itemsarr,
  			);
 			if(isset($this->session->data['coupon'])) {
 				$gtag['coupon'] = $this->session->data['coupon'];
-			} 
+			}
+
+			$signature = hash('sha256', json_encode($gtag));
+
+			if (isset($this->session->data['cmpltguagaf_payment_info_sent']) &&
+				$this->session->data['cmpltguagaf_payment_info_sent'] === $signature) {
+				return '';
+			}
 			  
-if($rs['status']) { return "<script type='text/javascript'> gtag('event', 'add_payment_info', ".json_encode($gtag,true)."); </script>"; }
+if($rs['status']) {
+	$code = $this->renderGtagEvent('add_payment_info', $gtag);
+
+	if ($code !== '') {
+		$this->session->data['cmpltguagaf_payment_info_sent'] = $signature;
+	}
+
+	return $code;
+}
 		}
 	}
 	public function addshpinfo() {
@@ -642,12 +735,14 @@ if($rs['status']) { return "<script type='text/javascript'> gtag('event', 'add_p
 			$stq = $this->db->query("SELECT DISTINCT * FROM " . DB_PREFIX . "store WHERE store_id = '".(int)$this->config->get('config_store_id')."' ");
  			$storename = isset($stq->row['name']) ? $stq->row['name'] : $this->config->get('config_name');
 			
- 			$itemsarr = array();
+			$itemsarr = array();
+			$event_value = 0;
 			$cnt = 0;
 			foreach ($this->cart->getProducts() as $pinfo) { 
  				$category_name = $this->getcatname($pinfo['product_id']);
 				$brand_name = $this->getbrandname($pinfo['product_id']);
-  				$totalprc = $this->tax->calculate($pinfo['total'], $pinfo['tax_class_id'], $this->config->get('config_tax'));
+				$totalprc = $pinfo['price'];
+				$event_value += $this->getcurval($totalprc) * (int)$pinfo['quantity'];
  				$items = array(
 					'id' => $pinfo['model'] ? $pinfo['model'] : $pinfo['product_id'],
 					'name' => htmlspecialchars_decode(strip_tags($pinfo['name'])),
@@ -670,15 +765,30 @@ if($rs['status']) { return "<script type='text/javascript'> gtag('event', 'add_p
 				'event_category' => 'ecommerce',
 				'event_label' => htmlspecialchars_decode(strip_tags($this->session->data['shipping_method']['title'])),
 				'currency' => $this->session->data['currency'],
-				'value' => $this->getcurval($this->cart->getTotal()),
+				'value' => round($event_value, 2),
 				'shipping_tier' => htmlspecialchars_decode(strip_tags($this->session->data['shipping_method']['title'])),
 				'items' => $itemsarr,
  			);
 			if(isset($this->session->data['coupon'])) {
 				$gtag['coupon'] = $this->session->data['coupon'];
-			} 
+			}
+
+			$signature = hash('sha256', json_encode($gtag));
+
+			if (isset($this->session->data['cmpltguagaf_shipping_info_sent']) &&
+				$this->session->data['cmpltguagaf_shipping_info_sent'] === $signature) {
+				return '';
+			}
 			  
-if($rs['status']) { return "<script type='text/javascript'> gtag('event', 'add_shipping_info', ".json_encode($gtag,true)."); </script>"; }
+if($rs['status']) {
+	$code = $this->renderGtagEvent('add_shipping_info', $gtag);
+
+	if ($code !== '') {
+		$this->session->data['cmpltguagaf_shipping_info_sent'] = $signature;
+	}
+
+	return $code;
+}
 		}
 	}
 	public function purchase($order_id = 0) {
@@ -686,35 +796,53 @@ if($rs['status']) { return "<script type='text/javascript'> gtag('event', 'add_s
 		if(!$order_id && isset($this->session->data['order_id'])) { 
 			$order_id = $this->session->data['order_id'];
 		}
-		if(!$order_id) { 
-			$order_id = $this->getorderid();
+
+		$order_id = (int)$order_id;
+
+		if (!$rs || !$order_id) {
+			return '';
+		}
+
+		// Reloading the success page must not emit the same conversion again.
+		if (isset($this->session->data['cmpltguagaf_purchase_sent']) &&
+			(int)$this->session->data['cmpltguagaf_purchase_sent'] === $order_id) {
+			return '';
 		}
 		
 		if($rs && $order_id) {
 			$stq = $this->db->query("SELECT DISTINCT * FROM " . DB_PREFIX . "store WHERE store_id = '".(int)$this->config->get('config_store_id')."' ");
  			$storename = isset($stq->row['name']) ? $stq->row['name'] : $this->config->get('config_name');
 			
- 			$this->load->model('checkout/order');
- 			$orderdata = $this->model_checkout_order->getOrder($order_id);
- 			$order_products = $this->getorderproduct($order_id); 
+			$this->load->model('checkout/order');
+			$orderdata = $this->model_checkout_order->getOrder($order_id);
+			$order_products = $this->getorderproduct($order_id);
+
+			if (!$orderdata || !$order_products) {
+				return '';
+			}
+
 			$order_tax = $this->getordertax($order_id);
 			$order_shipping = $this->getordershipping($order_id);
+			$currency_code = !empty($orderdata['currency_code']) ? $orderdata['currency_code'] : $this->config->get('config_currency');
+			$currency_value = isset($orderdata['currency_value']) ? $orderdata['currency_value'] : '';
  			
- 			$itemsarr = array();
+			$itemsarr = array();
+			$event_value = 0;
 			$cnt = 0;
 			foreach ($order_products as $pinfo) { 
  				$category_name = $this->getcatname($pinfo['product_id']);
 				$brand_name = $this->getbrandname($pinfo['product_id']);
-  				$totalprc = $pinfo['total'] + $pinfo['tax'];
+				$totalprc = (float)$this->currency->format($pinfo['price'], $currency_code, $currency_value, false);
+				$event_value += $totalprc * (int)$pinfo['quantity'];
  				$items = array(
 					'id' => $pinfo['model'] ? $pinfo['model'] : $pinfo['product_id'],
 					'name' => htmlspecialchars_decode(strip_tags($pinfo['name'])),
 					"item_id" => $pinfo['model'] ? $pinfo['model'] : $pinfo['product_id'],
 					"item_name" => htmlspecialchars_decode(strip_tags($pinfo['name'])),
 					'affiliation' => htmlspecialchars_decode(strip_tags($storename)),
-					'currency' => $this->session->data['currency'],
+					'currency' => $currency_code,
 					'list_position' => $cnt,
-					'price' => $this->getcurval($totalprc),
+					'price' => round($totalprc, 2),
 					'quantity' => $pinfo['quantity'],
 				);
 				if($category_name) { $items['category'] = $category_name; $items['item_category'] = $category_name; }
@@ -726,10 +854,10 @@ if($rs['status']) { return "<script type='text/javascript'> gtag('event', 'add_s
 			$gtag = array(
 				'transaction_id' => $order_id,
 				'affiliation' => htmlspecialchars_decode(strip_tags($storename)),
-				'currency' => $this->session->data['currency'],
-				'value' => $this->getcurval($orderdata['total']),
-				'tax' => $this->getcurval($order_tax),
-				'shipping' => $this->getcurval($order_shipping),
+				'currency' => $currency_code,
+				'value' => round($event_value, 2),
+				'tax' => round((float)$this->currency->format($order_tax, $currency_code, $currency_value, false), 2),
+				'shipping' => round((float)$this->currency->format($order_shipping, $currency_code, $currency_value, false), 2),
  				'items' => $itemsarr,
  			);
 			if(isset($this->session->data['coupon'])) {
@@ -738,7 +866,11 @@ if($rs['status']) { return "<script type='text/javascript'> gtag('event', 'add_s
 			
 $gacode = '';
 if($rs['status']) {
-$gacode = "<script type='text/javascript'> gtag('event', 'purchase', ".json_encode($gtag,true)."); </script>"; 
+$gacode = $this->renderGtagEvent('purchase', $gtag);
+}
+
+if ($gacode !== '') {
+	$this->session->data['cmpltguagaf_purchase_sent'] = $order_id;
 }
 
 return $gacode;

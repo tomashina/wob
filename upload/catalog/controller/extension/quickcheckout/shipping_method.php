@@ -314,6 +314,16 @@ class ControllerExtensionQuickCheckoutShippingMethod extends Controller {
 				$this->session->data['shipping_method'] = $this->session->data['shipping_methods'][$shipping[0]]['quote'][$shipping[1]];
 			}
 		}
+
+		$json = array('tracking_event' => '');
+
+		if (!empty($this->session->data['shipping_method']) && is_file(DIR_APPLICATION . 'model/extension/cmpltguagaf.php')) {
+			$this->load->model('extension/cmpltguagaf');
+			$json['tracking_event'] = $this->model_extension_cmpltguagaf->addshpinfo();
+		}
+
+		$this->response->addHeader('Content-Type: application/json');
+		$this->response->setOutput(json_encode($json));
 	}
 	
 	public function validate() {
@@ -402,7 +412,12 @@ class ControllerExtensionQuickCheckoutShippingMethod extends Controller {
 				$this->session->data['delivery_time'] = strip_tags($this->request->post['delivery_time']);
 			} else {
 				$this->session->data['delivery_time'] = '';
-			}				
+			}
+
+			if (is_file(DIR_APPLICATION . 'model/extension/cmpltguagaf.php')) {
+				$this->load->model('extension/cmpltguagaf');
+				$json['tracking_event'] = $this->model_extension_cmpltguagaf->addshpinfo();
+			}
 		}
 
 		$this->response->addHeader('Content-Type: application/json');

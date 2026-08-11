@@ -292,6 +292,16 @@ class ControllerExtensionQuickCheckoutPaymentMethod extends Controller {
 		if (isset($this->request->post['payment_method']) && isset($this->session->data['payment_methods'][$this->request->post['payment_method']])) {
 			$this->session->data['payment_method'] = $this->session->data['payment_methods'][$this->request->post['payment_method']];
 		}
+
+		$json = array('tracking_event' => '');
+
+		if (!empty($this->session->data['payment_method']) && is_file(DIR_APPLICATION . 'model/extension/cmpltguagaf.php')) {
+			$this->load->model('extension/cmpltguagaf');
+			$json['tracking_event'] = $this->model_extension_cmpltguagaf->addpayinfo();
+		}
+
+		$this->response->addHeader('Content-Type: application/json');
+		$this->response->setOutput(json_encode($json));
 	}
 	
 	public function validate() {
@@ -411,7 +421,12 @@ class ControllerExtensionQuickCheckoutPaymentMethod extends Controller {
 		  
 			$this->session->data['order_comment'] = strip_tags($this->request->post['comment']);
 			
-			$this->session->data['survey'] = strip_tags($this->request->post['survey']);						
+			$this->session->data['survey'] = strip_tags($this->request->post['survey']);
+
+			if (is_file(DIR_APPLICATION . 'model/extension/cmpltguagaf.php')) {
+				$this->load->model('extension/cmpltguagaf');
+				$json['tracking_event'] = $this->model_extension_cmpltguagaf->addpayinfo();
+			}
 		}
 		
 		$this->response->addHeader('Content-Type: application/json');

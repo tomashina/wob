@@ -198,6 +198,13 @@ class ControllerExtensionQuickCheckoutCheckout extends Equotix {
 		$data['column_right'] = $this->load->controller('common/column_right');
 		$data['content_top'] = $this->load->controller('common/content_top');
 		$data['content_bottom'] = $this->load->controller('common/content_bottom');
+		$data['tracking_event'] = '';
+
+		if (is_file(DIR_APPLICATION . 'model/extension/cmpltguagaf.php')) {
+			$this->load->model('extension/cmpltguagaf');
+			$data['tracking_event'] = $this->model_extension_cmpltguagaf->beginchk();
+		}
+
 		$data['footer'] = $this->load->controller('common/footer');
 		$data['header'] = $this->load->controller('common/header');
 

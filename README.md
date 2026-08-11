@@ -18,3 +18,20 @@ Production must not define `REMOTE_IMAGE_URL`; with the normal `image` directory
 ## Deployment
 
 Clone or pull the repository into the directory that contains `upload/` and `storagedijana/`. Keep the production config files and `upload/image/` on the server; Git ignores them and will not overwrite them.
+
+## Google Tag Manager and cookie consent
+
+The storefront uses Google Tag Manager `GTM-K6DBPBNM`, Google Consent Mode v2,
+and a custom CookieConsent v3 dialog. After importing or restoring a database,
+apply the tracking configuration and refresh OpenCart caches:
+
+```bash
+php scripts/apply-tracking-consent.php --refresh
+```
+
+The script disables the obsolete GDPR/Basel cookie banners and clears the
+module's direct GA fields to prevent duplicate measurement when GA4 is managed
+inside GTM. See [`docs/google-tag-manager-consent.md`](docs/google-tag-manager-consent.md)
+for GTM and verification notes, and
+[`docs/deploy-google-tracking.md`](docs/deploy-google-tracking.md) for the
+production deployment checklist.

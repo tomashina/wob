@@ -94,9 +94,12 @@ $('#shipping-method input[name=\'shipping_method\'], #shipping-method select[nam
 			url: 'index.php?route=extension/quickcheckout/shipping_method/set',
 			type: 'post',
 			data: post_data,
-			dataType: 'html',
+			dataType: 'json',
 			cache: false,
-			success: function(html) {
+			success: function(json) {
+				if (json['tracking_event']) {
+					$('body').append(json['tracking_event']);
+				}
 				{% if cart %} 
 				loadCart();
 				{% endif %} 
@@ -124,9 +127,12 @@ $('#shipping-method input[name=\'shipping_method\'], #shipping-method select[nam
 			url: url,
 			type: 'post',
 			data: post_data,
-			dataType: 'html',
+			dataType: 'json',
 			cache: false,
-			success: function(html) {
+			success: function(json) {
+				if (json['tracking_event']) {
+					$('body').append(json['tracking_event']);
+				}
 				{% if cart %} 
 				loadCart();
 				{% endif %} 

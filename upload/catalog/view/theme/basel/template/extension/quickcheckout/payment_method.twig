@@ -74,9 +74,12 @@ $('#payment-method input[name=\'payment_method\'], #payment-method select[name=\
 			url: 'index.php?route=extension/quickcheckout/payment_method/set',
 			type: 'post',
 			data: $('#payment-address input[type=\'text\'], #payment-address input[type=\'checkbox\']:checked, #payment-address input[type=\'radio\']:checked, #payment-address input[type=\'hidden\'], #payment-address select, #payment-method input[type=\'text\'], #payment-method input[type=\'checkbox\']:checked, #payment-method input[type=\'radio\']:checked, #payment-method input[type=\'hidden\'], #payment-method select, #payment-method textarea'),
-			dataType: 'html',
+			dataType: 'json',
 			cache: false,
-			success: function(html) {
+			success: function(json) {
+				if (json['tracking_event']) {
+					$('body').append(json['tracking_event']);
+				}
 				{% if cart and payment_reload %} 
 				loadCart();
 				{% endif %} 
@@ -100,9 +103,12 @@ $('#payment-method input[name=\'payment_method\'], #payment-method select[name=\
 			url: url,
 			type: 'post',
 			data: post_data,
-			dataType: 'html',
+			dataType: 'json',
 			cache: false,
-			success: function(html) {
+			success: function(json) {
+				if (json['tracking_event']) {
+					$('body').append(json['tracking_event']);
+				}
 				{% if cart and payment_reload %} 
 				loadCart();
 				{% endif %} 

@@ -14,6 +14,13 @@ class ControllerCommonHeader extends Controller {
 			}
 		}
 
+		$data['gtm_id'] = '';
+
+		if (is_file(DIR_APPLICATION . 'model/extension/cmpltguagaf.php')) {
+			$this->load->model('extension/cmpltguagaf');
+			$data['gtm_id'] = $this->model_extension_cmpltguagaf->getGtmId();
+		}
+
 		if ($this->request->server['HTTPS']) {
 			$server = $this->config->get('config_ssl');
 		} else {

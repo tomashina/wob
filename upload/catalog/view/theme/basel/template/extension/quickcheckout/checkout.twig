@@ -660,6 +660,10 @@ function validatePaymentMethod() {
 		success: function(json) {
 			$('.alert, .text-danger').remove();
 
+			if (json['tracking_event']) {
+				$('body').append(json['tracking_event']);
+			}
+
 			if (json['redirect']) {
 				location = json['redirect'];
 			} else if (json['error']) {
@@ -752,6 +756,10 @@ function validatePaymentMethod() {
 			cache: false,
 			success: function(json) {
 				$('.alert, .text-danger').remove();
+
+				if (json['tracking_event']) {
+					$('body').append(json['tracking_event']);
+				}
 
 				if (json['redirect']) {
 					location = json['redirect'];
@@ -1357,5 +1365,6 @@ $('.time').datetimepicker({
 
 $('.datetime').datetimepicker();
 //--></script>
+{{ tracking_event }}
 {{ content_bottom }}
 {{ footer }}
