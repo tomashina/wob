@@ -39,8 +39,8 @@
                 <div class="grid-holder categories carousel grid-holder grid6 prod_module0 carousel mb-3">
                     {% for category in categories %}
                         <div class="item single-product">
-                            <a href="{{ category.href }}"><img src="{{ category.thumb }}" alt="" title="{{ category.name }}" width="500" height="500" loading="lazy" decoding="async" /></a>
-                            <a href="{{ category.href }}">{{ category.name }}</a></div>
+                            <a class="category-thumb-link" href="{{ category.href }}"><img src="{{ category.thumb }}" alt="{{ category.name }}" width="500" height="500" loading="lazy" decoding="async" /></a>
+                            <a class="category-name-link" href="{{ category.href }}">{{ category.name }}</a></div>
                     {% endfor %}
                 </div>
 

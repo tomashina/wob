@@ -104,8 +104,10 @@ class ControllerProductCategory extends Controller {
 				'href' => $this->url->link('product/category', 'path=' . $this->request->get['path'])
 			);
 
-			if ($category_info['image']) {
-				$data['thumb'] = $this->model_tool_image->resize($category_info['image'], $this->config->get('theme_' . $this->config->get('config_theme') . '_image_category_width'), $this->config->get('theme_' . $this->config->get('config_theme') . '_image_category_height'));
+			$category_image = $category_info['image'] ?: $this->model_catalog_category->getRepresentativeProductImage($category_id);
+
+			if ($category_image) {
+				$data['thumb'] = $this->model_tool_image->resize($category_image, $this->config->get('theme_' . $this->config->get('config_theme') . '_image_category_width'), $this->config->get('theme_' . $this->config->get('config_theme') . '_image_category_height'));
 			} else {
 				$data['thumb'] = '';
 			}
@@ -141,9 +143,18 @@ class ControllerProductCategory extends Controller {
 					'filter_sub_category' => true
 				);
 
+				$representative_image = $result['image'] ?: $this->model_catalog_category->getRepresentativeProductImage($result['category_id']);
+
+				if ($representative_image) {
+					$category_thumb = $this->model_tool_image->resize($representative_image, $this->config->get('subcat_image_width'), $this->config->get('subcat_image_height'));
+				} else {
+					$category_thumb = $this->model_tool_image->resize('placeholder.png', $this->config->get('subcat_image_width'), $this->config->get('subcat_image_height'));
+				}
+
 				$data['categories'][] = array(
 					'name' => $result['name'] . ($this->config->get('config_product_count') ? ' (' . $this->model_catalog_product->getTotalProducts($filter_data) . ')' : ''),
-					'href' => $this->url->link('product/category', 'path=' . $this->request->get['path'] . '_' . $result['category_id'] . $url)
+					'href' => $this->url->link('product/category', 'path=' . $this->request->get['path'] . '_' . $result['category_id'] . $url),
+					'thumb' => $category_thumb
 				);
 			}
 

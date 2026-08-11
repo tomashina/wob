@@ -12,6 +12,12 @@ class ModelCatalogCategory extends Model {
 		return $query->rows;
 	}
 
+	public function getRepresentativeProductImage($category_id) {
+		$query = $this->db->query("SELECT p.image FROM " . DB_PREFIX . "product_to_category p2c INNER JOIN " . DB_PREFIX . "product p ON (p.product_id = p2c.product_id) INNER JOIN " . DB_PREFIX . "product_to_store p2s ON (p.product_id = p2s.product_id) WHERE (p2c.category_id = '" . (int)$category_id . "' OR p2c.category_id IN (SELECT cp.category_id FROM " . DB_PREFIX . "category_path cp WHERE cp.path_id = '" . (int)$category_id . "')) AND p.status = '1' AND p.date_available <= NOW() AND p2s.store_id = '" . (int)$this->config->get('config_store_id') . "' AND p.image != '' ORDER BY (p2c.category_id = '" . (int)$category_id . "') DESC, p.sort_order ASC, p.date_added DESC LIMIT 1");
+
+		return $query->num_rows ? $query->row['image'] : '';
+	}
+
 	public function getCategoryFilters($category_id) {
 		$implode = array();
 

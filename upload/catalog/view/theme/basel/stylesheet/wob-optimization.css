@@ -216,6 +216,53 @@ button.button-remove {
   height: auto;
 }
 
+.grid-holder.categories .slick-list {
+  padding-right: 0 !important;
+  padding-left: 0 !important;
+}
+
+.grid-holder.categories .item {
+  padding-right: 8px;
+  padding-left: 8px;
+  text-align: center;
+}
+
+.grid-holder.categories .category-thumb-link {
+  display: block;
+  margin-bottom: 12px;
+  background: #fff;
+  border: 1px solid #e5dcc0;
+}
+
+.grid-holder.categories .category-thumb-link:hover,
+.grid-holder.categories .category-thumb-link:focus-visible {
+  border-color: #ad974f;
+}
+
+.grid-holder.categories .category-thumb-link img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  margin: 0;
+  padding: 12px;
+  object-fit: contain;
+  background: #fff;
+  border: 0;
+  border-radius: 0 !important;
+  box-sizing: border-box;
+}
+
+.grid-holder.categories .category-name-link {
+  display: -webkit-box;
+  min-height: 44px;
+  overflow: hidden;
+  color: #00243d;
+  line-height: 22px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 .image-area .product-gallery-stage {
   position: relative;
   display: block !important;
