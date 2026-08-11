@@ -144,7 +144,7 @@ button.tf-filter-reset {
 
 #column-left .tf-filter.filter-container > .panel-heading,
 #column-right .tf-filter.filter-container > .panel-heading {
-  padding: 18px 20px;
+  padding: 12px 18px;
   background: #f4f1e9;
   border-bottom: 1px solid #e5dcc0;
   border-radius: 0;
@@ -157,8 +157,8 @@ button.tf-filter-reset {
 }
 
 .tf-filter.filter-container .tf-filter-group {
-  padding-top: 16px;
-  padding-bottom: 16px;
+  padding-top: 4px;
+  padding-bottom: 4px;
   border-bottom: 1px solid #e8e1cf;
 }
 
@@ -167,6 +167,7 @@ button.tf-filter-reset {
 }
 
 .tf-filter.filter-container .tf-filter-group-header {
+  padding: 10px 15px;
   color: #00243d;
 }
 
@@ -178,7 +179,7 @@ button.tf-filter-reset {
 
 .tf-filter.filter-container .tf-filter-group-content,
 .tf-filter.filter-container .tf-filter-group-search {
-  padding: 8px 15px 12px;
+  padding: 4px 15px 10px;
 }
 
 .tf-filter.filter-container .tf-filter-group-search {
@@ -203,6 +204,10 @@ button.tf-filter-reset {
 
 .tf-filter.filter-container .tf-filter-value.form-check label {
   line-height: 1.4;
+}
+
+.tf-filter.filter-container .tf-filter-group.price .tf-filter-group-content > .row {
+  display: none;
 }
 
 .tf-filter.filter-container .form-control,
