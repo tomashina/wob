@@ -30,13 +30,14 @@
 <div class="tab-pane{% if key == 0 %} active in{% endif %} fade" id="tab{{ module }}{{ key }}">
     <div class="grid-holder grid{{ columns }} prod_module{{ module }}{% if carousel %} carousel{% endif %}{% if carousel_a and rows > 1 %} sticky-arrows{% endif %}">
         {% for product in tab.products %}
+            {% set product_name = product.name|replace({'  ': ' '})|replace({'  ': ' '}) %}
             <div class="item single-product">
                   <div class="edge">
             <div class="image"{% if columns == 'list' %} style="width:{{ img_width }}px"{% endif %}>
                 <a href="{{ product.href }}">
-                <img src="{{ product.thumb }}" alt="{{ product.name }}" title="{{ product.name }}" width="500" height="500" loading="lazy" decoding="async" />
+                <img src="{{ product.thumb }}" alt="{{ product_name }}" width="500" height="500" loading="lazy" decoding="async" />
                 {% if product.thumb2 %}
-                <img class="thumb2" src="{{ product.thumb2 }}" alt="{{ product.name }}" title="{{ product.name }}" width="500" height="500" loading="lazy" decoding="async" />
+                <img class="thumb2" src="{{ product.thumb2 }}" alt="{{ product_name }}" width="500" height="500" loading="lazy" decoding="async" />
                 {% endif %}
                 </a>
             {% if product.price and product.special and product.sale_badge %}
@@ -54,7 +55,7 @@
 			{% else %}
 				{% set button_cart = default_button_cart %}
 			{% endif %}
-            <a class="img-overlay" href="{{ product.href }}" aria-label="{{ product.name }}"></a>
+            <a class="img-overlay" href="{{ product.href }}" aria-label="{{ product_name }}"></a>
             <div class="btn-center catalog_hide"><button type="button" class="btn btn-light-outline btn-thin" onclick="cart.add('{{ product.product_id }}', '{{ product.minimum }}');">{{ button_cart }}</button></div>
             <div class="icons-wrapper">
             <button type="button" class="icon is_wishlist" aria-label="{{ button_wishlist }}" data-toggle="tooltip" data-placement="{{ tooltip_align }}" data-title="{{ button_wishlist }}" onclick="wishlist.add('{{ product.product_id }}');"><span class="icon-heart" aria-hidden="true"></span></button>
@@ -63,7 +64,7 @@
             </div> <!-- .icons-wrapper -->
             </div><!-- .image ends -->
             <div class="caption">
-            <a class="product-name" href="{{ product.href }}">{{ product.name }}</a>
+            <a class="product-name" href="{{ product.href }}">{{ product_name }}</a>
             {% if product.rating %}      
                 <div class="rating">
                 <span class="rating_stars rating r{{ product.rating }}">

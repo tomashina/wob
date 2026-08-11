@@ -1,5 +1,9 @@
 # Deploy Google Tag Managera, privole i ecommerce praćenja
 
+Za kompletan aktualni deploy (uključujući SEO, strukturirane podatke i UI)
+koristite [`deploy-production.md`](deploy-production.md). Ovaj dokument ostaje
+detaljna GTM i Consent Mode kontrolna lista.
+
 Ove izmjene treba objaviti kao jednu cjelinu jer QuickCheckout kontroleri i
 njihovi predlošci zajedno mijenjaju AJAX odgovor za odabir dostave i plaćanja.
 
@@ -59,17 +63,18 @@ scripts/apply-tracking-consent.php
 Iz korijena produkcijskog projekta pokrenite:
 
 ```bash
-php scripts/apply-tracking-consent.php --refresh
+php scripts/apply-tracking-consent.php
+php scripts/apply-seo-ai.php --refresh
 ```
 
-Skripta je idempotentna i:
+Skripte su idempotentne i:
 
 - postavlja `GTM-K6DBPBNM`;
 - prazni stara izravna GA/GA4 polja kako ne bi došlo do dvostrukog mjerenja;
 - isključuje stari GDPR i Basel cookie banner;
-- osvježava OCMOD modifikacije i Twig cache.
+- primjenjuje SEO/AI postavke te osvježava OCMOD modifikacije i Twig cache.
 
-Očekivani završni ispis je:
+Ispis uključuje sljedeće potvrde (između njih se ispisuju i SEO provjere):
 
 ```text
 UPDATED Google Tag Manager GTM-K6DBPBNM
@@ -78,8 +83,9 @@ UPDATED legacy Basel cookie bar disabled
 REFRESHED OCMOD and theme template cache
 ```
 
-Ako automatsko osvježavanje nije dostupno, pokrenite skriptu bez
-`--refresh`, zatim u OpenCart administraciji ručno osvježite:
+Ako automatsko osvježavanje nije dostupno, pokrenite
+`php scripts/apply-seo-ai.php` bez `--refresh`, zatim u OpenCart administraciji
+ručno osvježite:
 
 1. **Extensions > Modifications > Refresh**
 2. **Dashboard > Developer Settings > Theme cache > Refresh**

@@ -19,6 +19,9 @@ Production must not define `REMOTE_IMAGE_URL`; with the normal `image` directory
 
 Clone or pull the repository into the directory that contains `upload/` and `storagedijana/`. Keep the production config files and `upload/image/` on the server; Git ignores them and will not overwrite them.
 
+The complete production command and post-deploy checklist are documented in
+[`docs/deploy-production.md`](docs/deploy-production.md).
+
 ## Google Tag Manager and cookie consent
 
 The storefront uses Google Tag Manager `GTM-K6DBPBNM`, Google Consent Mode v2,
