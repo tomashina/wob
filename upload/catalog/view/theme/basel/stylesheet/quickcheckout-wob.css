@@ -122,6 +122,7 @@
 
 #quickcheckoutconfirm .quickcheckout-login-details {
   padding: 0;
+  overflow: hidden;
 }
 
 #quickcheckoutconfirm .quickcheckout-login-toggle {
@@ -157,7 +158,9 @@
 }
 
 #quickcheckoutconfirm .quickcheckout-login-content {
-  padding: 4px 22px 22px;
+  margin-right: 0 !important;
+  margin-left: 0 !important;
+  padding: 14px 22px 22px;
   border-top: 1px solid #e5dcc0;
 }
 
@@ -174,7 +177,54 @@
 }
 
 #quickcheckoutconfirm .quickcheckout-wait-message {
-  color: #fff;
+  color: #00243d;
+}
+
+body > .blockUI.blockOverlay {
+  background: rgb(35 31 32 / 44%) !important;
+  opacity: 1 !important;
+}
+
+body > .blockUI.blockMsg.blockPage {
+  top: 50% !important;
+  left: 50% !important;
+  width: min(320px, calc(100% - 32px)) !important;
+  margin: 0 !important;
+  padding: 24px !important;
+  color: #00243d !important;
+  background: #fbfaf6 !important;
+  border: 1px solid #d8cfb4 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  cursor: wait;
+  transform: translate(-50%, -50%);
+}
+
+body > .blockUI .quickcheckout-wait-message {
+  display: flex;
+  margin: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #00243d;
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+body > .blockUI .quickcheckout-wait-message::before {
+  width: 22px;
+  height: 22px;
+  border: 2px solid #e5dcc0;
+  border-top-color: #ad974f;
+  border-radius: 50%;
+  content: "";
+  animation: wob-loader-spin .7s linear infinite;
+  flex: 0 0 auto;
+}
+
+@keyframes wob-loader-spin {
+  to { transform: rotate(360deg); }
 }
 
 #quickcheckoutconfirm select.form-control,
@@ -210,6 +260,6 @@
   }
 
   #quickcheckoutconfirm .quickcheckout-login-content {
-    padding: 4px 18px 18px;
+    padding: 12px 18px 18px;
   }
 }

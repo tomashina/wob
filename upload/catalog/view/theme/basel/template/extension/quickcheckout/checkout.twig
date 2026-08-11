@@ -151,20 +151,13 @@ $('#quickcheckout-countdown').countdown({
 });
 {% endif %}
 {% if load_screen %}
+if ($.blockUI) {
+	$.blockUI.defaults.css = {};
+	$.blockUI.defaults.overlayCSS = {};
+}
 $(window).load(function() {
     $.blockUI({
-		message: '<h1 class="quickcheckout-wait-message">{{ text_please_wait }}</h1>',
-		css: {
-			border: 'none',
-			padding: '15px',
-			backgroundColor: '#000000',
-			'-webkit-border-radius': '10px',
-			'-moz-border-radius': '10px',
-			'-khtml-border-radius': '10px',
-			'border-radius': '10px',
-			opacity: .8,
-			color: '#ffffff'
-		}
+		message: '<h1 class="quickcheckout-wait-message">{{ text_please_wait }}</h1>'
 	});
 
 	setTimeout(function() {
@@ -852,18 +845,7 @@ function loadConfirm() {
 
 				{% if load_screen %}
 				$.blockUI({
-					message: '<h1 class="quickcheckout-wait-message">{{ text_please_wait }}</h1>',
-					css: {
-						border: 'none',
-						padding: '15px',
-						backgroundColor: '#000000',
-						'-webkit-border-radius': '10px',
-						'-moz-border-radius': '10px',
-						'-khtml-border-radius': '10px',
-						'border-radius': '10px',
-						opacity: .8,
-						color: '#ffffff'
-					}
+					message: '<h1 class="quickcheckout-wait-message">{{ text_please_wait }}</h1>'
 				});
 				{% endif %}
 			{% endif %}

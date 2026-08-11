@@ -43,10 +43,12 @@
         {% endif %}
 
         <a class="link product-gallery-link" id="main-image" href="{{ popup }}" data-pswp-width="{{ img_w }}" data-pswp-height="{{ img_h }}"><img src="{{ thumb }}" alt="{{ heading_title }}" width="{{ img_w }}" height="{{ img_h }}" fetchpriority="high" decoding="async" /></a>
+        {% if images %}<span class="product-gallery-swipe-hint" aria-hidden="true"><i class="fa-light fa-hand-pointer"></i><i class="fa-light fa-arrows-left-right"></i></span>{% endif %}
         </div>
         {% for image in images %}
         <div class="product-gallery-slide">
         <a class="link product-gallery-link" href="{{ image.popup }}" data-pswp-width="{{ img_w }}" data-pswp-height="{{ img_h }}"><img src="{{ image.large }}" alt="{{ heading_title }} — slika {{ loop.index + 1 }}" width="{{ img_w }}" height="{{ img_h }}" loading="lazy" decoding="async" /></a>
+        <span class="product-gallery-swipe-hint" aria-hidden="true"><i class="fa-light fa-hand-pointer"></i><i class="fa-light fa-arrows-left-right"></i></span>
         </div>
         {% endfor %}
         </div>
@@ -307,7 +309,7 @@
                 <button type="button" class="product-quantity-step product-quantity-plus" aria-label="Povećaj količinu"><span aria-hidden="true">+</span></button>
               </div>
               <input type="hidden" name="product_id" value="{{ product_id }}" />
-              <button type="button" {% if ((qty < 1) and (stock_badge_status)) %}{% else %} id="button-cart" {% endif %}  data-loading-text="{{ text_loading }}" class="btn btn-primary">{% if ((qty < 1) and (stock_badge_status)) %}{{ basel_text_out_of_stock }}{% else %}{{ button_cart }}{% endif %}</button>
+              <button type="button" {% if ((qty < 1) and (stock_badge_status)) %}{% else %} id="button-cart" {% endif %} data-loading-text="{{ text_loading }}" class="btn btn-primary"><i class="fa-light fa-bag-shopping" aria-hidden="true"></i><span>{% if ((qty < 1) and (stock_badge_status)) %}{{ basel_text_out_of_stock }}{% else %}{{ button_cart }}{% endif %}</span></button>
             </div>
             {% if minimum > 1 %}
             <div class="alert alert-sm alert-info"><i class="fa fa-info-circle"></i> {{ text_minimum }}</div>
