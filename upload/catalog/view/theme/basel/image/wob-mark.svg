@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">World of Beauty</title>
+  <rect width="64" height="64" rx="12" fill="#231f20"/>
+  <path d="M10 16 20 48c.8 2.7 4.5 2.9 5.6.4L32 34l6.4 14.4c1.1 2.5 4.8 2.3 5.6-.4l10-32" fill="none" stroke="#fbfaf6" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M17 54c9-3.2 21-3.2 30 0" fill="none" stroke="#ad974f" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

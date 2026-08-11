@@ -1,10 +1,11 @@
 <div id="tf-filter-{{ module_class_id }}" class="panel tf-filter panel-default filter-container">
   <div data-toggle="collapse" href="#tf-filter-content-{{ module_class_id }}" class="panel-heading{{ collapsed?' collapsed' }}">
-    <h4 class="panel-title">{{ heading_title }}</h4>
+    <h2 class="panel-title">{{ heading_title }}</h2>
     {% if reset_all %}
       <span data-tf-reset="all" data-toggle="tooltip" title="{{ text_reset_all }}" class="tf-filter-reset hide text-danger"><i class="fa fa-times"></i></span>
     {% endif %}
     <i class="fa fa-chevron-circle-down" aria-hidden="true"></i>
+    <button type="button" class="tf-filter-mobile-close" aria-label="{{ text_close_filter }}"><i class="fa-light fa-xmark" aria-hidden="true"></i></button>
   </div>
   <div id="tf-filter-content-{{ module_class_id }}" data-tf-base-z-index="99" class="collapse{{ not collapsed?' in' }} tf-list-filter-group row">
     {% for key,filter in filters %}
@@ -413,11 +414,42 @@
 <script type="text/javascript">
   // Basel
   $(document).ready(function() {
-    $('.filter-trigger-btn').addClass('active').html('<img src="image/filter.svg" class="filter-icon" alt="" aria-hidden="true" width="20" height="20"/>{{ heading_title }}');
+    $('.filter-trigger-btn').addClass('active').html('<i class="fa-light fa-sliders" aria-hidden="true"></i><span class="filter-trigger-label">{{ heading_title }}</span>');
     // Basel
-    $(".filter-trigger-btn").click(function(){
+    var $filterTrigger = $(".filter-trigger-btn");
+    var $filterPanel = $('#tf-filter-{{ module_class_id }}');
+
+    function closeMobileFilter() {
+      $('html').removeClass('no-scroll side-filter-open');
+      $('.body-cover').removeClass('active');
+      $filterPanel.removeAttr('role aria-modal aria-label');
+      $filterTrigger.focus();
+    }
+
+    $filterTrigger.click(function(){
       $('html').addClass('no-scroll side-filter-open');
       $('.body-cover').addClass('active');
+      $filterPanel.attr({'role': 'dialog', 'aria-modal': 'true', 'aria-label': '{{ heading_title }}'});
+      window.setTimeout(function(){ $filterPanel.find('.tf-filter-mobile-close').focus(); }, 50);
+    });
+
+    $filterPanel.children('.panel-heading').on('click.tfMobileFilter', function(event) {
+      if (window.innerWidth <= 991 && !$(event.target).closest('.tf-filter-mobile-close').length) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    });
+
+    $filterPanel.find('.tf-filter-mobile-close').on('click', function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      closeMobileFilter();
+    });
+
+    $(document).on('keydown.tfMobileFilter{{ module_class_id }}', function(event) {
+      if (event.key === 'Escape' && $('html').hasClass('side-filter-open')) {
+        closeMobileFilter();
+      }
     });
   });
 </script>

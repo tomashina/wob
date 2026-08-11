@@ -14,7 +14,7 @@
             </ul>
             {% if lang_curr_title  %}
             <div class="setting-ul">
-            <div class="setting-li dropdown-wrapper from-left lang-curr-trigger nowrap"><button type="button" class="wob-link-button" aria-label="{{ lang_curr_title }}">
+            <div class="setting-li dropdown-wrapper from-left lang-curr-trigger nowrap"><button type="button" class="wob-link-button" aria-label="{{ lang_curr_title|striptags }}">
             <span><img src="image/{{ lang }}.png" alt="{{ lang_curr_title }}" title="{{ lang_curr_title }}"> {{ lang_curr_title }}</span>
             </button>
             <div class="dropdown-content dropdown-right lang-curr-wrapper">

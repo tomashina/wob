@@ -1,8 +1,9 @@
 {% set product_name = product.name|replace({'  ': ' '})|replace({'  ': ' '}) %}
+{% set product_label = product_name ~ ' – ID ' ~ product.product_id %}
 <div class="item single-product">
     <div class="edge">
 <div class="image{% if columns == 'list' %} product-list-image{% endif %}">
-    <a href="{{ product.href }}">
+    <a href="{{ product.href }}" aria-label="{{ product_label }}">
     <img src="{{ product.thumb }}" alt="{{ product_name }}" width="500" height="500" loading="lazy" decoding="async" />
     {% if product.thumb2 %}
     <img class="thumb2" src="{{ product.thumb2 }}" alt="{{ product_name }}" width="500" height="500" loading="lazy" decoding="async" />
@@ -22,7 +23,7 @@
 {% else %}
 	{% set button_cart = default_button_cart %}
 {% endif %}
-<a class="img-overlay" href="{{ product.href }}" aria-label="{{ product_name }}"></a>
+<a class="img-overlay" href="{{ product.href }}" aria-label="{{ product_label }}"></a>
 
 <div class="icons-wrapper">
 <button type="button" class="icon is_wishlist" aria-label="{{ button_wishlist }}" data-toggle="tooltip" data-placement="{{ tooltip_align }}" data-title="{{ button_wishlist }}" onclick="wishlist.add('{{ product.product_id }}');"><i class="fa-light fa-heart" aria-hidden="true"></i></button>
@@ -31,7 +32,7 @@
 </div> <!-- .icons-wrapper -->
 </div><!-- .image ends -->
 <div class="caption">
-<a class="product-name" href="{{ product.href }}">{{ product_name }}</a>
+<a class="product-name" href="{{ product.href }}" aria-label="{{ product_label }}">{{ product_name }}</a>
 {% if product.rating %}      
     <div class="rating">
     <span class="rating_stars rating r{{ product.rating }}">
@@ -66,7 +67,7 @@
   <span class="btn {% if basel_list_style == '6' %}btn-contrast{% else %}btn-outline{% endif %}" aria-disabled="true"><i class="fa-light fa-bag-shopping" aria-hidden="true"></i> {{ button_cart }}</span>
     {% set button_cart = basel_text_out_of_stock %}
 {% else %}
- <button type="button" class="btn {% if basel_list_style == '6' %}btn-contrast{% else %}btn-outline{% endif %}" onclick="cart.add('{{ product.product_id }}', '{{ product.minimum }}');"><i class="fa-light fa-bag-shopping" aria-hidden="true"></i> {{ button_cart }}</button>
+ <button type="button" class="btn {% if basel_list_style == '6' %}btn-contrast{% else %}btn-outline{% endif %}" aria-label="{{ button_cart }} – {{ product_name }}" onclick="cart.add('{{ product.product_id }}', '{{ product.minimum }}');"><i class="fa-light fa-bag-shopping" aria-hidden="true"></i><span class="wob-cart-label">{{ button_cart }}</span></button>
 {% endif %}
 
 

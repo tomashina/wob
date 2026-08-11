@@ -10,6 +10,7 @@
 			url('../fonts/simple-line-icons.svg?az2gmn#simple-line-icons') format('svg');
 	font-weight: normal;
 	font-style: normal;
+	font-display: swap;
 }
 
 
@@ -449,7 +450,7 @@ select {
 	-moz-appearance: none;
 	text-overflow: '';
 	cursor:pointer;
-	background-image:url('../image/arrow-down.png') !important;
+	background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='m1 1 5 5 5-5' fill='none' stroke='%2300243d' stroke-width='1.5'/%3E%3C/svg%3E") !important;
 	background-repeat: no-repeat;
 	background-position:right 50%;
 	padding-right:25px !important;

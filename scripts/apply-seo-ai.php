@@ -7,6 +7,7 @@ if (PHP_SAPI !== 'cli') {
 
 $projectRoot = dirname(__DIR__);
 require_once $projectRoot . '/upload/config.php';
+$mainCategoryContent = require $projectRoot . '/scripts/main-category-seo-content.php';
 
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $database = new mysqli(DB_HOSTNAME, DB_USERNAME, DB_PASSWORD, DB_DATABASE, (int) DB_PORT);
@@ -368,6 +369,223 @@ function seoRepairCategoryMeta(mysqli $database, array $languages)
     return $updated;
 }
 
+function seoApplyMainCategoryContent(mysqli $database, array $languages, array $content)
+{
+    $categoryTable = DB_PREFIX . 'category';
+    $descriptionTable = DB_PREFIX . 'category_description';
+    $select = $database->prepare(
+        "SELECT cd.`name`, cd.`description`, cd.`meta_title`, cd.`meta_description` " .
+        "FROM `{$categoryTable}` c " .
+        "INNER JOIN `{$descriptionTable}` cd ON cd.`category_id` = c.`category_id` " .
+        "WHERE c.`category_id` = ? AND c.`parent_id` = 0 AND c.`status` = 1 AND cd.`language_id` = ? LIMIT 1"
+    );
+    $update = $database->prepare(
+        "UPDATE `{$descriptionTable}` SET `description` = ?, `meta_title` = ?, `meta_description` = ? " .
+        "WHERE `category_id` = ? AND `language_id` = ?"
+    );
+    $updated = 0;
+
+    foreach ($content as $categoryId => $translations) {
+        foreach ($languages as $languageId => $code) {
+            if (strpos($code, 'hr') === 0) {
+                $locale = 'hr';
+            } elseif (strpos($code, 'en') === 0) {
+                $locale = 'en';
+            } else {
+                continue;
+            }
+
+            if (empty($translations[$locale])) {
+                throw new RuntimeException('Missing ' . $locale . ' SEO content for main category ' . $categoryId . '.');
+            }
+
+            $values = $translations[$locale];
+            foreach (array('description', 'meta_title', 'meta_description') as $field) {
+                if (!isset($values[$field]) || trim($values[$field]) === '') {
+                    throw new RuntimeException('Missing ' . $field . ' for main category ' . $categoryId . ' (' . $locale . ').');
+                }
+            }
+
+            $titleLength = mb_strlen($values['meta_title'], 'UTF-8');
+            $metaDescriptionLength = mb_strlen($values['meta_description'], 'UTF-8');
+            if ($titleLength > 65 || $metaDescriptionLength > 165) {
+                throw new RuntimeException(
+                    'SEO text is too long for main category ' . $categoryId . ' (' . $locale . '): title ' .
+                    $titleLength . ', description ' . $metaDescriptionLength . '.'
+                );
+            }
+
+            $categoryId = (int) $categoryId;
+            $languageId = (int) $languageId;
+            $select->bind_param('ii', $categoryId, $languageId);
+            $select->execute();
+            $result = $select->get_result();
+            $current = $result->fetch_assoc();
+
+            if (!$current || trim($current['name']) === '') {
+                continue;
+            }
+
+            if (
+                $current['description'] === $values['description'] &&
+                $current['meta_title'] === $values['meta_title'] &&
+                $current['meta_description'] === $values['meta_description']
+            ) {
+                continue;
+            }
+
+            $update->bind_param(
+                'sssii',
+                $values['description'],
+                $values['meta_title'],
+                $values['meta_description'],
+                $categoryId,
+                $languageId
+            );
+            $update->execute();
+            $updated++;
+        }
+    }
+
+    return $updated;
+}
+
+function seoNaturalList(array $items, $croatian)
+{
+    $items = array_values(array_filter(array_map('trim', $items)));
+    $count = count($items);
+
+    if ($count < 2) {
+        return isset($items[0]) ? $items[0] : '';
+    }
+
+    $last = array_pop($items);
+    return implode(', ', $items) . ($croatian ? ' i ' : ' and ') . $last;
+}
+
+function seoApplySubcategoryContent(mysqli $database, array $languages)
+{
+    $categoryTable = DB_PREFIX . 'category';
+    $descriptionTable = DB_PREFIX . 'category_description';
+    $storeTable = DB_PREFIX . 'category_to_store';
+    $pathTable = DB_PREFIX . 'category_path';
+    $update = $database->prepare(
+        "UPDATE `{$descriptionTable}` SET `description` = ?, `meta_title` = ?, `meta_description` = ? " .
+        "WHERE `category_id` = ? AND `language_id` = ?"
+    );
+    $updated = 0;
+    $descriptionsCreated = 0;
+
+    foreach ($languages as $languageId => $code) {
+        if (strpos($code, 'hr') === 0) {
+            $croatian = true;
+        } elseif (strpos($code, 'en') === 0) {
+            $croatian = false;
+        } else {
+            continue;
+        }
+
+        $languageId = (int) $languageId;
+        $result = $database->query(
+            "SELECT c.`category_id`, cd.`name`, cd.`description`, cd.`meta_title`, cd.`meta_description`, " .
+            "parent_cd.`name` AS `parent_name`, COALESCE(root_cd.`name`, parent_cd.`name`) AS `root_name`, " .
+            "GROUP_CONCAT(DISTINCT child_cd.`name` ORDER BY child.`sort_order`, child_cd.`name` SEPARATOR '||') AS `children` " .
+            "FROM `{$categoryTable}` c " .
+            "INNER JOIN `{$storeTable}` c2s ON c2s.`category_id` = c.`category_id` AND c2s.`store_id` = 0 " .
+            "INNER JOIN `{$descriptionTable}` cd ON cd.`category_id` = c.`category_id` AND cd.`language_id` = {$languageId} " .
+            "INNER JOIN `{$categoryTable}` parent ON parent.`category_id` = c.`parent_id` " .
+            "INNER JOIN `{$descriptionTable}` parent_cd ON parent_cd.`category_id` = parent.`category_id` AND parent_cd.`language_id` = {$languageId} " .
+            "LEFT JOIN `{$pathTable}` root_path ON root_path.`category_id` = c.`category_id` AND root_path.`level` = 0 " .
+            "LEFT JOIN `{$descriptionTable}` root_cd ON root_cd.`category_id` = root_path.`path_id` AND root_cd.`language_id` = {$languageId} " .
+            "LEFT JOIN `{$categoryTable}` child ON child.`parent_id` = c.`category_id` AND child.`status` = 1 " .
+            "LEFT JOIN `{$storeTable}` child_store ON child_store.`category_id` = child.`category_id` AND child_store.`store_id` = 0 " .
+            "LEFT JOIN `{$descriptionTable}` child_cd ON child_cd.`category_id` = child.`category_id` AND child_cd.`language_id` = {$languageId} AND child_store.`category_id` IS NOT NULL " .
+            "WHERE c.`parent_id` <> 0 AND c.`status` = 1 AND TRIM(cd.`name`) <> '' " .
+            "GROUP BY c.`category_id`, cd.`name`, cd.`description`, cd.`meta_title`, cd.`meta_description`, parent_cd.`name`, root_cd.`name` " .
+            "ORDER BY c.`category_id`"
+        );
+
+        while ($row = $result->fetch_assoc()) {
+            $name = seoPlainText($row['name']);
+            $parentName = seoPlainText($row['parent_name']);
+            $rootName = seoPlainText($row['root_name']);
+            $titleWithParent = $name . ' – ' . $parentName . ' | World of Beauty';
+            $title = mb_strlen($titleWithParent, 'UTF-8') <= 65
+                ? $titleWithParent
+                : seoTruncate($name . ' | World of Beauty', 65);
+
+            if ($croatian) {
+                $metaDescription = 'Istražite ' . $name . ' iz ponude ' . $parentName .
+                    '. Usporedite profesionalnu opremu, proizvode i pribor za salon te odaberite rješenje za svoj način rada.';
+            } else {
+                $metaDescription = 'Explore ' . $name . ' in our ' . $parentName .
+                    ' range. Compare professional salon equipment, products and accessories to find the right solution for your work.';
+            }
+            $metaDescription = seoTruncate($metaDescription, 160);
+
+            $description = $row['description'];
+            if (seoPlainText($description) === '') {
+                $escapedName = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+                $escapedParent = htmlspecialchars($parentName, ENT_QUOTES, 'UTF-8');
+                $escapedRoot = htmlspecialchars($rootName, ENT_QUOTES, 'UTF-8');
+                $children = $row['children'] ? array_slice(explode('||', $row['children']), 0, 4) : array();
+
+                if ($croatian) {
+                    $firstParagraph = '<p>Pregledajte ponudu <strong>' . $escapedName . '</strong> u sklopu kategorije ' .
+                        $escapedParent . '. Na jednom mjestu pronađite profesionalne proizvode, opremu i pribor ' .
+                        'namijenjene salonima, studijima i stručnjacima iz područja ' . $escapedRoot . '.</p>';
+
+                    if ($children) {
+                        $escapedChildren = array_map(function ($child) {
+                            return htmlspecialchars(seoPlainText($child), ENT_QUOTES, 'UTF-8');
+                        }, $children);
+                        $secondParagraph = '<p>Ponuda obuhvaća ' . seoNaturalList($escapedChildren, true) .
+                            ' i povezana rješenja. Usporedite dostupne modele, značajke i namjenu kako biste lakše ' .
+                            'odabrali proizvod koji odgovara vašim uslugama, prostoru i načinu rada.</p>';
+                    } else {
+                        $secondParagraph = '<p>Usporedite dostupne modele, značajke i namjenu proizvoda kako biste lakše ' .
+                            'odabrali rješenje koje odgovara vašim uslugama, prostoru i načinu rada.</p>';
+                    }
+                } else {
+                    $firstParagraph = '<p>Browse <strong>' . $escapedName . '</strong> within our ' . $escapedParent .
+                        ' category. Find professional products, equipment and accessories for salons, studios and ' .
+                        'specialists working in ' . $escapedRoot . '.</p>';
+
+                    if ($children) {
+                        $escapedChildren = array_map(function ($child) {
+                            return htmlspecialchars(seoPlainText($child), ENT_QUOTES, 'UTF-8');
+                        }, $children);
+                        $secondParagraph = '<p>The range includes ' . seoNaturalList($escapedChildren, false) .
+                            ' and related solutions. Compare available models, features and intended uses to choose a ' .
+                            'product suited to your services, space and working style.</p>';
+                    } else {
+                        $secondParagraph = '<p>Compare available models, features and intended uses to choose a solution ' .
+                            'suited to your services, space and working style.</p>';
+                    }
+                }
+
+                $description = $firstParagraph . $secondParagraph;
+                $descriptionsCreated++;
+            }
+
+            if (
+                $description === $row['description'] &&
+                $title === $row['meta_title'] &&
+                $metaDescription === $row['meta_description']
+            ) {
+                continue;
+            }
+
+            $categoryId = (int) $row['category_id'];
+            $update->bind_param('sssii', $description, $title, $metaDescription, $categoryId, $languageId);
+            $update->execute();
+            $updated++;
+        }
+    }
+
+    return array('updated' => $updated, 'descriptions' => $descriptionsCreated);
+}
+
 function seoRepairProductMeta(mysqli $database, array $languages)
 {
     $table = DB_PREFIX . 'product_description';
@@ -489,6 +707,8 @@ try {
     seoConfigureStructuredData($database);
     $headingFixed = seoFixHomepageHeadingHierarchy($database);
     $imageOptimization = seoOptimizeHomepageImages($database);
+    $mainCategoryUpdates = seoApplyMainCategoryContent($database, $languages, $mainCategoryContent);
+    $subcategoryUpdates = seoApplySubcategoryContent($database, $languages);
     $categoryUpdates = seoRepairCategoryMeta($database, $languages);
     $productUpdates = seoRepairProductMeta($database, $languages);
     $database->commit();
@@ -498,6 +718,9 @@ try {
     echo 'UPDATED Open Graph, Twitter Cards and structured data settings' . PHP_EOL;
     echo ($headingFixed ? 'UPDATED' : 'CHECKED') . ' homepage heading hierarchy' . PHP_EOL;
     echo 'OPTIMIZED ' . $imageOptimization['images'] . ' homepage images in ' . $imageOptimization['modules'] . ' modules' . PHP_EOL;
+    echo 'UPDATED ' . $mainCategoryUpdates . ' curated main category content records' . PHP_EOL;
+    echo 'UPDATED ' . $subcategoryUpdates['updated'] . ' subcategory SEO records and CREATED ' .
+        $subcategoryUpdates['descriptions'] . ' descriptions' . PHP_EOL;
     echo 'REPAIRED ' . $categoryUpdates . ' category metadata records' . PHP_EOL;
     echo 'REPAIRED ' . $productUpdates . ' product metadata records' . PHP_EOL;
 

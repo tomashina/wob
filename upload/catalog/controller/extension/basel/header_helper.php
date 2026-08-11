@@ -41,6 +41,19 @@
 	$data['promo_message'] = '';
 	if (isset($promo_message[$lang_id]))
 	$data['promo_message'] = html_entity_decode($promo_message[$lang_id], ENT_QUOTES, 'UTF-8');
+	$is_croatian = strpos(strtolower((string)$this->config->get('config_language')), 'hr') === 0;
+	$email_label = $is_croatian ? 'E-pošta' : 'Email';
+	$phone_label = $is_croatian ? 'Telefon' : 'Phone';
+	$data['promo_message'] = preg_replace(
+		'/<a\s+href="mailto:([^"]+)"/i',
+		'<a aria-label="' . $email_label . ': $1" href="mailto:$1"',
+		$data['promo_message']
+	);
+	$data['promo_message'] = preg_replace(
+		'/<a\s+href="tel:([^"]+)"/i',
+		'<a aria-label="' . $phone_label . ': $1" href="tel:$1"',
+		$data['promo_message']
+	);
 	$data['promo_message2'] = '';
 	if (isset($promo_message2[$lang_id]))
 	$data['promo_message2'] = html_entity_decode($promo_message2[$lang_id], ENT_QUOTES, 'UTF-8');
@@ -59,8 +72,19 @@
 	function sortlinks($a, $b) {return strcmp($a['sort'], $b['sort']);} usort($basel_links, 'sortlinks');		
 		foreach ($basel_links as $basel_link) {
 			if(isset($basel_link['text'][$lang_id])) {
+				$link_label = trim(strip_tags(html_entity_decode($basel_link['text'][$lang_id], ENT_QUOTES, 'UTF-8')));
+				if ($link_label === '') {
+					if (stripos($basel_link['target'], 'facebook.com') !== false) {
+						$link_label = 'Facebook';
+					} elseif (stripos($basel_link['target'], 'instagram.com') !== false) {
+						$link_label = 'Instagram';
+					} else {
+						$link_label = $is_croatian ? 'Vanjska poveznica' : 'External link';
+					}
+				}
 			$data['basel_links'][] = array(
 				'text' => html_entity_decode($basel_link['text'][$lang_id], ENT_QUOTES, 'UTF-8'),
+				'label' => $link_label,
 				'target' => $basel_link['target'],
 				'sort' => $basel_link['sort']
 			);

@@ -121,25 +121,25 @@ isBackground: false
 {% if column.type == "tm" %}
 <script>
 <!--
-$('.grid-holder.tm_module').slick({
+$('#mod{{ module }} .grid-holder.tm_module').slick({
   adaptiveHeight: false,
   dots: true,
   {% if direction == 'rtl' %}
   rtl: true,
   {% endif %}
   arrows: false,
-  respondTo: 'min',
+  respondTo: 'window',
   autoplay: true,
   autoplaySpeed: 3000, // brzina izmjene slajdova
   infinite: true, // omogućuje beskonačno vrtjenje u krug
   {% if column.data7 == '3' %}
   slidesToShow: 3,
   slidesToScroll: 3,
-  responsive: [{ breakpoint: 960, settings: { slidesToShow: 1, slidesToScroll: 1 } }],
+  responsive: [{ breakpoint: 992, settings: { slidesToShow: 1, slidesToScroll: 1, fade: true } }],
   {% elseif column.data7 == '2' %}
   slidesToShow: 2,
   slidesToScroll: 2,
-  responsive: [{ breakpoint: 960, settings: { slidesToShow: 1, slidesToScroll: 1 } }],
+  responsive: [{ breakpoint: 992, settings: { slidesToShow: 1, slidesToScroll: 1, fade: true } }],
   {% elseif column.data7 == '1' %}
   slidesToShow: 1,
   slidesToScroll: 1,

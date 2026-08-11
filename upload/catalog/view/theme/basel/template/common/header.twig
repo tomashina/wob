@@ -105,7 +105,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <!-- Main stylesheet -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;family=Outfit:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;family=Outfit:wght@500;600;700&amp;display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;family=Outfit:wght@500;600;700&amp;display=swap" rel="stylesheet"></noscript>
 <link href="catalog/view/theme/basel/stylesheet/stylesheet.css" rel="stylesheet">
 <link href="catalog/view/theme/basel/stylesheet/fontawesome-pro/fontawesome.min.css?v=7.3.1" rel="stylesheet">
 <link href="catalog/view/theme/basel/stylesheet/fontawesome-pro/light.min.css?v=7.3.1" rel="stylesheet">
@@ -119,9 +120,14 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <style id="basel-mandatory-css">{{ basel_mandatory_css }}</style>
 <!-- Plugin Stylesheet(s) -->
 {% for style in styles %}
+{% if 'fonts.googleapis.com' in style.href %}
+<link href="{{ style.href }}" rel="stylesheet" media="print" onload="this.media='all'" />
+<noscript><link href="{{ style.href }}" rel="stylesheet" /></noscript>
+{% else %}
 <link href="{{ style.href }}" rel="{{ style.rel }}" media="{{ style.media }}" />
+{% endif %}
 {% endfor %}
-<link href="catalog/view/theme/basel/stylesheet/wob-optimization.css?v=4.10" rel="stylesheet">
+<link href="catalog/view/theme/basel/stylesheet/wob-optimization.css?v=4.18" rel="stylesheet">
 {% if direction == 'rtl' %}
 <link href="catalog/view/theme/basel/stylesheet/rtl.css" rel="stylesheet">
 {% endif %}
@@ -139,6 +145,12 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <link href="{{ link.href }}" rel="{{ link.rel }}" />
 {% endif %}
 {% endfor %}
+<link rel="icon" href="catalog/view/theme/basel/image/wob-mark.svg" type="image/svg+xml" sizes="any">
+<link rel="icon" href="catalog/view/theme/basel/image/wob-favicon-48.png" type="image/png" sizes="48x48">
+<link rel="apple-touch-icon" href="catalog/view/theme/basel/image/wob-apple-touch-icon.png" sizes="180x180">
+<link rel="mask-icon" href="catalog/view/theme/basel/image/wob-mark.svg" color="#231f20">
+<link rel="manifest" href="site.webmanifest">
+<meta name="apple-mobile-web-app-title" content="World of Beauty">
 <!-- Analytic tools -->
 {% for analytic in analytics %}
 {{ analytic }}

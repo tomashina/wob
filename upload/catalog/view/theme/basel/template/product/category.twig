@@ -30,10 +30,6 @@
       
       {% endif %}
 
-       {% if description %}
-    {{ description }}
-        {% endif %}
-      
      {% if categories and category_subs_status %}
                 <h2 class="lined-title hidden-xs"><span>{{ text_refine }}</span></h2>
                 <div class="grid-holder categories category-refinement-grid mb-3">
@@ -72,6 +68,7 @@
           
           <div class="table-cell nowrap text-right">
           <div class="sort-select">
+          <i class="fa-light fa-arrow-down-a-z wob-sort-icon" aria-hidden="true"></i>
           <span class="hidden-xs">{{ text_sort }}</span>
           <select id="input-sort" aria-label="{{ text_sort }}" class="form-control input-sm inline" onchange="location = this.value;">
             {% for sorts in sorts %}
@@ -105,6 +102,12 @@
       
       {% if not products %}
       <p>{{ text_empty }}</p>
+      {% endif %}
+
+      {% if description %}
+      <div class="category-description">
+        {{ description }}
+      </div>
       {% endif %}
       
       {{ content_bottom }}</div>

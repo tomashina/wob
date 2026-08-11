@@ -18,3 +18,4 @@ $_['text_reset'] = 'Očisti';
 $_['text_reset_all'] = 'Očisti sve';
 $_['text_see_more'] = 'Prikaži više';
 $_['text_see_less'] = 'Prikaži manje';
+$_['text_close_filter'] = 'Zatvori filter';
