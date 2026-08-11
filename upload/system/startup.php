@@ -67,9 +67,48 @@ function modification($filename) {
 }
 
 // Autoloader
-if (defined('DIR_STORAGE') && is_file(DIR_STORAGE . 'vendor/autoload.php')) {
-	require_once(DIR_STORAGE . 'vendor/autoload.php');
-    require_once(DIR_CONFIG . 'eloquent.php');
+$bundled_vendor_dir = DIR_SYSTEM . 'storage/vendor/';
+$external_vendor_autoload = defined('DIR_STORAGE') ? DIR_STORAGE . 'vendor/autoload.php' : '';
+
+if ($external_vendor_autoload && is_file($external_vendor_autoload)) {
+	$vendor_loader = require_once($external_vendor_autoload);
+	$bundled_composer_dir = $bundled_vendor_dir . 'composer/';
+
+	// Production storage can contain only application-specific packages. Merge the
+	// bundled OpenCart dependencies into the active loader without loading a second
+	// Composer runtime (both runtimes may share the same generated class name).
+	if (is_object($vendor_loader)) {
+		$namespace_map = $bundled_composer_dir . 'autoload_namespaces.php';
+		$psr4_map = $bundled_composer_dir . 'autoload_psr4.php';
+		$class_map = $bundled_composer_dir . 'autoload_classmap.php';
+		$files_map = $bundled_composer_dir . 'autoload_files.php';
+
+		if (is_file($namespace_map) && method_exists($vendor_loader, 'add')) {
+			foreach ((array)require($namespace_map) as $prefix => $paths) {
+				$vendor_loader->add($prefix, $paths, true);
+			}
+		}
+
+		if (is_file($psr4_map) && method_exists($vendor_loader, 'addPsr4')) {
+			foreach ((array)require($psr4_map) as $prefix => $paths) {
+				$vendor_loader->addPsr4($prefix, $paths, true);
+			}
+		}
+
+		if (is_file($class_map) && method_exists($vendor_loader, 'addClassMap')) {
+			$vendor_loader->addClassMap((array)require($class_map));
+		}
+
+		if (is_file($files_map)) {
+			foreach ((array)require($files_map) as $file) {
+				require_once($file);
+			}
+		}
+	}
+
+	require_once(DIR_CONFIG . 'eloquent.php');
+} elseif (is_file($bundled_vendor_dir . 'autoload.php')) {
+	require_once($bundled_vendor_dir . 'autoload.php');
 }
 
 function library($class) {
