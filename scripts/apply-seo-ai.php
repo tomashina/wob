@@ -174,6 +174,47 @@ function seoConfigureStructuredData(mysqli $database)
     }
 }
 
+function seoOptimizeProductQuickEdit(mysqli $database)
+{
+    $table = DB_PREFIX . 'setting';
+    $installed = $database->query(
+        "SELECT 1 FROM `{$table}` WHERE `store_id` = 0 AND `code` = 'module_product_quick_edit' " .
+        "AND `key` = 'module_product_quick_edit_installed' AND `value` = '1' LIMIT 1"
+    );
+
+    if (!$installed->num_rows) {
+        return 0;
+    }
+
+    // Loading 100 image/category rows at once makes the Quick Edit screen
+    // needlessly expensive. The extension already supports both cache layers.
+    $values = array(
+        'module_product_quick_edit_items_per_page' => '25',
+        'module_product_quick_edit_server_side_caching' => '1',
+        'module_product_quick_edit_client_side_caching' => '1'
+    );
+    $select = $database->prepare(
+        "SELECT `value` FROM `{$table}` WHERE `store_id` = 0 AND `code` = 'module_product_quick_edit' AND `key` = ? LIMIT 1"
+    );
+    $updated = 0;
+
+    foreach ($values as $key => $value) {
+        $select->bind_param('s', $key);
+        $select->execute();
+        $select->bind_result($currentValue);
+        $found = $select->fetch();
+        $select->free_result();
+
+        if (!$found || (string)$currentValue !== $value) {
+            seoUpsertSetting($database, 'module_product_quick_edit', $key, $value);
+            $updated++;
+        }
+    }
+
+    $select->close();
+    return $updated;
+}
+
 function seoFixHomepageHeadingHierarchy(mysqli $database)
 {
     $table = DB_PREFIX . 'module';
@@ -780,6 +821,7 @@ try {
     ));
     seoConfigureSearchMeta($database, $languages);
     seoConfigureStructuredData($database);
+    $quickEditUpdates = seoOptimizeProductQuickEdit($database);
     $headingFixed = seoFixHomepageHeadingHierarchy($database);
     $imageOptimization = seoOptimizeHomepageImages($database);
     $mainCategoryUpdates = seoApplyMainCategoryContent($database, $languages, $mainCategoryContent);
@@ -791,6 +833,7 @@ try {
     echo 'UPDATED search and pagination metadata' . PHP_EOL;
     echo 'ENSURED ' . $routeAliases . ' route aliases' . PHP_EOL;
     echo 'UPDATED Open Graph, Twitter Cards and structured data settings' . PHP_EOL;
+    echo 'OPTIMIZED ' . $quickEditUpdates . ' Product Quick Edit performance settings' . PHP_EOL;
     echo ($headingFixed ? 'UPDATED' : 'CHECKED') . ' homepage heading hierarchy' . PHP_EOL;
     echo 'OPTIMIZED ' . $imageOptimization['images'] . ' homepage images in ' . $imageOptimization['modules'] . ' modules' . PHP_EOL;
     echo 'UPDATED ' . $mainCategoryUpdates . ' curated main category content records' . PHP_EOL;

@@ -299,8 +299,18 @@ class ModelExtensionModuleProductQuickEdit extends Model {
 	public function getProducts($data = array()) {
 		$columns = isset($data['columns']) ? $data['columns'] : array();
 		$actions = isset($data['actions']) ? $data['actions'] : array();
+		$filtered_count_required = !empty($data['search']);
 
-		$sql = "SELECT SQL_CALC_FOUND_ROWS pd.*, p.*";
+		foreach ((array)(isset($data['filter']) ? $data['filter'] : array()) as $filter_value) {
+			if ((is_array($filter_value) && $filter_value) || (!is_array($filter_value) && $filter_value !== '' && $filter_value !== null)) {
+				$filtered_count_required = true;
+				break;
+			}
+		}
+
+		// Product descriptions can contain hundreds of KB of HTML and are loaded
+		// separately by the description editor. Keep the list query lean.
+		$sql = "SELECT " . ($filtered_count_required ? "SQL_CALC_FOUND_ROWS " : "") . "p.*, pd.name, pd.tag";
 
 		$sql .= ", (SELECT price FROM " . DB_PREFIX . "product_special WHERE product_id = p.product_id AND (date_start = '0000-00-00' OR date_start < NOW() AND (date_end = '0000-00-00' OR date_end > NOW())) ORDER BY priority, price LIMIT 1) AS special_price";
 
@@ -782,8 +792,14 @@ class ModelExtensionModuleProductQuickEdit extends Model {
 		if ($product_data === false || is_null($product_data)) {
 			$query = $this->db->query($sql);
 
-			$count = $this->db->query("SELECT FOUND_ROWS() AS count");
-			$this->productCount = ($count->num_rows) ? (int)$count->row['count'] : 0;
+			if ($filtered_count_required) {
+				$count = $this->db->query("SELECT FOUND_ROWS() AS count");
+				$this->productCount = ($count->num_rows) ? (int)$count->row['count'] : 0;
+			} else {
+				// SQL_CALC_FOUND_ROWS forces MySQL to process every grouped product,
+				// even when the admin only needs the first page.
+				$this->productCount = $this->getTotalProducts();
+			}
 
 			$products = array();
 

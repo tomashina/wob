@@ -3258,11 +3258,12 @@ body[class*="information-information-"] .information-copy blockquote {
   }
 }
 
-/* Keep the two homepage funding offers on one consistent heading system. */
+/* Keep every homepage section on one consistent heading system. */
+.common-home .widget-title .main-title,
 .common-home #mod2 h2.homeb,
 .common-home #mod3 .dark h3.contrast-font {
   font-family: "Outfit", "Manrope", sans-serif !important;
-  font-weight: 600 !important;
+  font-weight: 700 !important;
   letter-spacing: -.015em;
 }
 
@@ -3306,7 +3307,7 @@ body[class*="information-information-"] .information-copy blockquote {
   .common-home #mod3 .dark h3.contrast-font {
     font-family: "Outfit", "Manrope", sans-serif !important;
     font-size: 24px !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
     letter-spacing: -.015em;
     line-height: 1.28 !important;
   }
@@ -3316,8 +3317,22 @@ body[class*="information-information-"] .information-copy blockquote {
   }
 
   .common-home .grid-holder.slick-slider > .slick-list {
+    width: 100%;
+    max-width: 100%;
     padding-right: 0 !important;
     padding-left: 0 !important;
+  }
+
+  /* The theme's 1px grid padding makes two rounded Slick slides wider than
+     the available list on 390px iPhones, which causes a sideways jump. */
+  .common-home .grid-holder.slick-slider {
+    width: 100%;
+    max-width: 100%;
+    padding-left: 0 !important;
+  }
+
+  .common-home .grid-holder[class*="prod_module"].slick-slider .slick-track {
+    will-change: transform;
   }
 
   .common-home .grid-holder.slick-slider .slick-dots {
@@ -3359,7 +3374,7 @@ body[class*="information-information-"] .information-copy blockquote {
   .common-home #mod3 .dark h3.contrast-font {
     font-family: "Outfit", "Manrope", sans-serif !important;
     font-size: 22px !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
     letter-spacing: -.015em;
     line-height: 1.28 !important;
   }
