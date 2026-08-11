@@ -662,6 +662,14 @@ function seoRefreshRuntimeCaches(mysqli $database)
         throw new RuntimeException('cURL is required for --refresh.');
     }
 
+    if (!is_dir(DIR_MODIFICATION) && !mkdir(DIR_MODIFICATION, 0777, true) && !is_dir(DIR_MODIFICATION)) {
+        throw new RuntimeException('Unable to create the OCMOD directory: ' . DIR_MODIFICATION);
+    }
+
+    if (!is_writable(DIR_MODIFICATION)) {
+        throw new RuntimeException('The OCMOD directory is not writable: ' . DIR_MODIFICATION);
+    }
+
     $userResult = $database->query(
         "SELECT `user_id` FROM `" . DB_PREFIX . "user` WHERE `status` = 1 AND `user_group_id` = 1 ORDER BY `user_id` LIMIT 1"
     );

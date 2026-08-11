@@ -59,6 +59,12 @@ class ControllerMarketplaceModification extends Controller {
 		$this->load->model('setting/modification');
 
 		if ($this->validate()) {
+			if (!is_dir(DIR_MODIFICATION) && !@mkdir(DIR_MODIFICATION, 0777, true) && !is_dir(DIR_MODIFICATION)) {
+				$this->error['warning'] = 'Unable to create the modification directory: ' . DIR_MODIFICATION;
+				$this->getList();
+				return;
+			}
+
 			// Just before files are deleted, if config settings say maintenance mode is off then turn it on
 			$maintenance = $this->config->get('config_maintenance');
 
@@ -415,10 +421,22 @@ class ControllerMarketplaceModification extends Controller {
 						}
 					}
 
-					$handle = fopen(DIR_MODIFICATION . $key, 'w');
+					$target = DIR_MODIFICATION . $key;
+					$target_directory = dirname($target);
+
+					if (!is_dir($target_directory) && !@mkdir($target_directory, 0777, true) && !is_dir($target_directory)) {
+						$log[] = 'ERROR: Unable to create directory ' . $target_directory;
+						continue;
+					}
+
+					$handle = @fopen($target, 'w');
+
+					if ($handle === false) {
+						$log[] = 'ERROR: Unable to write ' . $target;
+						continue;
+					}
 
 					fwrite($handle, $value);
-
 					fclose($handle);
 				}
 			}
