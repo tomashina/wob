@@ -419,8 +419,30 @@ function seoApplyMainCategoryContent(mysqli $database, array $languages, array $
             $languageId = (int) $languageId;
             $select->bind_param('ii', $categoryId, $languageId);
             $select->execute();
-            $result = $select->get_result();
-            $current = $result->fetch_assoc();
+            $select->store_result();
+
+            $current = null;
+            $currentName = null;
+            $currentDescription = null;
+            $currentMetaTitle = null;
+            $currentMetaDescription = null;
+            $select->bind_result(
+                $currentName,
+                $currentDescription,
+                $currentMetaTitle,
+                $currentMetaDescription
+            );
+
+            if ($select->fetch()) {
+                $current = array(
+                    'name' => $currentName,
+                    'description' => $currentDescription,
+                    'meta_title' => $currentMetaTitle,
+                    'meta_description' => $currentMetaDescription,
+                );
+            }
+
+            $select->free_result();
 
             if (!$current || trim($current['name']) === '') {
                 continue;
