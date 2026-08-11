@@ -3,14 +3,13 @@ class ModelToolImage extends Model {
 	public function resize($filename, $width, $height) {
 		$extension = pathinfo($filename, PATHINFO_EXTENSION);
 
-		// Local development can use the already generated image cache from the live store.
+		// Cached variants are not guaranteed to exist for every local dimension.
 		if (defined('REMOTE_IMAGE_URL') && !is_file(DIR_IMAGE . $filename)) {
 			if (!$filename || strpos(str_replace('\\', '/', $filename), '../') !== false || substr($filename, 0, 1) === '/') {
 				return;
 			}
 
-			$image_new = 'cache/' . utf8_substr($filename, 0, utf8_strrpos($filename, '.')) . '-' . (int)$width . 'x' . (int)$height . '.' . $extension;
-			return rtrim(REMOTE_IMAGE_URL, '/') . '/' . str_replace(' ', '%20', $image_new);
+			return rtrim(REMOTE_IMAGE_URL, '/') . '/' . str_replace(' ', '%20', $filename);
 		}
 
 		$output_extension = function_exists('imagewebp') ? 'webp' : $extension;
