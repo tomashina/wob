@@ -10,7 +10,19 @@ class ControllerStartupSass extends Controller {
 
 				$stylesheet = DIR_APPLICATION . 'view/stylesheet/' . $filename . '.css';
 
-				if (!is_file($stylesheet) || !$this->config->get('developer_sass')) {
+				if (!is_file($stylesheet) || $this->config->get('developer_sass')) {
+					if (!class_exists('ScssPhp\\ScssPhp\\Compiler')) {
+						$autoload = DIR_SYSTEM . 'storage/vendor/autoload.php';
+
+						if (is_file($autoload)) {
+							require_once($autoload);
+						}
+					}
+
+					if (!class_exists('ScssPhp\\ScssPhp\\Compiler')) {
+						continue;
+					}
+
 					$scss = new \ScssPhp\ScssPhp\Compiler();
 					$scss->setImportPaths(DIR_APPLICATION . 'view/stylesheet/');
 
