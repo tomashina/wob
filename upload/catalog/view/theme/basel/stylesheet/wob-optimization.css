@@ -3451,6 +3451,300 @@ body[class*="information-information-"] .information-copy blockquote {
     font-size: 14px !important;
     line-height: 20px !important;
   }
+
+  /* Keep product carousel actions light and legible on compact cards. */
+  .single-product .price-wrapper > .btn {
+    color: #231f20 !important;
+    background: #fff !important;
+    border: 1px solid #231f20 !important;
+    box-shadow: none !important;
+  }
+
+  .single-product .price-wrapper > .btn i,
+  .single-product .price-wrapper > .btn [class^="fa-"],
+  .single-product .price-wrapper > .btn [class*=" fa-"] {
+    color: #231f20 !important;
+  }
+
+  .single-product .price-wrapper > .btn:hover,
+  .single-product .price-wrapper > .btn:focus-visible {
+    color: #231f20 !important;
+    background: #fbfaf6 !important;
+    border-color: #231f20 !important;
+  }
+}
+
+/* Homepage salon gateway: a static Basel Content replacement for LayerSlider. */
+.wob-salon-gateway {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.wob-salon-card {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 430px;
+  grid-template-columns: minmax(0, 52%) minmax(0, 48%);
+  overflow: hidden;
+  color: #00243d !important;
+  background: linear-gradient(135deg, #fbfaf7 0%, #f5f2e9 100%);
+  border: 1px solid #e6dfcc;
+  border-radius: 3px;
+  isolation: isolate;
+  transition: box-shadow .25s ease;
+}
+
+.wob-salon-card:hover {
+  color: #00243d !important;
+  border-color: #ad974f;
+  box-shadow: 0 10px 26px rgba(173, 151, 79, .16);
+  transform: none;
+}
+
+.wob-salon-card:focus-visible {
+  color: #00243d !important;
+  border-color: #e6dfcc;
+  outline: 2px solid #ad974f;
+  outline-offset: 3px;
+}
+
+.wob-salon-card__content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-width: 0;
+  padding: 50px 0 34px 40px;
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.wob-salon-card__title {
+  max-width: 310px;
+  margin: 0;
+  color: #00243d !important;
+  font-family: "Outfit", "Manrope", sans-serif !important;
+  font-size: clamp(28px, 1.75vw, 32px) !important;
+  font-weight: 700 !important;
+  letter-spacing: -.025em;
+  line-height: 1.13 !important;
+}
+
+.wob-salon-card__title-line {
+  white-space: nowrap;
+}
+
+.wob-salon-card__rule {
+  display: block;
+  width: 54px;
+  height: 3px;
+  margin: 24px 0 22px;
+  background: #ad974f;
+}
+
+.wob-salon-card__description {
+  max-width: 250px;
+  margin: 0 0 30px;
+  color: #324a5b;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.wob-salon-card__cta {
+  display: inline-flex;
+  min-height: 46px;
+  margin-top: auto;
+  padding: 12px 20px;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: #ad974f;
+  border: 1px solid #ad974f;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .035em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  transition: color .2s ease, background-color .2s ease, border-color .2s ease;
+}
+
+.wob-salon-card:hover .wob-salon-card__cta,
+.wob-salon-card:focus-visible .wob-salon-card__cta {
+  color: #fff;
+  background: #ad974f;
+  border-color: #ad974f;
+}
+
+.wob-salon-card__visual {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-width: 0;
+  padding: 26px 10px 12px 0;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.wob-salon-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  transition: transform .35s ease;
+}
+
+.wob-salon-card--beauty .wob-salon-card__image {
+  width: 125%;
+  max-width: none;
+  height: 125%;
+  flex: 0 0 auto;
+  transform: translateX(-14%);
+}
+
+@media (max-width: 1199px) {
+  .wob-salon-gateway {
+    gap: 18px;
+  }
+
+  .wob-salon-card {
+    min-height: 410px;
+    grid-template-columns: minmax(0, 52%) minmax(0, 48%);
+  }
+
+  .wob-salon-card__content {
+    padding: 46px 0 32px 32px;
+  }
+
+  .wob-salon-card__title {
+    font-size: 30px !important;
+  }
+
+  .wob-salon-card__description {
+    max-width: 220px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .wob-salon-gateway {
+    grid-template-columns: 1fr;
+  }
+
+  .wob-salon-card {
+    min-height: 390px;
+    grid-template-columns: minmax(0, 50%) minmax(0, 50%);
+  }
+
+  .wob-salon-card__content {
+    padding: 44px 0 30px 38px;
+  }
+
+  .wob-salon-card__title {
+    max-width: 360px;
+    font-size: 32px !important;
+  }
+
+  .wob-salon-card__description {
+    max-width: 300px;
+  }
+}
+
+@media (max-width: 600px) {
+  .wob-salon-gateway {
+    gap: 14px;
+  }
+
+  .wob-salon-card {
+    display: block;
+    min-height: 420px;
+  }
+
+  .wob-salon-card__content {
+    min-height: 420px;
+    padding: 26px 22px 24px;
+  }
+
+  .wob-salon-card__title {
+    max-width: 100%;
+    font-size: 26px !important;
+    line-height: 1.12 !important;
+  }
+
+  .wob-salon-card__rule {
+    width: 46px;
+    margin: 16px 0 14px;
+  }
+
+  .wob-salon-card__description {
+    max-width: 58%;
+    margin-bottom: 18px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .wob-salon-card__cta {
+    min-height: 44px;
+    max-width: 60%;
+    margin-top: auto;
+    padding: 11px 18px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .wob-salon-card__visual {
+    position: absolute;
+    right: 0;
+    bottom: 10px;
+    width: 52%;
+    height: 60%;
+    min-height: 0;
+    padding: 0 10px 0 0;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .wob-salon-card__image {
+    width: auto;
+    max-width: 100%;
+    height: 100%;
+    object-position: center bottom;
+  }
+
+  .wob-salon-card--beauty .wob-salon-card__visual {
+    right: -2%;
+    width: 58%;
+    height: 62%;
+  }
+
+  .wob-salon-card--beauty .wob-salon-card__image {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    transform: none;
+  }
+}
+
+@media (max-width: 380px) {
+  .wob-salon-card {
+    min-height: 400px;
+  }
+
+  .wob-salon-card__content {
+    min-height: 400px;
+    padding: 22px 18px 20px;
+  }
+
+  .wob-salon-card__title {
+    font-size: 24px !important;
+  }
+
+  .wob-salon-card__cta {
+    width: auto;
+    max-width: 62%;
+    padding-right: 14px;
+    padding-left: 14px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

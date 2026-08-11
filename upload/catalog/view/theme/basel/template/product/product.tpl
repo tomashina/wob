@@ -648,18 +648,27 @@ $('.grid-holder.related').slick({
 prevArrow: "<a class=\"arrow-left icon-arrow-left\"></a>",
 nextArrow: "<a class=\"arrow-right icon-arrow-right\"></a>",
 dots:true,
+swipe:true,
+draggable:true,
+speed:420,
+cssEase:'cubic-bezier(0.22, 1, 0.36, 1)',
+useCSS:true,
+useTransform:true,
+waitForAnimate:true,
+swipeToSlide:false,
+touchThreshold:8,
 <?php if ($direction == 'rtl') { ?>
 rtl: true,
 <?php } ?>
 respondTo:'min',
 <?php if ($basel_rel_prod_grid == '5') { ?>
-slidesToShow:5,slidesToScroll:5,responsive:[{breakpoint:1100,settings:{slidesToShow:4,slidesToScroll:4}},{breakpoint:960,settings:{slidesToShow:3,slidesToScroll:3}},{breakpoint:600,settings:{slidesToShow:2,slidesToScroll:2}},
+slidesToShow:5,slidesToScroll:1,responsive:[{breakpoint:1100,settings:{slidesToShow:4,slidesToScroll:1}},{breakpoint:960,settings:{slidesToShow:3,slidesToScroll:1}},{breakpoint:600,settings:{slidesToShow:2,slidesToScroll:1}},
 <?php } elseif ($basel_rel_prod_grid == '4') { ?>
-slidesToShow:4,slidesToScroll:4,responsive:[{breakpoint:960,settings:{slidesToShow:3,slidesToScroll:3}},{breakpoint:600,settings:{slidesToShow:2,slidesToScroll:2}},
+slidesToShow:4,slidesToScroll:1,responsive:[{breakpoint:960,settings:{slidesToShow:3,slidesToScroll:1}},{breakpoint:600,settings:{slidesToShow:2,slidesToScroll:1}},
 <?php } elseif ($basel_rel_prod_grid == '3') { ?>
-slidesToShow:3,slidesToScroll:3,responsive:[{breakpoint:600,settings:{slidesToShow:2,slidesToScroll:2}},
+slidesToShow:3,slidesToScroll:1,responsive:[{breakpoint:600,settings:{slidesToShow:2,slidesToScroll:1}},
 <?php } elseif ($basel_rel_prod_grid == '2') { ?>
-slidesToShow:2,slidesToScroll:2,responsive:[
+slidesToShow:2,slidesToScroll:1,responsive:[
 <?php } ?>
 <?php if ($items_mobile_fw) { ?>
 {breakpoint:320,settings:{slidesToShow:1,slidesToScroll:1}}

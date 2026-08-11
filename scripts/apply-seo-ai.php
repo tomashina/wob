@@ -791,6 +791,36 @@ function seoRefreshRuntimeCaches(mysqli $database)
                 if (!is_file($loader) || filesize($loader) === 0) {
                     throw new RuntimeException('OCMOD refresh did not rebuild system/engine/loader.php.');
                 }
+
+                // Some local OpenCart builds keep the generated header template even
+                // after a successful modification refresh. Keep only our stylesheet
+                // cache-buster in sync without replacing other OCMOD changes.
+                $sourceHeader = DIR_APPLICATION . 'view/theme/basel/template/common/header.twig';
+                $modifiedHeader = rtrim(DIR_MODIFICATION, '/\\') . '/catalog/view/theme/basel/template/common/header.twig';
+
+                if (is_file($sourceHeader) && is_file($modifiedHeader)) {
+                    $sourceContents = file_get_contents($sourceHeader);
+                    $modifiedContents = file_get_contents($modifiedHeader);
+
+                    if (
+                        $sourceContents !== false &&
+                        $modifiedContents !== false &&
+                        preg_match('/wob-optimization\\.css\\?v=([0-9.]+)/', $sourceContents, $versionMatch)
+                    ) {
+                        $synchronizedContents = preg_replace(
+                            '/wob-optimization\\.css\\?v=[0-9.]+/',
+                            'wob-optimization.css?v=' . $versionMatch[1],
+                            $modifiedContents,
+                            1
+                        );
+
+                        if ($synchronizedContents !== null && $synchronizedContents !== $modifiedContents) {
+                            if (file_put_contents($modifiedHeader, $synchronizedContents) === false) {
+                                throw new RuntimeException('Unable to synchronize the optimization stylesheet version.');
+                            }
+                        }
+                    }
+                }
             } else {
                 $json = json_decode($responseText, true);
 

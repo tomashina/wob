@@ -16,6 +16,7 @@ cd /home/dmb/worldofbeauty.hr
 git restore --source=HEAD --staged --worktree storagedijana/storagedijana/modification
 git pull --ff-only origin main
 php scripts/apply-tracking-consent.php
+php scripts/apply-home-salon-gateway.php
 php scripts/apply-seo-ai.php --refresh
 git status --short
 ```
@@ -31,6 +32,7 @@ Nakon prvog deploya generirana OCMOD mapa više nije pod Gitom, pa je dovoljno:
 cd /home/dmb/worldofbeauty.hr
 git pull --ff-only origin main
 php scripts/apply-tracking-consent.php
+php scripts/apply-home-salon-gateway.php
 php scripts/apply-seo-ai.php --refresh
 ```
 

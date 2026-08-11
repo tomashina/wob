@@ -136,19 +136,27 @@ dots:true,
 <?php } ?>
 respondTo:'min',
 rows:<?php echo $rows; ?>,
+speed:420,
+cssEase:'cubic-bezier(0.22, 1, 0.36, 1)',
+useCSS:true,
+useTransform:true,
+waitForAnimate:true,
+swipe:true,
+swipeToSlide:false,
+touchThreshold:8,
 <?php if ($columns == '5') { ?>
-slidesToShow:5,slidesToScroll:5,responsive:[{breakpoint:1100,settings:{slidesToShow:4,slidesToScroll:4}},{breakpoint:960,settings:{slidesToShow:3,slidesToScroll:3}},{breakpoint:600,settings:{slidesToShow:2,slidesToScroll:2}},
+slidesToShow:5,slidesToScroll:1,responsive:[{breakpoint:1100,settings:{slidesToShow:4,slidesToScroll:1}},{breakpoint:960,settings:{slidesToShow:3,slidesToScroll:1}},{breakpoint:600,settings:{slidesToShow:2,slidesToScroll:1}},
 <?php } elseif ($columns == '4') { ?>
-slidesToShow:4,slidesToScroll:4,responsive:[{breakpoint:960,settings:{slidesToShow:3,slidesToScroll:3}},{breakpoint:600,settings:{slidesToShow:2,slidesToScroll:2}},
+slidesToShow:4,slidesToScroll:1,responsive:[{breakpoint:960,settings:{slidesToShow:3,slidesToScroll:1}},{breakpoint:600,settings:{slidesToShow:2,slidesToScroll:1}},
 <?php } elseif ($columns == '3') { ?>
-slidesToShow:3,slidesToScroll:3,responsive:[{breakpoint:600,settings:{slidesToShow:2,slidesToScroll:2}},
+slidesToShow:3,slidesToScroll:1,responsive:[{breakpoint:600,settings:{slidesToShow:2,slidesToScroll:1}},
 <?php } elseif ($columns == '2') { ?>
-slidesToShow:2,slidesToScroll:2,responsive:[
+slidesToShow:2,slidesToScroll:1,responsive:[
 <?php } elseif (($columns == '1' || $columns == 'list')) { ?>
 adaptiveHeight:true,slidesToShow:1,slidesToScroll:1,responsive:[
 <?php } ?>
 <?php if ($items_mobile_fw) { ?>
-{breakpoint:420,settings:{slidesToShow:1,slidesToScroll:1}}
+{breakpoint:420,settings:{slidesToShow:2,slidesToScroll:1}}
 <?php } ?>
 ]
 });
