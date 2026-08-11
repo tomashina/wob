@@ -1,0 +1,215 @@
+/* World of Beauty checkout contrast and form clarity layer. */
+#quickcheckoutconfirm {
+  margin-top: 10px;
+  color: #00243d;
+}
+
+#quickcheckoutconfirm,
+#quickcheckoutconfirm * {
+  box-sizing: border-box;
+}
+
+#quickcheckoutconfirm .quickcheckoutleft,
+#quickcheckoutconfirm .quickcheckoutright {
+  width: calc(50% - 9px);
+}
+
+#quickcheckoutconfirm .quickcheckoutleft {
+  padding-right: 0;
+  border-right: 0;
+}
+
+#quickcheckoutconfirm .quickcheckout-heading {
+  margin: 0;
+  color: #00243d;
+  font-size: 18px !important;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+#quickcheckoutconfirm .quickcheckout-heading::after {
+  width: 40px;
+  height: 2px;
+  margin-top: 6px;
+  margin-bottom: 18px;
+  background: #ad974f;
+}
+
+#quickcheckoutconfirm #payment-address,
+#quickcheckoutconfirm #shipping-address,
+#quickcheckoutconfirm #shipping-method,
+#quickcheckoutconfirm #payment-method,
+#quickcheckoutconfirm .quickcheckoutright,
+#quickcheckoutconfirm .cart-module-holder,
+#quickcheckoutconfirm .quickcheckout-login-details {
+  margin-bottom: 18px;
+  padding: 22px;
+  background-color: #fbfaf6;
+  border: 1px solid #e5dcc0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+#quickcheckoutconfirm .quickcheckout-content {
+  margin-bottom: 0;
+}
+
+#quickcheckoutconfirm #payment-address .quickcheckout-content,
+#quickcheckoutconfirm #shipping-address .quickcheckout-content,
+#quickcheckoutconfirm #login-box .quickcheckout-content {
+  margin-right: -10px;
+  margin-left: -10px;
+}
+
+#quickcheckoutconfirm label,
+#quickcheckoutconfirm .control-label {
+  color: #193b52;
+  font-weight: 600;
+}
+
+#quickcheckoutconfirm .form-control,
+#quickcheckoutconfirm input[type="text"],
+#quickcheckoutconfirm input[type="email"],
+#quickcheckoutconfirm input[type="tel"],
+#quickcheckoutconfirm input[type="password"],
+#quickcheckoutconfirm input[type="number"],
+#quickcheckoutconfirm select,
+#quickcheckoutconfirm textarea {
+  min-height: 44px;
+  color: #00243d;
+  background-color: #f4f1e9;
+  border: 1px solid #d8cfb4;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+#quickcheckoutconfirm textarea {
+  min-height: 100px;
+}
+
+#quickcheckoutconfirm .form-control:focus,
+#quickcheckoutconfirm input:focus,
+#quickcheckoutconfirm select:focus,
+#quickcheckoutconfirm textarea:focus {
+  background-color: #fff;
+  border-color: #ad974f;
+  box-shadow: none;
+}
+
+#quickcheckoutconfirm .input-group-btn .btn,
+#quickcheckoutconfirm .btn-primary {
+  min-height: 44px;
+  border: 1px solid #231f20;
+  border-radius: 0;
+}
+
+#quickcheckoutconfirm .quickcheckout-content.cart-content,
+#quickcheckoutconfirm .totals-slip,
+#quickcheckoutconfirm .quickcheckout-cart thead,
+#quickcheckoutconfirm .total-list {
+  background-color: #fff;
+}
+
+#quickcheckoutconfirm .quickcheckout-content.cart-content {
+  padding: 14px;
+  border: 1px solid #e7e1d0;
+}
+
+#quickcheckoutconfirm .quickcheckout-cart thead td,
+#quickcheckoutconfirm .quickcheckout-cart tbody td {
+  border-color: #e5dcc0;
+}
+
+#quickcheckoutconfirm .quickcheckout-login-details {
+  padding: 0;
+}
+
+#quickcheckoutconfirm .quickcheckout-login-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 60px;
+  padding: 18px 22px;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  list-style: none;
+}
+
+#quickcheckoutconfirm .quickcheckout-login-toggle::-webkit-details-marker {
+  display: none;
+}
+
+#quickcheckoutconfirm .quickcheckout-login-toggle::after {
+  display: none;
+}
+
+#quickcheckoutconfirm .quickcheckout-login-toggle .fa {
+  display: inline-block;
+}
+
+#quickcheckoutconfirm .quickcheckout-login-chevron {
+  color: #ad974f;
+  transition: transform .2s ease;
+}
+
+#quickcheckoutconfirm .quickcheckout-login-details[open] .quickcheckout-login-chevron {
+  transform: rotate(180deg);
+}
+
+#quickcheckoutconfirm .quickcheckout-login-content {
+  padding: 4px 22px 22px;
+  border-top: 1px solid #e5dcc0;
+}
+
+#quickcheckoutconfirm .quickcheckout-login-panel .or {
+  display: none;
+}
+
+#quickcheckoutconfirm .quickcheckout-clear {
+  clear: both;
+}
+
+#quickcheckoutconfirm .quickcheckout-is-hidden {
+  display: none !important;
+}
+
+#quickcheckoutconfirm .quickcheckout-wait-message {
+  color: #fff;
+}
+
+#quickcheckoutconfirm select.form-control,
+#quickcheckoutconfirm select {
+  padding-right: 36px !important;
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
+  background-size: 11px auto !important;
+}
+
+@media (max-width: 991px) {
+  #quickcheckoutconfirm .quickcheckoutleft,
+  #quickcheckoutconfirm .quickcheckoutright {
+    width: 100%;
+  }
+
+  #quickcheckoutconfirm #payment-address,
+  #quickcheckoutconfirm #shipping-address,
+  #quickcheckoutconfirm #shipping-method,
+  #quickcheckoutconfirm #payment-method,
+  #quickcheckoutconfirm .quickcheckoutright,
+  #quickcheckoutconfirm .cart-module-holder,
+  #quickcheckoutconfirm .quickcheckout-login-details {
+    padding: 18px;
+  }
+
+  #quickcheckoutconfirm .quickcheckout-login-details {
+    padding: 0;
+  }
+
+  #quickcheckoutconfirm .quickcheckout-login-toggle {
+    padding: 16px 18px;
+  }
+
+  #quickcheckoutconfirm .quickcheckout-login-content {
+    padding: 4px 18px 18px;
+  }
+}

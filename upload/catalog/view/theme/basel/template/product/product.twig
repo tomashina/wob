@@ -349,9 +349,12 @@
             </div>
             {% endif %}
             
-            <div class="form-group buy catalog_hide">
-
-            <input type="number" step="1" min="{{ minimum }}" name="quantity" value="{{ minimum }}" id="input-quantity" class="form-control input-quantity" aria-label="Količina" />
+            <div class="form-group buy catalog_hide product-buy-actions">
+              <div class="product-quantity-control" role="group" aria-label="Količina">
+                <button type="button" class="product-quantity-step product-quantity-minus" aria-label="Smanji količinu"><span aria-hidden="true">−</span></button>
+                <input type="number" step="1" min="{{ minimum }}" name="quantity" value="{{ minimum }}" id="input-quantity" class="form-control input-quantity" aria-label="Količina" />
+                <button type="button" class="product-quantity-step product-quantity-plus" aria-label="Povećaj količinu"><span aria-hidden="true">+</span></button>
+              </div>
               <input type="hidden" name="product_id" value="{{ product_id }}" />
               <button type="button" {% if ((qty < 1) and (stock_badge_status)) %}{% else %} id="button-cart" {% endif %}  data-loading-text="{{ text_loading }}" class="btn btn-primary">{% if ((qty < 1) and (stock_badge_status)) %}{{ basel_text_out_of_stock }}{% else %}{{ button_cart }}{% endif %}</button>
             </div>
@@ -701,6 +704,16 @@ $('select[name=\'recurring_id\'], input[name="quantity"]').change(function(){
 //--></script>
 
 <script><!--
+$('.product-quantity-step').on('click', function() {
+	var quantity = $('#input-quantity');
+	var minimum = parseInt(quantity.attr('min'), 10) || 1;
+	var step = parseInt(quantity.attr('step'), 10) || 1;
+	var current = parseInt(quantity.val(), 10) || minimum;
+	var next = $(this).hasClass('product-quantity-plus') ? current + step : Math.max(minimum, current - step);
+
+	quantity.val(next).trigger('change');
+});
+
 $('#button-cart').on('click', function() {
 	$.ajax({
 		url: 'index.php?route=extension/basel/basel_features/add_to_cart',

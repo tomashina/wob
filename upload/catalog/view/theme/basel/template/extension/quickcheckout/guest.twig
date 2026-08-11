@@ -35,7 +35,7 @@
 	{% endif %} 
   {% elseif field == 'customer_group' %} 
     {% if attribute(_context, 'field_' ~ field).display %}  
-	<div class="col-sm-6 required"{{ customer_groups|length <= 1 ? ' style="display:none !important"' }}>
+	<div class="col-sm-6 required{{ customer_groups|length <= 1 ? ' quickcheckout-is-hidden' }}">
 	  <label class="control-label" for="input-payment-customer-group">{{ entry_customer_group }}</label>
 	  <select name="customer_group_id" class="form-control" id="input-payment-customer-group">
 		{% for customer_group in customer_groups %} 
@@ -133,7 +133,7 @@
   {% endif %}
   {% endfor %}
 </div>
-<div style="clear:both;"></div>
+<div class="quickcheckout-clear"></div>
 <div class="labels-holder">
   {% if field_register.display %} 
 	{% if not guest_checkout or field_register.required %} 

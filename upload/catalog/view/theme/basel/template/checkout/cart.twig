@@ -34,11 +34,12 @@
     {% set class = 'col-sm-12' %}
     {% endif %}
     
-    <div id="content" class="{{ class }}">
+    <div id="content" class="{{ class }} cart-page">
     {{ content_top }}
       <h1 id="page-title">{{ heading_title }}{% if weight %} ({{ weight }}){% endif %}</h1>
       <form action="{{ action }}" method="post" enctype="multipart/form-data">
         
+          <div class="cart-table-wrap">
           <table class="table table-bordered border-bottom">
             <thead>
               <tr>
@@ -82,7 +83,7 @@
                   {% endif %}
                   <small class="hidden-md hidden-lg"><br />{{ column_model }}: {{ product.model }}</small>
                   <small class="hidden-md hidden-lg"><br />{{ column_price }}: {{ product.price }}</small><br />
-				  <button type="button" class="btn btn-default btn-tiny hidden-md hidden-lg" style="margin-top:5px;" onclick="cart.remove('{{ product.cart_id }}');">{{ button_remove }}</button>
+				  <button type="button" class="btn btn-default btn-tiny hidden-md hidden-lg cart-remove-mobile" onclick="cart.remove('{{ product.cart_id }}');">{{ button_remove }}</button>
                   </td>
                 <td class="hidden-xs hidden-sm">{{ product.model }}</td>
                 <td>
@@ -99,10 +100,10 @@
 				</td>
 				<td colspan="2" class="text-left">
 				{{ voucher.description }}<br>
-				<button type="button" class="btn btn-default btn-tiny hidden-md hidden-lg" style="margin-top:5px;" onclick="voucher.remove('{{ voucher.key }}');">{{ button_remove }}</button>
+				<button type="button" class="btn btn-default btn-tiny hidden-md hidden-lg cart-remove-mobile" onclick="voucher.remove('{{ voucher.key }}');">{{ button_remove }}</button>
 				</td>               
 				<td class="hidden-xs hidden-sm"></td>
-				<td class="text-left"><div class="input-group btn-block" style="max-width: 200px;">
+				<td class="text-left"><div class="input-group btn-block voucher-quantity">
 					<input type="number" value="1" disabled="disabled" aria-label="{{ column_quantity }}" class="form-control qty-form" />
                     </td>
 				<td class="hidden-xs hidden-sm"></td>
@@ -114,6 +115,7 @@
             </tbody>
             
           </table>
+          </div>
 
           <div class="row margin-b30">
           <div class="col-xs-12 text-right"><button type="submit" class="btn btn-outline">{{ button_update }}</button></div>

@@ -29,13 +29,18 @@
 
 
 
-	  <div id="quickcheckoutconfirm" style="margin-top: 10px;">
+	  <div id="quickcheckoutconfirm" class="quickcheckout-confirm">
 		<div id="quickcheckout-disable">
 		  {% if not logged and login_module %}
-		  <div class="quickcheckoutmid" id="login-box">
+		  <div class="quickcheckoutmid quickcheckout-login-panel" id="login-box">
 			<div id="checkout">
-			  <div class="quickcheckout-heading"><i class="fa fa-sign-in"></i> {{ text_checkout_option }}</div>
-			  <div class="quickcheckout-content">{{ login }}</div>
+			  <details class="quickcheckout-login-details">
+				<summary class="quickcheckout-heading quickcheckout-login-toggle">
+				  <span><i class="fa fa-sign-in" aria-hidden="true"></i> {{ text_checkout_option }}</span>
+				  <i class="fa fa-chevron-down quickcheckout-login-chevron" aria-hidden="true"></i>
+				</summary>
+				<div class="quickcheckout-content quickcheckout-login-content">{{ login }}</div>
+			  </details>
 			</div>
 			<div class="or">{{ text_or }}</div>
 		  </div>
@@ -53,12 +58,12 @@
 			{% endif %}
 
               {% if shipping_required %}
-                  <div id="shipping-method"{{ not shipping_module ? ' style="display:none;"' }}>
+                  <div id="shipping-method" class="{{ not shipping_module ? 'quickcheckout-is-hidden' }}">
                       <div class="quickcheckout-heading"><i class="fa fa-truck"></i> {{ text_checkout_shipping_method }}</div>
                       <div class="quickcheckout-content"></div>
                   </div>
               {% endif %}
-              <div id="payment-method"{{ not payment_module ? ' style="display:none;"' }}>
+              <div id="payment-method" class="{{ not payment_module ? 'quickcheckout-is-hidden' }}">
                   <div class="quickcheckout-heading"><i class="fa fa-credit-card"></i> {{ text_checkout_payment_method }}</div>
                   <div class="quickcheckout-content"></div>
               </div>
@@ -115,7 +120,7 @@
 		{% endif %}
 
 
-		  <div style="clear: both;"></div>
+		  <div class="quickcheckout-clear"></div>
 		</div><!-- Close Quick Checkout Disable Div -->
 
 
@@ -148,7 +153,7 @@ $('#quickcheckout-countdown').countdown({
 {% if load_screen %}
 $(window).load(function() {
     $.blockUI({
-		message: '<h1 style="color:#ffffff;">{{ text_please_wait }}</h1>',
+		message: '<h1 class="quickcheckout-wait-message">{{ text_please_wait }}</h1>',
 		css: {
 			border: 'none',
 			padding: '15px',
@@ -847,7 +852,7 @@ function loadConfirm() {
 
 				{% if load_screen %}
 				$.blockUI({
-					message: '<h1 style="color:#ffffff;">{{ text_please_wait }}</h1>',
+					message: '<h1 class="quickcheckout-wait-message">{{ text_please_wait }}</h1>',
 					css: {
 						border: 'none',
 						padding: '15px',

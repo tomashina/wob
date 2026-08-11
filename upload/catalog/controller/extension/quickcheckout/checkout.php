@@ -28,6 +28,7 @@ class ControllerExtensionQuickCheckoutCheckout extends Equotix {
 		}
 		
 		$this->document->addStyle('catalog/view/theme/basel/stylesheet/quickcheckout_' . $stylesheet . '.css');
+		$this->document->addStyle('catalog/view/theme/basel/stylesheet/quickcheckout-wob.css?v=1.0');
 		
 		if (!$this->config->get('quickcheckout_debug') || !isset($this->request->get['debug'])) {
 			if (!$this->config->get('quickcheckout_status')) {
