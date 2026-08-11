@@ -1055,6 +1055,98 @@ button.button-remove {
   justify-content: center;
 }
 
+/* Product autosuggest search. */
+.header-wrapper .search-field {
+  position: relative;
+}
+
+.header-wrapper .search-field .live-search {
+  top: 100%;
+  right: 0;
+  left: 0;
+  z-index: 1100;
+  width: 100%;
+  max-height: min(520px, calc(100vh - 170px));
+  overflow-y: auto;
+  background: #fbfaf6;
+  border: 1px solid #d8cfb4;
+  box-shadow: none;
+}
+
+.header-wrapper .live-search .table.products {
+  width: 100%;
+  background: #fbfaf6;
+}
+
+.header-wrapper .live-search .table.products tr {
+  border-bottom: 1px solid #e4ddc8;
+  transition: background .16s ease;
+}
+
+.header-wrapper .live-search .table.products tr:hover {
+  background: #f3efe4;
+}
+
+.header-wrapper .live-search .table.products tr td.image {
+  width: 74px;
+  padding: 8px 10px;
+}
+
+.header-wrapper .live-search .table.products tr td.image img {
+  display: block;
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid #e4ddc8;
+}
+
+.header-wrapper .live-search .table.products tr td.main {
+  padding: 9px 14px 9px 0;
+  vertical-align: middle;
+}
+
+.header-wrapper .live-search .product-name {
+  display: block;
+  color: #00243d;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.header-wrapper .live-search .price {
+  margin-top: 3px;
+  color: #ad974f;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.header-wrapper .live-search .price-old {
+  margin-right: 8px;
+  color: #8d8a84;
+  font-size: 12px;
+  text-decoration: line-through;
+}
+
+.header-wrapper .live-search .result-text {
+  padding: 11px 14px;
+  color: #fff;
+  background: #231f20;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.header-wrapper .live-search .result-text a.view-all-results {
+  display: block;
+  color: #fff;
+  font-weight: 400;
+}
+
+.header-wrapper .live-search .live-search-loading td {
+  padding: 22px 12px;
+  text-align: center;
+}
+
 /* Compact vertical category trigger. */
 .header-bottom .main-menu.vertical .menu-heading {
   display: flex;

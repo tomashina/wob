@@ -22,7 +22,7 @@ $(document).ready(function() {
 			else{
 				$('.result-text').html();
 				var html = '';
-				html +=	'<tr><td style="text-align:center;padding:20px 10px 10px"><span class="basel-spinner"></span></td></tr>';
+				html +=	'<tr class="live-search-loading"><td><span class="basel-spinner" aria-label="Pretraživanje"></span></td></tr>';
 				$('.live-search .table.products').html(html);
 				$('.live-search').css('display','block');
 
