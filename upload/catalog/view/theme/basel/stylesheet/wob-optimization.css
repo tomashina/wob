@@ -3258,6 +3258,100 @@ body[class*="information-information-"] .information-copy blockquote {
   }
 }
 
+/* Mobile homepage rhythm: one type scale, centered sliders and a compact header. */
+@media (max-width: 991px) {
+  .header-wrapper > .top_line {
+    display: none !important;
+  }
+
+  .common-home .grid-holder.slick-slider > .slick-list {
+    padding-right: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  .common-home .grid-holder.slick-slider .slick-dots {
+    display: flex;
+    width: 100%;
+    margin-right: auto;
+    margin-left: auto;
+    padding: 16px 0 0;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .common-home .grid-holder.slick-slider .slick-dots li {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 767px) {
+  .common-home .widget-title {
+    width: 100%;
+    max-width: 560px;
+    margin-right: auto;
+    margin-left: auto;
+    text-align: center;
+  }
+
+  .common-home .widget-title .main-title,
+  .common-home #mod2 h2.homeb,
+  .common-home #mod3 .dark h3.contrast-font {
+    font-family: "Outfit", "Manrope", sans-serif !important;
+    font-size: 22px !important;
+    font-weight: 600 !important;
+    letter-spacing: -.015em;
+    line-height: 1.28 !important;
+  }
+
+  .common-home .widget-title .sub-line,
+  .common-home #mod2 p.homeb,
+  .common-home #mod3 .dark p {
+    font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif !important;
+    font-size: 15px !important;
+    line-height: 1.55 !important;
+  }
+
+  .common-home .widget-title .sub-line {
+    max-width: 520px;
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  .common-home #mod2 .about-widget,
+  .common-home #mod2 .cm_item {
+    text-align: center !important;
+  }
+
+  .common-home #mod2 .about-widget .btn {
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  .common-home #mod1 .simple-caption.contrast-font,
+  .common-home #mod4 .simple-caption.contrast-font {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    line-height: 1.25 !important;
+  }
+
+  .common-home .grid-holder[class*="prod_module"] .single-product {
+    padding-right: 6px;
+    padding-left: 6px;
+  }
+
+  .common-home .grid-holder[class*="prod_module"] .single-product .edge {
+    width: auto;
+    margin-right: 0;
+    margin-left: 0;
+  }
+
+  .common-home .grid-holder[class*="prod_module"] .product-name {
+    font-size: 14px !important;
+    line-height: 20px !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
