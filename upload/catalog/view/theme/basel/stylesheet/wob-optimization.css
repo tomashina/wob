@@ -2790,8 +2790,8 @@ body[class*="information-information-"] .information-copy blockquote {
   .title_in_bc.tall_height_bc .breadcrumb-holder #title-holder #page-title,
   .title_in_bc.extra_tall_height_bc .breadcrumb-holder #title-holder #page-title {
     max-width: 100%;
-    font-size: clamp(27px, 8vw, 34px) !important;
-    line-height: 1.1;
+    font-size: clamp(24px, 6vw, 28px) !important;
+    line-height: 1.15;
     overflow-wrap: anywhere;
   }
 
