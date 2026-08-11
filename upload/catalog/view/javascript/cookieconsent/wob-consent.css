@@ -133,6 +133,11 @@
   stroke-width: 2;
 }
 
+.gk-cookie-fab img {
+  width: 27px;
+  height: 27px;
+}
+
 .gk-cookie-fab:hover,
 .gk-cookie-fab:focus {
   color: #fff;
@@ -170,7 +175,4 @@
     font-size: 21px;
   }
 
-  .gk-cookie-fab {
-    display: none !important;
-  }
 }

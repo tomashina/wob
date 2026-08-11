@@ -33,7 +33,6 @@ main {
 button.shortcut-wrapper,
 button.menu-closer,
 button.basel-back-btn,
-button.scroll-to-top,
 .slick-arrow,
 .wob-link-button {
   border: 0;
@@ -41,6 +40,78 @@ button.scroll-to-top,
   color: inherit;
   background: transparent;
   font: inherit;
+}
+
+a.scroll-to-top.email {
+  right: 22px;
+  bottom: 22px;
+  display: flex;
+  width: 54px;
+  height: 54px;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.wob-fa-pro-icon {
+  display: block;
+  width: 27px;
+  height: 27px;
+}
+
+.gk-cookie-fab .wob-fa-pro-icon {
+  filter: invert(1);
+}
+
+.slick-arrow.arrow-left::before,
+.slick-arrow.arrow-right::before {
+  display: block;
+  width: 12px;
+  height: 20px;
+  margin: auto;
+  content: "" !important;
+  background: center / contain no-repeat;
+}
+
+.slick-arrow.arrow-left::before {
+  background-image: url("../image/fontawesome-pro/chevron-left-regular.svg");
+}
+
+.slick-arrow.arrow-right::before {
+  background-image: url("../image/fontawesome-pro/chevron-right-regular.svg");
+}
+
+button.slick-arrow {
+  width: 44px;
+  height: 44px;
+  background: #fff;
+  border: 1px solid rgb(0 36 61 / 10%);
+  border-radius: 50%;
+  box-shadow: 0 8px 24px rgb(0 36 61 / 12%);
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+
+button.slick-arrow:hover {
+  border-color: rgb(173 151 79 / 55%);
+  box-shadow: 0 10px 28px rgb(0 36 61 / 18%);
+  transform: translateY(-1px);
+}
+
+.ms-nav-prev::after,
+.ms-nav-next::after {
+  width: 16px;
+  height: 26px;
+  margin-top: -13px;
+  content: "" !important;
+  background: center / contain no-repeat;
+}
+
+.ms-nav-prev::after {
+  background-image: url("../image/fontawesome-pro/chevron-left-regular.svg");
+}
+
+.ms-nav-next::after {
+  background-image: url("../image/fontawesome-pro/chevron-right-regular.svg");
 }
 
 .single-product button.icon {
@@ -58,6 +129,15 @@ button.scroll-to-top,
 button.tf-filter-reset {
   border: 0;
   padding: 4px;
+  background: transparent;
+}
+
+button.product-remove,
+button.button-update,
+button.button-remove {
+  border: 0;
+  padding: 6px;
+  color: inherit;
   background: transparent;
 }
 
@@ -108,6 +188,118 @@ button.tf-filter-reset {
 
 .product-holder .single-product .price-wrapper {
   margin-top: auto;
+}
+
+/* Light visual refresh that preserves the existing World of Beauty identity. */
+#main-content .btn {
+  min-height: 42px;
+  border-radius: 6px;
+  transition: background-color .2s ease, border-color .2s ease, box-shadow .2s ease, color .2s ease, transform .2s ease;
+}
+
+#main-content .btn:hover {
+  box-shadow: 0 7px 18px rgb(0 36 61 / 12%);
+  transform: translateY(-1px);
+}
+
+.form-control {
+  border-color: rgb(0 36 61 / 15%);
+  border-radius: 6px;
+  box-shadow: none;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.form-control:focus {
+  border-color: #ad974f;
+  box-shadow: 0 0 0 3px rgb(173 151 79 / 14%);
+}
+
+#product-view > .table.filter {
+  padding: 12px 16px;
+  margin-bottom: 24px;
+  background: #fbfbfa;
+  border: 1px solid rgb(0 36 61 / 8%);
+  border-radius: 8px;
+}
+
+.single-product .image {
+  overflow: hidden;
+  border: 1px solid rgb(0 36 61 / 7%);
+  border-radius: 9px;
+  box-shadow: 0 4px 16px rgb(0 36 61 / 4%);
+  transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease;
+}
+
+.single-product:hover .image {
+  border-color: rgb(173 151 79 / 28%);
+  box-shadow: 0 12px 30px rgb(0 36 61 / 10%);
+  transform: translateY(-2px);
+}
+
+.single-product .image img {
+  transition: transform .35s ease;
+}
+
+.single-product:hover .image > a:first-child img {
+  transform: scale(1.015);
+}
+
+.single-product .image .badge,
+.main-image .badge {
+  border-radius: 4px;
+}
+
+.grid .single-product .product-name,
+.grid .single-product .product-name:hover {
+  min-height: 42px;
+  line-height: 1.4;
+  -webkit-line-clamp: 2;
+}
+
+.product-page .main-image {
+  overflow: hidden;
+  background: #fbfbfa;
+  border: 1px solid rgb(0 36 61 / 7%);
+  border-radius: 10px;
+}
+
+body[class^="product-product-"] .product-info .table-cell.right .inner {
+  background: #fbfbfa;
+  border: 1px solid rgb(0 36 61 / 7%);
+  border-radius: 10px;
+}
+
+.main_tabs {
+  border-bottom-color: rgb(0 36 61 / 10%);
+}
+
+.main_tabs > li > a {
+  border-radius: 6px 6px 0 0;
+}
+
+.quickcheckout-heading {
+  padding: 14px 16px;
+  color: #fff !important;
+  background: #00243d;
+  border-radius: 8px 8px 0 0;
+}
+
+.quickcheckout-heading i {
+  color: #fff !important;
+}
+
+.quickcheckout-content {
+  padding: 20px;
+  margin-bottom: 18px;
+  background: #fff;
+  border: 1px solid rgb(0 36 61 / 9%);
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 5px 20px rgb(0 36 61 / 5%);
+}
+
+.table-responsive {
+  border-radius: 8px;
 }
 
 .master-slider {
