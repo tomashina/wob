@@ -90,8 +90,8 @@ class ControllerProductCategory extends Controller {
 		$category_info = $this->model_catalog_category->getCategory($category_id);
 
 		if ($category_info) {
-			$this->document->setTitle($category_info['meta_title']);
-			$this->document->setDescription($category_info['meta_description']);
+			$this->document->setTitle($this->getCategoryMetaTitle($category_info));
+			$this->document->setDescription($this->getCategoryMetaDescription($category_info));
 			$this->document->setKeywords($category_info['meta_keyword']);
 
 			$data['heading_title'] = $category_info['name'];
@@ -428,5 +428,63 @@ class ControllerProductCategory extends Controller {
 
 			$this->response->setOutput($this->load->view('error/not_found', $data));
 		}
+	}
+
+	private function getCategoryMetaTitle($categoryInfo) {
+		$title = trim(html_entity_decode((string) $categoryInfo['meta_title'], ENT_QUOTES, 'UTF-8'));
+
+		if ($title === '' || preg_match('/\{[^}]+\}|^buy best\b/i', $title)) {
+			$title = trim($categoryInfo['name']) . ' | World of Beauty';
+		}
+
+		$page = isset($this->request->get['page']) ? (int) $this->request->get['page'] : 1;
+
+		if ($page > 1) {
+			$language = strtolower((string) $this->language->get('code'));
+			$title .= strpos($language, 'hr') === 0 ? ' | Stranica ' . $page : ' | Page ' . $page;
+		}
+
+		return $this->truncateMetaText($title, 65);
+	}
+
+	private function getCategoryMetaDescription($categoryInfo) {
+		$description = trim(html_entity_decode((string) $categoryInfo['meta_description'], ENT_QUOTES, 'UTF-8'));
+
+		if ($description === '' || preg_match('/\{[^}]+\}/', $description) || trim($description, " -\t\n\r\0\x0B") === '') {
+			$name = trim($categoryInfo['name']);
+			$language = strtolower((string) $this->language->get('code'));
+
+			if (strpos($language, 'hr') === 0) {
+				$description = 'Istražite ' . $name . ' za profesionalne salone. Kvalitetna oprema, sigurna online kupnja, brza isporuka i stručna podrška World of Beauty tima.';
+			} else {
+				$description = 'Explore ' . $name . ' for professional salons. Quality equipment, secure online shopping, fast delivery and expert World of Beauty support.';
+			}
+		}
+
+		$page = isset($this->request->get['page']) ? (int) $this->request->get['page'] : 1;
+
+		if ($page > 1) {
+			$language = strtolower((string) $this->language->get('code'));
+			$description .= strpos($language, 'hr') === 0 ? ' Stranica ' . $page . '.' : ' Page ' . $page . '.';
+		}
+
+		return $this->truncateMetaText($description, 160);
+	}
+
+	private function truncateMetaText($text, $limit) {
+		$text = preg_replace('/\s+/u', ' ', trim(strip_tags($text)));
+
+		if (utf8_strlen($text) <= $limit) {
+			return $text;
+		}
+
+		$short = utf8_substr($text, 0, $limit - 1);
+		$space = utf8_strrpos($short, ' ');
+
+		if ($space !== false && $space > (int) ($limit * 0.7)) {
+			$short = utf8_substr($short, 0, $space);
+		}
+
+		return rtrim($short, ' ,.;:-') . '…';
 	}
 }

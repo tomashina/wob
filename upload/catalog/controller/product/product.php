@@ -230,8 +230,8 @@ class ControllerProductProduct extends Controller {
 				'href' => $this->url->link('product/product', $url . '&product_id=' . $this->request->get['product_id'])
 			);
 
-			$this->document->setTitle($product_info['meta_title']);
-			$this->document->setDescription($product_info['meta_description']);
+			$this->document->setTitle($this->getProductMetaTitle($product_info));
+			$this->document->setDescription($this->getProductMetaDescription($product_info));
 			$this->document->setKeywords($product_info['meta_keyword']);
 			$this->document->addLink($this->url->link('product/product', 'product_id=' . $this->request->get['product_id']), 'canonical');
 			$this->document->addScript('catalog/view/javascript/jquery/magnific/jquery.magnific-popup.min.js');
@@ -640,6 +640,52 @@ $data['weight'] = $weight;
 
 			$this->response->setOutput($this->load->view('error/not_found', $data));
 		}
+	}
+
+	private function getProductMetaTitle($productInfo) {
+		$title = trim(html_entity_decode((string) $productInfo['meta_title'], ENT_QUOTES, 'UTF-8'));
+
+		if ($title === '' || preg_match('/\{[^}]+\}/', $title)) {
+			$title = trim($productInfo['name']) . ' | World of Beauty';
+		}
+
+		return $this->truncateMetaText($title, 65);
+	}
+
+	private function getProductMetaDescription($productInfo) {
+		$description = trim(html_entity_decode((string) $productInfo['meta_description'], ENT_QUOTES, 'UTF-8'));
+
+		if ($description === '' || preg_match('/\{[^}]+\}/', $description)) {
+			$description = html_entity_decode((string) $productInfo['description'], ENT_QUOTES, 'UTF-8');
+			$description = html_entity_decode($description, ENT_QUOTES, 'UTF-8');
+			$description = trim(strip_tags($description));
+		}
+
+		if ($description === '') {
+			$language = strtolower((string) $this->language->get('code'));
+			$description = strpos($language, 'hr') === 0
+				? trim($productInfo['name']) . ' – profesionalna oprema za salone. Sigurna online kupnja, brza isporuka i stručna podrška World of Beauty tima.'
+				: trim($productInfo['name']) . ' – professional salon equipment with secure online shopping, fast delivery and expert World of Beauty support.';
+		}
+
+		return $this->truncateMetaText($description, 160);
+	}
+
+	private function truncateMetaText($text, $limit) {
+		$text = preg_replace('/\s+/u', ' ', trim(strip_tags($text)));
+
+		if (utf8_strlen($text) <= $limit) {
+			return $text;
+		}
+
+		$short = utf8_substr($text, 0, $limit - 1);
+		$space = utf8_strrpos($short, ' ');
+
+		if ($space !== false && $space > (int) ($limit * 0.7)) {
+			$short = utf8_substr($short, 0, $space);
+		}
+
+		return rtrim($short, ' ,.;:-') . '…';
 	}
 
 	public function review() {

@@ -16,12 +16,14 @@ upload/image/
 # Runtime and generated data
 upload/error_log
 upload/admin/error_log
+upload/sitemaps/
 upload/system/storage/cache/
 upload/system/storage/logs/
 upload/system/storage/session/
 upload/system/storage/upload/
 storagedijana/storagedijana/cache/
 storagedijana/storagedijana/logs/
+storagedijana/storagedijana/modification/
 storagedijana/storagedijana/session/
 storagedijana/storagedijana/upload/
 

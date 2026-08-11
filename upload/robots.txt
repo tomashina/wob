@@ -1,59 +1,41 @@
 User-agent: *
+Allow: /
+
+# Privatne i transakcijske stranice
+Disallow: /admin/
+Disallow: /system/
+Disallow: /storage/
+Disallow: /download/
+Disallow: /export/
 Disallow: /*route=account/
 Disallow: /*route=affiliate/
 Disallow: /*route=checkout/
 Disallow: /*route=product/search
-Disallow: /index.php?route=product/product*&manufacturer_id=
-Disallow: /admin
-Disallow: /download
-Disallow: /export
-Disallow: /system
+Disallow: /*route=product/compare
+
+# Varijante URL-ova koje ne trebaju zasebno indeksiranje
 Disallow: /*?sort=
 Disallow: /*&sort=
 Disallow: /*?order=
 Disallow: /*&order=
 Disallow: /*?limit=
 Disallow: /*&limit=
-Disallow: /*?filter_name=
-Disallow: /*&filter_name=
-Disallow: /*?filter_sub_category=
-Disallow: /*&filter_sub_category=
-Disallow: /*?filter_description=
-Disallow: /*&filter_description=
+Disallow: /*?filter=
+Disallow: /*&filter=
 Disallow: /*?tracking=
 Disallow: /*&tracking=
-Disallow: /wishlist
-Disallow: /login
-Disallow: /index.php?route=product/manufacturer
-Disallow: /index.php?route=product/compare
-Disallow: /index.php?route=product/category
-Sitemap: https://www.dijana-tosev.hr/sitemap-index.xml
 
-User-agent: Yandex
-Disallow: /*route=account/
-Disallow: /*route=affiliate/
-Disallow: /*route=checkout/
-Disallow: /*route=product/search
-Disallow: /index.php?route=product/product*&manufacturer_id=
-Disallow: /admin
-Disallow: /download
-Disallow: /export
-Disallow: /system
-Disallow: /*?sort=
-Disallow: /*&sort=
-Disallow: /*?order=
-Disallow: /*&order=
-Disallow: /*?limit=
-Disallow: /*&limit=
-Disallow: /*?tracking=
-Disallow: /*&tracking=
-Disallow: /*route=product/search
-Disallow: /wishlist
-Disallow: /login
-Disallow: /index.php?route=product/manufacturer
-Disallow: /index.php?route=product/compare
-Disallow: /index.php?route=product/category
-Sitemap: https://www.dijana-tosev.hr/sitemap-index.xml
+# AI tražilice i asistenti smiju dohvatiti javni sadržaj trgovine.
+User-agent: OAI-SearchBot
+Allow: /
 
+User-agent: ChatGPT-User
+Allow: /
 
+User-agent: PerplexityBot
+Allow: /
 
+User-agent: ClaudeBot
+Allow: /
+
+Sitemap: https://www.worldofbeauty.hr/sitemap-index.xml

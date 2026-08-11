@@ -41,6 +41,7 @@ class ControllerCommonHeader extends Controller {
 		$data['scripts'] = $this->document->getScripts('header');
 		$data['lang'] = $this->language->get('code');
 		$data['direction'] = $this->language->get('direction');
+		$data['robots'] = $this->getRobotsDirective();
 
 		$data['name'] = $this->config->get('config_name');
 
@@ -85,5 +86,32 @@ class ControllerCommonHeader extends Controller {
 		$data['menu'] = $this->load->controller('common/menu');
 
 		return $this->load->view('common/header', $data);
+	}
+
+	private function getRobotsDirective() {
+		$route = isset($this->request->get['route']) ? (string) $this->request->get['route'] : 'common/home';
+		$noindexPrefixes = array(
+			'account/',
+			'affiliate/',
+			'checkout/',
+			'extension/quickcheckout/',
+			'product/compare',
+			'product/search',
+			'error/not_found'
+		);
+
+		foreach ($noindexPrefixes as $prefix) {
+			if (strpos($route, $prefix) === 0) {
+				return 'noindex, follow';
+			}
+		}
+
+		foreach (array('sort', 'order', 'limit', 'filter', 'tracking') as $parameter) {
+			if (isset($this->request->get[$parameter])) {
+				return 'noindex, follow';
+			}
+		}
+
+		return 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
 	}
 }
