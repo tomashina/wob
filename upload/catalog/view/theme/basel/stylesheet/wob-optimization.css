@@ -3282,6 +3282,39 @@ body[class*="information-information-"] .information-copy blockquote {
     display: none !important;
   }
 
+  /* Use one vertical rhythm for every direct homepage section. */
+  .common-home #main-content > .container > .widget {
+    margin-top: 0 !important;
+    margin-bottom: 28px !important;
+  }
+
+  .common-home #main-content > .container > .widget:first-child {
+    margin-top: 20px !important;
+  }
+
+  .common-home #mod3 .cm_content {
+    margin: 0 !important;
+    padding: 28px 18px !important;
+  }
+
+  .common-home .widget .widget-title {
+    margin-bottom: 24px;
+  }
+
+  .common-home .widget-title .main-title,
+  .common-home #mod2 h2.homeb,
+  .common-home #mod3 .dark h3.contrast-font {
+    font-family: "Outfit", "Manrope", sans-serif !important;
+    font-size: 24px !important;
+    font-weight: 600 !important;
+    letter-spacing: -.015em;
+    line-height: 1.28 !important;
+  }
+
+  .common-home .widget-title .main-title span {
+    font-size: 1em;
+  }
+
   .common-home .grid-holder.slick-slider > .slick-list {
     padding-right: 0 !important;
     padding-left: 0 !important;
@@ -3305,6 +3338,14 @@ body[class*="information-information-"] .information-copy blockquote {
 }
 
 @media (max-width: 767px) {
+  .common-home #main-content > .container > .widget {
+    margin-bottom: 24px !important;
+  }
+
+  .common-home #mod3 .cm_content {
+    padding: 24px 14px !important;
+  }
+
   .common-home .widget-title {
     width: 100%;
     max-width: 560px;
@@ -3321,6 +3362,10 @@ body[class*="information-information-"] .information-copy blockquote {
     font-weight: 600 !important;
     letter-spacing: -.015em;
     line-height: 1.28 !important;
+  }
+
+  .common-home .widget-title .main-title span {
+    font-size: 1em;
   }
 
   .common-home .widget-title .sub-line,
