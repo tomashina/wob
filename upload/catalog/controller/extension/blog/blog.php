@@ -146,7 +146,8 @@ class ControllerExtensionBlogBlog extends Controller {
 			
 			$this->document->addLink($this->url->link('extension/blog/blog', 'blog_id=' . $this->request->get['blog_id']), 'canonical');
 										
-      		$data['heading_title'] = $blog_info['title'];
+			$data['heading_title'] = $blog_info['title'];
+			$data['share'] = $this->url->link('extension/blog/blog', 'blog_id=' . $this->request->get['blog_id']);
 			
 			$data['description'] = html_entity_decode($blog_info['description'], ENT_QUOTES, 'UTF-8');
 			

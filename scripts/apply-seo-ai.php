@@ -90,6 +90,43 @@ function seoLanguages(mysqli $database)
     return $languages;
 }
 
+function seoEnsureRouteAliases(mysqli $database, array $languages, array $aliases)
+{
+    $storeIds = array(0);
+    $storeResult = $database->query("SELECT `store_id` FROM `" . DB_PREFIX . "store`");
+
+    while ($store = $storeResult->fetch_assoc()) {
+        $storeIds[] = (int) $store['store_id'];
+    }
+
+    $storeIds = array_values(array_unique($storeIds));
+    $table = DB_PREFIX . 'seo_url';
+    $upsert = $database->prepare(
+        "INSERT INTO `{$table}` (`store_id`, `language_id`, `query`, `keyword`) VALUES (?, ?, ?, ?) " .
+        "ON DUPLICATE KEY UPDATE `keyword` = VALUES(`keyword`)"
+    );
+    $updated = 0;
+
+    foreach ($storeIds as $storeId) {
+        foreach ($languages as $languageId => $code) {
+            foreach ($aliases as $query => $keywords) {
+                if (is_array($keywords)) {
+                    $croatian = strpos(strtolower($code), 'hr') === 0;
+                    $keyword = $croatian ? $keywords['hr'] : $keywords['default'];
+                } else {
+                    $keyword = $keywords;
+                }
+
+                $upsert->bind_param('iiss', $storeId, $languageId, $query, $keyword);
+                $upsert->execute();
+                $updated++;
+            }
+        }
+    }
+
+    return $updated;
+}
+
 function seoConfigureSearchMeta(mysqli $database, array $languages)
 {
     foreach ($languages as $languageId => $code) {
@@ -442,6 +479,12 @@ function seoRefreshRuntimeCaches(mysqli $database)
 try {
     $database->begin_transaction();
     $languages = seoLanguages($database);
+    $routeAliases = seoEnsureRouteAliases($database, $languages, array(
+        'information/contact' => array(
+            'hr' => 'contact',
+            'default' => 'contact-us'
+        )
+    ));
     seoConfigureSearchMeta($database, $languages);
     seoConfigureStructuredData($database);
     $headingFixed = seoFixHomepageHeadingHierarchy($database);
@@ -451,6 +494,7 @@ try {
     $database->commit();
 
     echo 'UPDATED search and pagination metadata' . PHP_EOL;
+    echo 'ENSURED ' . $routeAliases . ' route aliases' . PHP_EOL;
     echo 'UPDATED Open Graph, Twitter Cards and structured data settings' . PHP_EOL;
     echo ($headingFixed ? 'UPDATED' : 'CHECKED') . ' homepage heading hierarchy' . PHP_EOL;
     echo 'OPTIMIZED ' . $imageOptimization['images'] . ' homepage images in ' . $imageOptimization['modules'] . ' modules' . PHP_EOL;

@@ -34,13 +34,13 @@
     {% set class = 'col-sm-12' %}
     {% endif %}
     
-    <div id="content" class="{{ class }}">
+    <div id="content" class="{{ class }} information-contact-content">
     {{ content_top }}
       <h1 id="page-title">{{ heading_title }}</h1>
       
-      <div class="row">
+      <div class="row contact-layout">
         
-      <div class="col-sm-6 left-side">
+      <div class="col-sm-6 left-side contact-form-panel">
       	<h3 class="lined-title lg margin-b35"><span>{{ text_contact }}</span></h3>
         <form action="{{ action }}" method="post" enctype="multipart/form-data" class="form-vertical">
 
@@ -93,36 +93,28 @@
         </form>
       </div>
       
-      <div class="col-sm-6 right-side">
+      <div class="col-sm-6 right-side contact-details-panel">
        <h3 class="lined-title lg margin-b30"><span>{{ heading_title }}</span></h3>
        
    
            <div class="grid-holder margin-b20">
            
-           <div class="item">
-           <p class="contact-detail">
-   
-           {{ address }}
-        
-           </p>
+           <div class="item contact-info-item">
+           <i class="fa-light fa-location-dot" aria-hidden="true"></i>
+           <div class="contact-detail">{{ address }}</div>
            </div>
 
                {% if open %}
                    <div class="item">
-
-                       <p class="contact-detail">
-                       
-                           {{ telephone }}
-                     
-                       </p>
-
-                
-                       <p class="contact-detail" >
-                    
-                           {{ open }}
-                       </p>
-
-                       <p class="contact-detail"><img src="image/dijana-tosev.jpg" alt="World of Beauty salon i trgovina" style="max-width: 350px;"></p>
+                       <div class="contact-info-item">
+                         <i class="fa-light fa-phone" aria-hidden="true"></i>
+                         <div class="contact-detail">{{ telephone }}</div>
+                       </div>
+                       <div class="contact-info-item">
+                         <i class="fa-light fa-clock" aria-hidden="true"></i>
+                         <div class="contact-detail">{{ open }}</div>
+                       </div>
+                       <div class="contact-store-photo"><img src="image/dijana-tosev.jpg" alt="World of Beauty salon i trgovina" loading="lazy"></div>
                    </div>
                {% endif %}
 
@@ -139,7 +131,7 @@
         {% if locations %}
       <h3 class="lined-title lg margin-b15"><span><b>{{ text_store }}</b></span></h3>
       <div class="panel-group" id="accordion">
-        {% for locations in location %}
+        {% for location in locations %}
         <div class="panel panel-default">
           <div class="panel-heading">
             <h4 class="panel-title"><a href="#collapse-location{{ location.location_id }}" class="accordion-toggle" data-toggle="collapse" data-parent="#accordion">{{ location.name }} <i class="fa fa-caret-down"></i></a></h4>

@@ -853,6 +853,32 @@ $('#button-review').on('click', function() {
 });
 
 $(document).ready(function() {
+// Descriptions edited in the admin can contain an unclosed formatting tag.
+// Browsers then nest the following panes inside it, so Bootstrap cannot switch
+// tabs correctly. Restore every referenced pane to the proper container.
+$('.product-tabs-wrapper, .inline-tabs').each(function() {
+    var $tabsContainer = $(this);
+    var $tabNavigation = $tabsContainer.find('.main_tabs').first();
+    var $tabContent = $tabNavigation.siblings('.tab-content').first();
+
+    if (!$tabContent.length) {
+        return;
+    }
+
+    $tabNavigation.find('a[data-toggle="tab"]').each(function() {
+        var target = $(this).attr('href');
+        var pane = target && document.querySelector(target);
+
+        if (pane && pane.parentNode !== $tabContent[0]) {
+            $tabContent[0].appendChild(pane);
+        }
+    });
+
+    $tabContent.children('strong, b, em, i, u').filter(function() {
+        return !$.trim($(this).text()) && !$(this).children().length;
+    }).remove();
+});
+
 {% if product_layout == "full-width" %}
 // Sticky information
 $('.table-cell.right .inner').theiaStickySidebar({containerSelector:'.product-info'});

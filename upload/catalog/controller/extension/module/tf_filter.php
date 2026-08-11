@@ -307,6 +307,20 @@ class ControllerExtensionModuleTfFilter extends Controller
 
         $sort_order = array();
 
+        $category_path = array();
+
+        if (!empty($this->request->get['path'])) {
+            foreach (explode('_', (string)$this->request->get['path']) as $path_category_id) {
+                if ((int)$path_category_id > 0) {
+                    $category_path[] = (int)$path_category_id;
+                }
+            }
+        }
+
+        if (!$category_path || (int)end($category_path) !== (int)$this->category_id) {
+            $category_path[] = (int)$this->category_id;
+        }
+
         foreach ($sub_categories as $sub_category) {
             $image = null;
 
@@ -339,10 +353,14 @@ class ControllerExtensionModuleTfFilter extends Controller
                 $sort_order[] = $sub_category['sort_order'];
             }
 
+            $sub_category_path = $category_path;
+            $sub_category_path[] = (int)$sub_category['category_id'];
+
             $data['values'][] = array(
                 'category_id' => $sub_category['category_id'],
                 'name' => $sub_category['name'],
                 'image' => $image,
+                'href' => $this->url->link('product/category', 'path=' . implode('_', $sub_category_path), true),
                 'total' => $total,
                 'selected' => in_array($sub_category['category_id'], $selected),
                 'status' => $status,

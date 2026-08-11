@@ -13,10 +13,12 @@
     {% else %}
     {% set class = 'col-sm-12' %}
     {% endif %}
-    <div id="content" class="{{ class }} info">
+    <div id="content" class="{{ class }} info information-page-content">
     {{ content_top }}
       <h1 id="page-title">{{ heading_title }}</h1>
-      {{ description }}
+      <div class="information-copy">
+        {{ description }}
+      </div>
       {{ content_bottom }}
      </div>
     {{ column_right }}

@@ -13,10 +13,10 @@
     {% else %}
     {% set class = 'col-sm-12' %}
     {% endif %}
-    <div id="content" class="{{ class }}">{{ content_top }}
+    <div id="content" class="{{ class }} information-sitemap-content">{{ content_top }}
       <h1 id="page-title">{{ heading_title }}</h1>
-      <div class="row">
-        <div class="col-sm-6">
+      <div class="row sitemap-grid">
+        <div class="col-sm-6 sitemap-panel">
           <ul class="sitemap">
             {% for category_1 in categories %}
             <li><a href="{{ category_1.href }}">{{ category_1.name }}</a>
@@ -39,7 +39,7 @@
            {% endfor %}
           </ul>
         </div>
-        <div class="col-sm-6">
+        <div class="col-sm-6 sitemap-panel">
           <ul class="sitemap">
             <li><a href="{{ special }}">{{ text_special }}</a></li>
             <li><a href="{{ account }}">{{ text_account }}</a>

@@ -13,8 +13,8 @@
     {% else %}
     {% set class = 'col-sm-12' %}
     {% endif %}
-    <div id="content" class="{{ class }}">{{ content_top }}
-      <div class="blog">
+    <div id="content" class="{{ class }} wob-blog-content">{{ content_top }}
+      <div class="blog wob-blog-index">
       
       <h1 id="page-title">{{ heading_title }}</h1>
       
@@ -25,14 +25,14 @@
       {% endif %}
   	
     {% if blogs %}
-		<div class="grid-holder grid{{ list_columns }}">
+		<div class="grid-holder grid{{ list_columns }} wob-blog-grid">
 			
             {% for blog in blogs %}
-				<div class="item single-blog">
+				<article class="item single-blog wob-blog-card">
                 
                 {% if blog.image %}
-                <div class="banner_wrap hover-zoom hover-darken">
-				<img class="zoom_image" src="{{ blog.image }}" alt="{{ blog.title }}" title="{{ blog.title }}" />
+                <div class="banner_wrap hover-zoom hover-darken wob-blog-media">
+				<img class="zoom_image" src="{{ blog.image }}" alt="{{ blog.title }}" title="{{ blog.title }}" loading="lazy" />
                 <a href="{{ blog.href }}" class="effect-holder"></a>
                 {% if date_added_status %}
                 <div class="date_added">
@@ -53,7 +53,7 @@
                 </div>
 				{% endif %}
                 
-                <div class="summary">
+                <div class="summary wob-blog-summary">
                 <h3 class="blog-title"><a href="{{ blog.href }}">{{ blog.title }}</a></h3>
                 
                 <div class="blog_stats">
@@ -64,8 +64,9 @@
                 {% if blog.short_description %}
                 <p class="short-description">{{ blog.short_description }}</p>
                 {% endif %}
+                <a class="wob-blog-read-more" href="{{ blog.href }}">{{ text_read_more }}</a>
                 </div>
-                </div>
+                </article>
             {% endfor %}
           </div>
 		<div class="row pagination-holder">
@@ -81,4 +82,4 @@
       {{ content_bottom }}</div>
     {{ column_right }}</div>
 </div>
-{{ footer }} 
+{{ footer }}

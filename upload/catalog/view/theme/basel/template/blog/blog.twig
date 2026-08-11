@@ -11,11 +11,11 @@
 
     {% set class = 'col-sm-12' %}
     
-    <div id="content" class="{{ class }}">{{ content_top }}
-    <div class="blog blog_post">
+    <div id="content" class="{{ class }} wob-blog-content">{{ content_top }}
+    <article class="blog blog_post wob-blog-post">
     
     {% if main_thumb and blogsetting_post_thumb %}
-    <div class="main_thumb">
+    <div class="main_thumb wob-blog-hero">
     <img src="{{ main_thumb }}" alt="{{ heading_title }}" title="{{ heading_title }}" />
     {% if post_date_added_status %}
     <div class="date_added">
@@ -34,12 +34,12 @@
 	{% if post_comments_count_status %}<i>{{ text_comments }}: {{ comment_total }}</i>{% endif %}
 	</div>
     
-    <div class="main_description">
+    <div class="main_description wob-blog-article-copy">
 	{{ description }}
     </div>
     
     {% if tags %}
-	<p class="post_tags">
+	<p class="post_tags wob-blog-tags">
     {{ text_tags }}
 	{% for i in 0..tags|length %}
     {% if i < (tags|length - 1) %} 
@@ -50,9 +50,13 @@
 	</p>
 	{% endif %}
 
-        <script type='text/javascript' src='https://platform-api.sharethis.com/js/sharethis.js#property=61a636a5d0a9e10012e4df2d&product=sop' async='async'></script>
-        <!-- ShareThis BEGIN -->
-        <div class="sharethis-inline-share-buttons" style="text-align:center; margin-bottom:50px"></div>
+	{% set blog_share_url = share|replace({'&amp;': '&'}) %}
+    <nav class="wob-blog-share" aria-label="Podijeli članak">
+      <a href="https://www.facebook.com/sharer/sharer.php?u={{ blog_share_url|url_encode }}" target="_blank" rel="noopener noreferrer" aria-label="Podijeli na Facebooku"><i class="fa-brands fa-facebook-f" aria-hidden="true"></i></a>
+      <a href="https://x.com/intent/post?url={{ blog_share_url|url_encode }}&amp;text={{ heading_title|url_encode }}" target="_blank" rel="noopener noreferrer" aria-label="Podijeli na X-u"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i></a>
+      <a href="https://wa.me/?text={{ (heading_title ~ ' ' ~ blog_share_url)|url_encode }}" target="_blank" rel="noopener noreferrer" aria-label="Podijeli na WhatsAppu"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></a>
+      <a href="mailto:?subject={{ heading_title|url_encode }}&amp;body={{ blog_share_url|url_encode }}" aria-label="Podijeli e-mailom"><i class="fa-light fa-envelope" aria-hidden="true"></i></a>
+    </nav>
 	
     <!-- Related Products -->
     {% if products %}
@@ -68,12 +72,12 @@
      
      {% if related_blogs %}
 		<h3 class="section-title"><b>{{ text_related_blog }}</b></h3>
-        <div class="grid-holder grid{{ rel_per_row }}">
+        <div class="grid-holder grid{{ rel_per_row }} wob-blog-grid wob-blog-related">
             {% for blog in related_blogs %}
-            <div class="item single-blog related">
+            <article class="item single-blog related wob-blog-card">
                 {% if blog.image and rel_thumb_status %}
-                <div class="banner_wrap hover-zoom hover-darken">
-				<img class="zoom_image" src="{{ blog.image }}" alt="{{ blog.title }}" title="{{ blog.title }}" />
+                <div class="banner_wrap hover-zoom hover-darken wob-blog-media">
+				<img class="zoom_image" src="{{ blog.image }}" alt="{{ blog.title }}" title="{{ blog.title }}" loading="lazy" />
                 <a href="{{ blog.href }}" class="effect-holder"></a>
                 {% if date_added_status %}
                 <div class="date_added">
@@ -92,7 +96,7 @@
                 {% endif %}
                 </div>
 				{% endif %}
-                <div class="summary">
+                <div class="summary wob-blog-summary">
                 <h3 class="blog-title"><a href="{{ blog.href }}">{{ blog.title }}</a></h3>
                 <div class="blog_stats">
                 {% if author_status %}<i>{{ text_posted_by }}: {{ blog.author }}</i>{% endif %}
@@ -100,16 +104,16 @@
                 {% if page_view_status %}<i>{{ text_read }}: {{ blog.count_read }}</i>{% endif %}
                 </div>
 				<p class="short-description">{{ blog.short_description }}</p>
-                <a class="u-lined" href="{{ blog.href }}">{{ text_read_more }}</a>
+                <a class="wob-blog-read-more" href="{{ blog.href }}">{{ text_read_more }}</a>
                 </div>
-               </div>
+               </article>
 			{% endfor %}           
 		</div>
 	{% endif %}
 	 <!-- Related Blog End -->
 	 
 
-      </div>
+      </article>
      
       {{ content_bottom }}</div>
     {{ column_right }}</div>
@@ -160,54 +164,44 @@ $('#button-comment').on('click', function() {
 			}
 		}
 	});
-});    
-// Sharing buttons
-var share_url = encodeURIComponent(window.location.href);
-var page_title = '{{ heading_title }}';
-{% if main_thumb %}
-var thumb = '{{ main_thumb }}';
-{% endif %}
-$('.fb_share').attr("href", 'https://www.facebook.com/sharer/sharer.php?u=' + share_url + '');
-$('.twitter_share').attr("href", 'https://twitter.com/intent/tweet?source=' + share_url + '&text=' + page_title + ': ' + share_url + '');
-$('.google_share').attr("href", 'https://plus.google.com/share?url=' + share_url + '');
-$('.pinterest_share').attr("href", 'http://pinterest.com/pin/create/button/?url=' + share_url + '&media=' + thumb + '&description=' + page_title + '');
-$('.vk_share').attr("href", 'http://vkontakte.ru/share.php?url=' + share_url + '');
+});
 </script>
 
 <script type="application/ld+json">
 {
-"@context": "http://schema.org",
+"@context": "https://schema.org",
 "@type": "NewsArticle",
 "mainEntityOfPage": {
 "@type": "WebPage",
-"@id": "https://google.com/article"
+"@id": {{ share|replace({'&amp;': '&'})|json_encode|raw }}
 },
-"headline": "{{ heading_title }}",
+"headline": {{ heading_title|json_encode|raw }},
 {% if main_thumb %}
 "image": {
 "@type": "ImageObject",
-"url": "{{ main_thumb }}",
+"url": {{ main_thumb|json_encode|raw }},
 "height": {{ img_height }},
 "width": {{ img_width }}
 },
 {% endif %}
-"datePublished": "{{ date_added_full }}",
-"dateModified": "{{ date_added_full }}",
+"datePublished": {{ date_added_full|json_encode|raw }},
+"dateModified": {{ date_added_full|json_encode|raw }},
 "author": {
 "@type": "Person",
-"name": "{{ author }}"
+"name": {{ author|json_encode|raw }}
 },
 "publisher": {
 "@type": "Organization",
-"name": "{{ store }}",
+"name": {{ store|json_encode|raw }}{% if logo %},
+{% endif %}
 {% if logo %}
 "logo": {
 "@type": "ImageObject",
-"url": "{{ logo }}"
+"url": {{ logo|json_encode|raw }}
 }
 {% endif %}
 },
-"description": "{{ short_description }}"
+"description": {{ short_description|json_encode|raw }}
 }
 </script>
-{{ footer }} 
+{{ footer }}
