@@ -1,5 +1,36 @@
 <?php
 class ModelExtensionModuleHbSeoSnippets extends Model {	
+	private function cleanText($value) {
+		$value = html_entity_decode((string)$value, ENT_QUOTES, 'UTF-8');
+		$value = html_entity_decode($value, ENT_QUOTES, 'UTF-8');
+		return preg_replace('/\s+/u', ' ', trim(strip_tags($value)));
+	}
+
+	private function summaryText($value, $limit = 200) {
+		$value = $this->cleanText($value);
+		if (mb_strlen($value, 'UTF-8') <= $limit) {
+			return $value;
+		}
+
+		$summary = mb_substr($value, 0, $limit - 1, 'UTF-8');
+		$space = mb_strrpos($summary, ' ', 0, 'UTF-8');
+		if ($space !== false && $space > (int)($limit * 0.7)) {
+			$summary = mb_substr($summary, 0, $space, 'UTF-8');
+		}
+
+		return rtrim($summary, ' ,.;:-') . '…';
+	}
+
+	private function jsonLd($data, $comment = '') {
+		$prefix = $comment ? '<!--' . $comment . '-->' : '';
+		return $prefix . '<script type="application/ld+json">' . json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . '</script>';
+	}
+
+	private function homeLabel() {
+		$language = strtolower((string)$this->config->get('config_language'));
+		return strpos($language, 'hr') === 0 ? 'Početna' : 'Home';
+	}
+
 	public function get_stock_status_id($product_id) {
 		$query = $this->db->query("SELECT stock_status_id FROM ".DB_PREFIX."product WHERE product_id = '".(int)$product_id."'");
 		if ($query->row) {
@@ -17,34 +48,31 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 		if ($this->config->get('hb_snippets_prod_enable') || $this->config->get('hb_snippets_og_enable') || $this->config->get('hb_snippets_tc_enable')) {
 			$currencycode = (isset($this->session->data['currency'])) ? $this->session->data['currency'] : $this->config->get('config_currency');
 
-			$description = ($this->config->get('hb_snippets_description') == 'description') ? preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "", htmlentities(strip_tags($data['description']))) : $product_info['meta_description'];
-			
-			$description = preg_replace('/\s{2,}/', ' ', trim($description));
+			$description_source = ($this->config->get('hb_snippets_description') == 'description') ? $data['description'] : $product_info['meta_description'];
+			$description = $this->cleanText($description_source);
+			if ($description === '') {
+				$description = $this->cleanText($product_info['meta_description']);
+			}
 			
 			$product_id 	= $product_info['product_id'];
-			$name  			= $product_info['name'];
+			$name  			= $this->cleanText($product_info['name']);
 			$model 			= $product_info['model'];
 			$url			= $this->url->link('product/product','product_id='.$product_id);
 			$review_count 	= $product_info['reviews'];
 
-			if ((float)$product_info['special']) {
-				$price = (float)$product_info['special'];
-			}else{
-				$price = (float)$product_info['price'];
-			}
-			
-			$actual_price = (float)$product_info['price'];		
+			$base_price = (float)$product_info['special'] > 0 ? (float)$product_info['special'] : (float)$product_info['price'];
+			$regular_base_price = (float)$product_info['price'];
+			$formatted_price = $this->currency->format(
+				$this->tax->calculate($base_price, $product_info['tax_class_id'], $this->config->get('config_tax')),
+				$currencycode
+			);
 
-			$formatted_price =  $this->currency->format($price, $currencycode);
-			
+			// Structured data must match the tax-inclusive amount visible to the customer.
+			$price = $this->tax->calculate($base_price, $product_info['tax_class_id'], $this->config->get('config_tax'));
+			$actual_price = $this->tax->calculate($regular_base_price, $product_info['tax_class_id'], $this->config->get('config_tax'));
 			$currency_value = $this->currency->getValue($currencycode);
 			$price 			= $price * $currency_value;
 			$actual_price 	= $actual_price * $currency_value;
-			
-			if ($this->config->get('hb_snippets_incl_tax')) {
-				$price 			= $this->tax->calculate($price, $product_info['tax_class_id'], $this->config->get('config_tax'));
-				$actual_price 	= $this->tax->calculate($product_info['price'], $product_info['tax_class_id'], $this->config->get('config_tax'));
-			}			
 			
 			$price = number_format($price, 2, '.', '');
 			$actual_price = number_format($actual_price, 2, '.', '');
@@ -62,8 +90,11 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 					}
 				}
 
-				$sku = ($product_info['sku']) ? $product_info['sku'] : $product_id;
-				$mpn = ($product_info['mpn']) ? $product_info['mpn'] : $product_id;
+				$sku = trim((string)$product_info['sku']);
+				if ($sku === '') {
+					$sku = trim((string)$product_info['model']);
+				}
+				$mpn = trim((string)$product_info['mpn']);
 
 				$product_images = [];
 
@@ -107,8 +138,14 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 					}
 				}				
 
-				$brand_name = ($product_info['manufacturer'])? $product_info['manufacturer'] : $this->config->get('hb_snippets_brand');
-				$brand = array('@type' => 'Brand', '@id' => $this->url->link('product/manufacturer/info', 'manufacturer_id=' . $product_info['manufacturer_id']), 'name' => $brand_name );
+				$brand_name = $this->cleanText($product_info['manufacturer'] ? $product_info['manufacturer'] : $this->config->get('hb_snippets_brand'));
+				$brand = array();
+				if ($brand_name !== '') {
+					$brand = array('@type' => 'Brand', 'name' => $brand_name);
+					if ((int)$product_info['manufacturer_id'] > 0) {
+						$brand['@id'] = $this->url->link('product/manufacturer/info', 'manufacturer_id=' . (int)$product_info['manufacturer_id']);
+					}
+				}
 
 				$review_data = array();
 				$review_query = $this->db->query("SELECT * FROM `".DB_PREFIX."review` WHERE product_id = '".(int)$product_id."' AND status = 1");
@@ -139,7 +176,7 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 							'headline'		=> 	$title,
 							'reviewRating'	=> 	$reviewRating,
 							'author'		=> 	$author,
-							'reviewBody'	=> 	htmlentities($rev['text']),
+							'reviewBody'	=> 	$this->cleanText($rev['text']),
 							'datePublished'	=>	date('Y-m-d', strtotime($rev['date_added']))
 						);
 					}
@@ -163,13 +200,14 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 					'url'             => $url,
 					'availability'    => $availability,
 					'itemCondition'    => 'https://schema.org/NewCondition',
-					'price'           => $actual_price,
+					'price'           => $price,
 					'priceCurrency'   => $currencycode,
+					'seller'          => array(
+						'@type' => 'Organization',
+						'@id' => rtrim($this->config->get('config_url'), '/') . '/#store',
+						'name' => $this->config->get('config_name')
+					),
 				);
-
-				if ($price < $actual_price){
-					$offers['salePrice'] = $price;
-				}
 				
 				if ($this->config->get('hb_snippets_pricevalid')) {
 					$price_date = $this->config->get('hb_snippets_pricevaliddate');
@@ -186,7 +224,7 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 					}
 				}				
 
-				if (isset($price_date)) {
+				if (isset($price_date) && strtotime($price_date) >= strtotime(date('Y-m-d'))) {
 					$offers['priceValidUntil'] = $price_date;
 				}
 
@@ -336,28 +374,34 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 					}
 				}
 
-				//seller
-				$offer['sellers'] = ['@type' => 'Organization', 'name' => $this->config->get('config_name')];
-
 				$product_snippet = array(
-					'@context' 			=> 	'https://schema.org/',
+					'@context' 			=> 	'https://schema.org',
 					'@type'				=> 	'Product',
 					'@id'				=> 	$url.'#product',
-					'sku'				=> 	$sku,
-					'mpn'				=> 	$mpn,
+					'url'				=> 	$url,
 					'image'				=> 	$product_images,
-					'name'				=> 	$data['heading_title'],
+					'name'				=> 	$this->cleanText($data['heading_title']),
 					'description'		=> 	$description,
-					'productID'			=> 	$product_id,
-					'brand'				=>	$brand,
-					'review'			=> 	$review_data,
-					'aggregateRating'	=> 	$aggregateRating,
 					'offers'			=> 	$offers,
 				);
-				
-				$ldjson .= '<script type="application/ld+json">';
-				$ldjson .= json_encode($product_snippet);
-				$ldjson .= "</script>";
+
+				if ($sku !== '') {
+					$product_snippet['sku'] = $sku;
+				}
+				if ($mpn !== '') {
+					$product_snippet['mpn'] = $mpn;
+				}
+				if (!empty($brand)) {
+					$product_snippet['brand'] = $brand;
+				}
+				if (!empty($review_data)) {
+					$product_snippet['review'] = $review_data;
+				}
+				if (!empty($aggregateRating)) {
+					$product_snippet['aggregateRating'] = $aggregateRating;
+				}
+
+				$ldjson .= $this->jsonLd($product_snippet, 'World of Beauty product structured data');
 			}
 
 			//OPEN GRAPH
@@ -378,6 +422,7 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 				$this->document->setOpengraph('og:title', $hb_snippets_ogp);
 				$this->document->setOpengraph('og:type', 'product');
 				$this->document->setOpengraph('og:site_name', $this->config->get('config_name'));
+				$this->document->setOpengraph('og:locale', 'hr_HR');
 				
 				$this->load->model('tool/image');
 				if ($product_info['image']) {
@@ -385,10 +430,12 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 					$this->document->setOpengraph('og:image', $snippet_thumb);
 					$this->document->setOpengraph('og:image:width', $this->config->get('hb_snippets_og_piw'));
 					$this->document->setOpengraph('og:image:height', $this->config->get('hb_snippets_og_pih'));
+					$this->document->setOpengraph('og:image:alt', $name);
 				} 
 				
 				$this->document->setOpengraph('og:url', $this->url->link('product/product', 'product_id=' . $product_id));
-				$this->document->setOpengraph('og:description', $description);
+				$social_description = $this->summaryText($product_info['meta_description'] ?: $description);
+				$this->document->setOpengraph('og:description', $social_description);
 				
 				/*if (!empty($data['images'])) {
 					foreach ($data['images'] as $additional_image){
@@ -398,6 +445,8 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 					}
 				}*/
 				
+				$this->document->setOpengraph('product:price:amount', $price);
+				$this->document->setOpengraph('product:price:currency', $currencycode);
 				if ((float)$product_info['special']) {
 					$this->document->setOpengraph('product:sale_price:amount', $price);
 					$this->document->setOpengraph('product:sale_price:currency', $currencycode);
@@ -409,9 +458,9 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 				}
 
 				if ($product_info['quantity'] > 0){
-					$this->document->setOpengraph('og:availability', 'instock');
+					$this->document->setOpengraph('product:availability', 'in stock');
 				} else {
-					$this->document->setOpengraph('og:availability', 'oos');
+					$this->document->setOpengraph('product:availability', 'out of stock');
 				}
 				
 				if (!empty($data['products'])) {
@@ -433,9 +482,11 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 				}
 				
 				$this->document->setTwittercard('twitter:card', 'summary_large_image');
-				$this->document->setTwittercard('twitter:site', $this->config->get('hb_snippets_tc_username'));
+				if ($this->config->get('hb_snippets_tc_username')) {
+					$this->document->setTwittercard('twitter:site', $this->config->get('hb_snippets_tc_username'));
+				}
 				$this->document->setTwittercard('twitter:title', $hb_snippets_tcp);
-				$this->document->setTwittercard('twitter:description', $description);
+				$this->document->setTwittercard('twitter:description', isset($social_description) ? $social_description : $this->summaryText($description));
 				if ($product_info['image']) {
 					$this->document->setTwittercard('twitter:image', $data['popup']);
 				}
@@ -460,16 +511,18 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 			    $this->document->setOpengraph('fb:app_id', $this->config->get('hb_snippets_og_id'));
 			}
 			$this->document->setOpengraph('og:title', $hb_snippets_ogc);
-            $this->document->setOpengraph('og:type', 'product.group');
+			$this->document->setOpengraph('og:type', 'website');
 			$this->document->setOpengraph('og:site_name', $this->config->get('config_name'));
+			$this->document->setOpengraph('og:locale', 'hr_HR');
 			$this->document->setOpengraph('og:url', $this->url->link('product/category', 'path=' . $category_info['category_id']));
 			if ($category_info['image']) {
 				$image = $this->model_tool_image->resize($category_info['image'], $this->config->get('hb_snippets_og_ciw'), $this->config->get('hb_snippets_og_cih'));
 				$this->document->setOpengraph('og:image', $image);
 				$this->document->setOpengraph('og:image:width', $this->config->get('hb_snippets_og_ciw'));
 				$this->document->setOpengraph('og:image:height', $this->config->get('hb_snippets_og_cih'));
+				$this->document->setOpengraph('og:image:alt', $category_info['name']);
 			}
-			$this->document->setOpengraph('og:description', $category_info['meta_description']);
+			$this->document->setOpengraph('og:description', $this->cleanText($category_info['meta_description']));
 		}
 		
 		//TWITTER CARDS
@@ -483,9 +536,11 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 			}
 			
 			$this->document->setTwittercard('twitter:card', 'summary_large_image');
-			$this->document->setTwittercard('twitter:site', $this->config->get('hb_snippets_tc_username'));
+			if ($this->config->get('hb_snippets_tc_username')) {
+				$this->document->setTwittercard('twitter:site', $this->config->get('hb_snippets_tc_username'));
+			}
 			$this->document->setTwittercard('twitter:title', $hb_snippets_tcc);
-			$this->document->setTwittercard('twitter:description', $category_info['meta_description']);
+			$this->document->setTwittercard('twitter:description', $this->cleanText($category_info['meta_description']));
 			if ($category_info['image']) {
 				$image = $this->model_tool_image->resize($category_info['image'], $this->config->get('hb_snippets_og_ciw'), $this->config->get('hb_snippets_og_cih'));
 			    $this->document->setTwittercard('twitter:image', $image);
@@ -494,9 +549,10 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 	}
 	
 	public function information_social($information_info) {
+		$config_url = $this->config->get('config_url');
+		$og_img = $this->config->get('hb_snippets_og_img');
+
 		if ($this->config->get('hb_snippets_og_enable')) {
-			$config_url = $this->config->get('config_url');
-			$og_img = $this->config->get('hb_snippets_og_img');
 			$fb_app_id = $this->config->get('hb_snippets_og_id');
 	
 			// Open Graph
@@ -507,22 +563,26 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 			$this->document->setOpengraph('og:title', $information_info['title']);
 			$this->document->setOpengraph('og:type', 'website');
 			$this->document->setOpengraph('og:site_name', $this->config->get('config_name'));
+			$this->document->setOpengraph('og:locale', 'hr_HR');
 			$this->document->setOpengraph('og:url', $this->url->link('information/information', 'information_id=' . $information_info['information_id']));
-			$this->document->setOpengraph('og:description', $information_info['meta_description']);
+			$this->document->setOpengraph('og:description', $this->cleanText($information_info['meta_description']));
 	
 			if ($og_img) {
 				$this->document->setOpengraph('og:image', $config_url . 'image/' . $og_img);
 				$this->document->setOpengraph('og:image:width', $this->config->get('hb_snippets_og_diw'));
 				$this->document->setOpengraph('og:image:height', $this->config->get('hb_snippets_og_dih'));
+				$this->document->setOpengraph('og:image:alt', $information_info['title']);
 			}
 		}
 	
 		// Twitter Cards
 		if ($this->config->get('hb_snippets_tc_enable')) {
 			$this->document->setTwittercard('twitter:card', 'summary_large_image');
-			$this->document->setTwittercard('twitter:site', $this->config->get('hb_snippets_tc_username'));
+			if ($this->config->get('hb_snippets_tc_username')) {
+				$this->document->setTwittercard('twitter:site', $this->config->get('hb_snippets_tc_username'));
+			}
 			$this->document->setTwittercard('twitter:title', $information_info['title']);
-			$this->document->setTwittercard('twitter:description', $information_info['meta_description']);
+			$this->document->setTwittercard('twitter:description', $this->cleanText($information_info['meta_description']));
 	
 			if ($og_img) {
 				$this->document->setTwittercard('twitter:image', $config_url . 'image/' . $og_img);
@@ -545,6 +605,7 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 			$this->document->setOpengraph('og:title', $this->config->get('config_meta_title'));
 			$this->document->setOpengraph('og:type', 'website');
 			$this->document->setOpengraph('og:site_name', $this->config->get('config_name'));
+			$this->document->setOpengraph('og:locale', 'hr_HR');
 			$this->document->setOpengraph('og:url', $config_url);
 			$this->document->setOpengraph('og:description', $this->config->get('config_meta_description'));
 
@@ -552,13 +613,16 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 				$this->document->setOpengraph('og:image', $config_url . 'image/' . $og_img);
 				$this->document->setOpengraph('og:image:width', $this->config->get('hb_snippets_og_diw'));
 				$this->document->setOpengraph('og:image:height', $this->config->get('hb_snippets_og_dih'));
+				$this->document->setOpengraph('og:image:alt', $this->config->get('config_name'));
 			}
 		}
 
 		// Twitter Cards
 		if ($this->config->get('hb_snippets_tc_enable')) {
 			$this->document->setTwittercard('twitter:card', 'summary_large_image');
-			$this->document->setTwittercard('twitter:site', $this->config->get('hb_snippets_tc_username'));
+			if ($this->config->get('hb_snippets_tc_username')) {
+				$this->document->setTwittercard('twitter:site', $this->config->get('hb_snippets_tc_username'));
+			}
 			$this->document->setTwittercard('twitter:title', $this->config->get('config_meta_title'));
 			$this->document->setTwittercard('twitter:description', $this->config->get('config_meta_description'));
 
@@ -569,7 +633,7 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 	}
 	
 	public function getProductCategory(int $product_id): array{
-		$query = $this->db->query("SELECT c.category_id, c.parent_id FROM " . DB_PREFIX . "product_to_category p2c LEFT JOIN " . DB_PREFIX . "category c ON (p2c.category_id = c.category_id) WHERE product_id = '" . (int)$product_id . "' ORDER BY parent_id DESC LIMIT 1");
+		$query = $this->db->query("SELECT c.category_id, c.parent_id, COUNT(cp.path_id) AS depth FROM " . DB_PREFIX . "product_to_category p2c INNER JOIN " . DB_PREFIX . "category c ON (p2c.category_id = c.category_id) LEFT JOIN " . DB_PREFIX . "category_path cp ON (cp.category_id = c.category_id) WHERE p2c.product_id = '" . (int)$product_id . "' AND c.status = 1 GROUP BY c.category_id, c.parent_id ORDER BY depth DESC, c.category_id DESC LIMIT 1");
 		if ($query->row){
 			return $query->row;
 		}else{
@@ -601,6 +665,25 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 			$itemlist = [];
 			$i = 1;
 
+			if ($this->config->get('hb_snippets_bc_type') == 'smart' && empty($options) && isset($this->request->get['product_id'])) {
+				$last_breadcrumb = end($breadcrumbs);
+				$options = array(
+					'type' => 'product',
+					'id' => (int)$this->request->get['product_id'],
+					'title' => isset($last_breadcrumb['text']) ? $last_breadcrumb['text'] : ''
+				);
+			}
+			if ($this->config->get('hb_snippets_bc_type') == 'smart' && empty($options) && isset($this->request->get['path'])) {
+				$path_parts = explode('_', (string)$this->request->get['path']);
+				$category_id = (int)end($path_parts);
+				$last_breadcrumb = end($breadcrumbs);
+				$options = array(
+					'type' => 'category',
+					'id' => $category_id,
+					'title' => isset($last_breadcrumb['text']) ? $last_breadcrumb['text'] : ''
+				);
+			}
+
 			if ($this->config->get('hb_snippets_bc_type') == 'smart' && !empty($options)) {
 				$type   = $options['type'];
 				$id 	= $options['id'];
@@ -617,29 +700,19 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 
 					$category = $this->getProductCategory($id);
 					if (!empty($category)){
-						$sub_category_id 	= $category['category_id'];
-						$parent_category_id = $category['parent_id'];
-
-						$parent_path_id = '';
-						if ($parent_category_id != 0 && $this->isCategoryActive($parent_category_id)) {
-							$parent_category_info = $this->model_catalog_category->getCategory($parent_category_id);
-
-							$breadcrumbs[] = [
-								'text' => isset($parent_category_info['name']) ? $parent_category_info['name'] : $parent_category_id,
-								'href' => $this->url->link('product/category', 'path=' . $parent_category_id)
-							];
-
-							$parent_path_id = $parent_category_id.'_';
+						$path_query = $this->db->query("SELECT path_id FROM " . DB_PREFIX . "category_path WHERE category_id = '" . (int)$category['category_id'] . "' ORDER BY level ASC");
+						$path_ids = array();
+						foreach ($path_query->rows as $path_row) {
+							$category_info = $this->model_catalog_category->getCategory((int)$path_row['path_id']);
+							if (!$category_info) {
+								continue;
+							}
+							$path_ids[] = (int)$path_row['path_id'];
+							$breadcrumbs[] = array(
+								'text' => $category_info['name'],
+								'href' => $this->url->link('product/category', 'path=' . implode('_', $path_ids))
+							);
 						}
-
-						$sub_category_info = $this->model_catalog_category->getCategory($sub_category_id);
-
-						if ($sub_category_info) {
-							$breadcrumbs[] = [
-								'text' => isset($sub_category_info['name']) ? $sub_category_info['name'] : $sub_category_id,
-								'href' => $this->url->link('product/category', 'path=' .$parent_path_id.$sub_category_id)
-							];
-						}						
 					}					
 
 					$breadcrumbs[] = [
@@ -678,12 +751,18 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 			}			
 			
 			if (!empty($breadcrumbs)) {
-				array_shift($breadcrumbs); //removing the first array element which is usually the home
-				foreach ($breadcrumbs as $breadcrumb) {	
+				foreach ($breadcrumbs as $index => $breadcrumb) {
+					$name = $this->cleanText(isset($breadcrumb['text']) ? $breadcrumb['text'] : '');
+					if ($index === 0 && $name === '') {
+						$name = $this->homeLabel();
+					}
+					if ($name === '' || empty($breadcrumb['href'])) {
+						continue;
+					}
 					$itemlist[] = array(
 						'@type'			=> 	'ListItem',
 						'position'		=>  $i,
-						'name'			=>  $breadcrumb['text'],
+						'name'			=>  $name,
 						'item'			=>  $breadcrumb['href']
 					);
 
@@ -692,14 +771,14 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 			}					
 
 			$breadcrumb_snippet = array(
-				'@context' 			=> 	'https://schema.org/',
+				'@context' 			=> 	'https://schema.org',
 				'@type'				=> 	'BreadcrumbList',
 				'itemListElement'   =>	$itemlist
 			);
-			
-			$ldjson .= '<!--huntbee breadcrumb structured data--><script type="application/ld+json">';
-			$ldjson .= json_encode($breadcrumb_snippet);
-			$ldjson .= "</script>";
+
+			if (!empty($itemlist)) {
+				$ldjson .= $this->jsonLd($breadcrumb_snippet, 'World of Beauty breadcrumb structured data');
+			}
 
 		} else {
 			$ldjson = '';
@@ -720,52 +799,75 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 			return;
 		}
 	
-		$store_id = (int)$this->config->get('config_store_id');
 		$store_url = $this->config->get('config_url') ?: HTTPS_SERVER;
+		$store_url = rtrim($store_url, '/') . '/';
 	
 		// Prepare Contact Points
+		$contacts = $this->config->get('hb_snippets_contact');
+		$contacts = is_array($contacts) ? $contacts : array();
 		$contactPoint = array_map(function ($contact) {
 			return [
 				'@type'       => 'ContactPoint',
 				'telephone'   => $contact['n'],
-				'contactType' => $contact['t']
+				'contactType' => $contact['t'],
+				'areaServed'  => 'HR',
+				'availableLanguage' => array('hr', 'en')
 			];
-		}, $this->config->get('hb_snippets_contact') ?? []);
+		}, $contacts);
 	
+		$emails = $this->config->get('hb_snippets_emails');
+		$emails = is_array($emails) ? $emails : array();
 		$contactPoint = array_merge($contactPoint, array_map(function ($email) {
 			return [
 				'@type'       => 'ContactPoint',
 				'email'       => $email['email'],
-				'contactType' => $email['type']
+				'contactType' => $email['type'],
+				'areaServed'  => 'HR',
+				'availableLanguage' => array('hr', 'en')
 			];
-		}, $this->config->get('hb_snippets_emails') ?? []));
+		}, $emails));
 	
 		// Prepare Social Media Links
-		$sameAs = $this->config->get('hb_snippets_socials') ?? [];
+		$sameAs = $this->config->get('hb_snippets_socials');
+		$sameAs = is_array($sameAs) ? array_values(array_filter($sameAs)) : array();
 	
 		// Prepare Home Snippet
 		$home_snippet = [];
 		if ($this->config->get('hb_snippets_logo')) {
 			$home_snippet = [
-				'@context'       => 'https://schema.org/',
+				'@context'       => 'https://schema.org',
 				'@type'          => 'OnlineStore',
+				'@id'            => $store_url . '#store',
 				'name'           => $this->config->get('config_name'),
+				'legalName'      => $this->config->get('hb_snippets_local_name'),
 				'url'            => $store_url,
 				'logo'           => $store_url . 'image/' . $this->config->get('hb_snippets_logo'),
+				'image'          => $store_url . 'image/' . ($this->config->get('hb_snippets_og_img') ?: $this->config->get('hb_snippets_logo')),
 				'description'    => $this->config->get('config_meta_description'),
 				'telephone'      => $this->config->get('config_telephone'),
-				'email'          => $this->config->get('config_email'),
+				'areaServed'     => 'HR',
+				'currenciesAccepted' => $this->config->get('config_currency'),
 				'address'        => [
 					'@type'            => 'PostalAddress',
 					'streetAddress'    => $this->config->get('hb_snippets_local_st'),
 					'addressLocality'  => $this->config->get('hb_snippets_local_location'),
 					'addressRegion'    => $this->config->get('hb_snippets_local_state'),
 					'postalCode'       => $this->config->get('hb_snippets_local_postal'),
-					'addressCountry'   => $this->config->get('hb_snippets_local_country')
+					'addressCountry'   => 'HR'
 				],
 				'contactPoint'   => $contactPoint,
 				'sameAs'         => $sameAs
 			];
+
+			$email = trim((string)$this->config->get('config_email'));
+			if ($email !== '' && stripos($email, 'noreply') === false && stripos($email, 'no-reply') === false) {
+				$home_snippet['email'] = $email;
+			}
+
+			$payments = $this->config->get('hb_snippets_payment');
+			if (is_array($payments) && !empty($payments)) {
+				$home_snippet['paymentAccepted'] = implode(', ', $payments);
+			}
 	
 			// Add VAT ID if available
 			if (!empty($this->config->get('hb_snippets_vat'))) {
@@ -774,7 +876,7 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 		}
 	
 		// Generate JSON-LD
-		$ldjson = $home_snippet ? '<!--huntbee home-logo structured data--><script type="application/ld+json">' . json_encode($home_snippet) . '</script>' : '';
+		$ldjson = $home_snippet ? $this->jsonLd($home_snippet, 'World of Beauty store structured data') : '';
 	
 		$this->document->setStructureddata($ldjson);
 	}
@@ -789,9 +891,13 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 		$search_link = $this->url->link('product/search', 'search=');
 	
 		$snippet = [
-			'@context'        => 'https://schema.org/',
+			'@context'        => 'https://schema.org',
 			'@type'           => 'WebSite',
+			'@id'             => rtrim($store_url, '/') . '/#website',
+			'name'            => $this->config->get('config_name'),
 			'url'             => $store_url,
+			'inLanguage'      => array('hr-HR', 'en'),
+			'publisher'       => array('@id' => rtrim($store_url, '/') . '/#store'),
 			'potentialAction' => [
 				'@type'       => 'SearchAction',
 				'target'      => $search_link . '{search_term_string}',
@@ -799,9 +905,7 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 			]
 		];
 	
-		$ldjson = '<!--huntbee sitelinks search box structured data--><script type="application/ld+json">';
-		$ldjson .= json_encode($snippet);
-		$ldjson .= '</script>';
+		$ldjson = $this->jsonLd($snippet, 'World of Beauty website structured data');
 	
 		$this->document->setStructureddata($ldjson);
 	}
@@ -816,21 +920,22 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 			return [
 				'@type'    => 'ListItem',
 				'position' => $index + 1,
-				'name'     => $product['name'],
-				'image'    => $product['thumb'],
-				'url'      => $product['href']
+				'item'     => array(
+					'@type' => 'Product',
+					'name' => $this->cleanText($product['name']),
+					'image' => $product['thumb'],
+					'url' => $product['href']
+				)
 			];
 		}, $products, array_keys($products));
 	
 		$itemlist_snippet = [
-			'@context'         => 'https://schema.org/',
+			'@context'         => 'https://schema.org',
 			'@type'            => 'ItemList',
 			'itemListElement'  => $itemlist
 		];
 	
-		$ldjson = '<!--huntbee category structured data--><script type="application/ld+json">';
-		$ldjson .= json_encode($itemlist_snippet);
-		$ldjson .= '</script>';
+		$ldjson = $this->jsonLd($itemlist_snippet, 'World of Beauty category structured data');
 	
 		$this->document->setStructureddata($ldjson);
 	}	

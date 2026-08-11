@@ -980,43 +980,4 @@ $("#gallery").lightGallery({
 });
 });
 //--></script>
-<script type="application/ld+json">
-{
-"@context": "http://schema.org",
-"@type": "Product",
-"image": [
-<?php if ($thumb) { ?>
-"<?php echo $thumb; ?>"
-<?php } ?>
-],
-"description": "<?php echo $meta_description; ?>",
-<?php if ($review_qty) { ?>
-"aggregateRating": {
-"@type": "AggregateRating",
-"ratingValue": "<?php echo $rating; ?>",
-"reviewCount": "<?php echo $review_qty; ?>"},
-<?php } ?>
-"name": "<?php echo $heading_title; ?>",
-"sku": "<?php echo $model; ?>",
-<?php if ($manufacturer) { ?>
-"brand": "<?php echo $manufacturer; ?>",
-<?php } ?>
-"offers": {
-"@type": "Offer",
-<?php if ($qty > 0) { ?>
-"availability": "http://schema.org/InStock",
-<?php } else { ?>
-"availability": "http://schema.org/OutOfStock",
-<?php } ?>
-<?php if ($price) { ?>
-<?php if ($special) { ?>
-"price": "<?php echo $special_snippet; ?>",
-<?php } else { ?>
-"price": "<?php echo $price_snippet; ?>",
-<?php } ?>
-<?php } ?>
-"priceCurrency": "<?php echo $currency_code; ?>"
-}
-}
-</script>
 <?php echo $footer; ?>

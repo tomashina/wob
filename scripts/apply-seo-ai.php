@@ -116,6 +116,26 @@ function seoConfigureSearchMeta(mysqli $database, array $languages)
     }
 }
 
+function seoConfigureStructuredData(mysqli $database)
+{
+    $values = array(
+        'hb_snippets_prod_enable' => '1',
+        'hb_snippets_bc_enable' => '1',
+        'hb_snippets_bc_type' => 'smart',
+        'hb_snippets_list_enable' => '1',
+        'hb_snippets_kg_enable' => '1',
+        'hb_snippets_search_enable' => '1',
+        'hb_snippets_og_enable' => '1',
+        'hb_snippets_tc_enable' => '1',
+        'hb_snippets_local_enable' => '0',
+        'hb_snippets_local_country' => 'HR'
+    );
+
+    foreach ($values as $key => $value) {
+        seoUpsertSetting($database, 'hb_snippets', $key, $value);
+    }
+}
+
 function seoRepairCategoryMeta(mysqli $database, array $languages)
 {
     $table = DB_PREFIX . 'category_description';
@@ -271,11 +291,13 @@ try {
     $database->begin_transaction();
     $languages = seoLanguages($database);
     seoConfigureSearchMeta($database, $languages);
+    seoConfigureStructuredData($database);
     $categoryUpdates = seoRepairCategoryMeta($database, $languages);
     $productUpdates = seoRepairProductMeta($database, $languages);
     $database->commit();
 
     echo 'UPDATED search and pagination metadata' . PHP_EOL;
+    echo 'UPDATED Open Graph, Twitter Cards and structured data settings' . PHP_EOL;
     echo 'REPAIRED ' . $categoryUpdates . ' category metadata records' . PHP_EOL;
     echo 'REPAIRED ' . $productUpdates . ' product metadata records' . PHP_EOL;
 

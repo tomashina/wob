@@ -974,43 +974,4 @@ $("#gallery").lightGallery({
 });
 });
 //--></script>
-<script type="application/ld+json">
-{
-"@context": "http://schema.org",
-"@type": "Product",
-"image": [
-{% if thumb %}
-"{{ thumb }}"
-{% endif %}
-],
-"description": "{{ meta_description }}",
-{% if review_qty %}
-"aggregateRating": {
-"@type": "AggregateRating",
-"ratingValue": "{{ rating }}",
-"reviewCount": "{{ review_qty }}"},
-{% endif %}
-"name": "{{ heading_title }}",
-"sku": "{{ model }}",
-{% if manufacturer %}
-"brand": "{{ manufacturer }}",
-{% endif %}
-"offers": {
-"@type": "Offer",
-{% if qty > 0 %}
-"availability": "http://schema.org/InStock",
-{% else %}
-"availability": "http://schema.org/OutOfStock",
-{% endif %}
-{% if price %}
-{% if special %}
-"price": "{{ special_snippet }}",
-{% else %}
-"price": "{{ price_snippet }}",
-{% endif %}
-"priceCurrency": "{{ currency_code }}"
-{% endif %}
-}
-}
-</script>
 {{ footer }}
