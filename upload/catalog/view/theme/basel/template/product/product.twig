@@ -1,53 +1,5 @@
 {{ header }}
 
-{% if product_layout != "full-width" %}
-<style>
-.product-page .image-area {
-	{% if product_layout == "images-left" and images %} 
-		width: {{img_w + img_a_w + 20 }}px;
-	{% else %}
-		width: {{ img_w }}px;
-	{% endif %}
-}
-.product-page .main-image {
-	max-width:{{ img_w }}px;	
-}
-.product-page .image-additional {
-	{% if product_layout == "images-left" %} 
-		width: {{ img_a_w }}px;
-		height: {{ img_h }}px;
-	{% else %}
-		width: {{ img_w }}px;
-	{% endif %}
-}
-.product-page .image-additional.has-arrows {
-	{% if product_layout == "images-left" %} 
-		height: {{ img_h - 40 }}px;
-	{% endif %}
-}
-@media (min-width: 992px) and (max-width: 1199px) {
-.product-page .image-area {
-	{% if product_layout == "images-left" %} 
-		width: {{((img_w + img_a_w)/1.25 + 20) }}px;
-	{% else %}
-		width: {{ img_w/1.25 }}px;
-	{% endif %}
-}
-.product-page .main-image {
-	width:{{ img_w/1.25 }}px;	
-}
-.product-page .image-additional {
-	{% if product_layout == "images-left" %} 
-		width: {{ img_a_w/1.25 }}px;
-		height: {{ img_h/1.25 }}px;
-	{% else %}
-		width: {{ img_w/1.25 }}px;
-	{% endif %}
-}
-}
-</style>
-{% endif %}
-
 <ul class="breadcrumb">
     {% for breadcrumb in breadcrumbs %}
     <li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
@@ -128,24 +80,23 @@
     {% if review_status and (review_qty > 0) %}
     <div class="rating">
     <span class="rating_stars rating r{{ rating }}">
-    <i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i>
+    <i class="fa-light fa-star"></i><i class="fa-light fa-star"></i><i class="fa-light fa-star"></i><i class="fa-light fa-star"></i><i class="fa-light fa-star"></i>
     </span>
     </div>
     <span class="review_link">(<button type="button" class="hover_uline to_tabs wob-link-button" onclick="$('a[href=\'#tab-review\']').trigger('click'); return false;">{{ reviews }}</button>)</span>
 	{% endif %}
 
     {% if price %}
-      <ul class="list-unstyled price">
+      <ul class="list-unstyled price product-price">
         {% if not special %}
-        <li><span class="live-price">{{ price }} <span>   <small>{{ text_tax_included }} </small></li>
+        <li class="product-price-row"><span class="live-price">{{ price }}</span><small class="product-tax-note">{{ text_tax_included }}</small></li>
         {% else %}
-        <li><span class="price-old">{{ price }}  </span><span class="live-price-new">{{ special }}  </span> <small>{{ text_tax_included }} </small></li>
-
-        <span id="special_countdown"></span>
+        <li class="product-price-row product-price-sale"><span class="price-old">{{ price }}</span><span class="live-price-new">{{ special }}</span><small class="product-tax-note">{{ text_tax_included }}</small></li>
+        <li><span id="special_countdown"></span></li>
         {% endif %}
       </ul>
  {% if special %}
-      <p>Najniža cijena u zadnjih 30 dana: {{ price }} <small>{{ text_tax_included }}</small></p>
+      <p class="product-lowest-price">Najniža cijena u zadnjih 30 dana: <strong>{{ price }}</strong> <small>{{ text_tax_included }}</small></p>
 {% endif %}
 
     
@@ -365,10 +316,10 @@
           </div> <!-- #product ends -->
 
 
-	<p class="info is_wishlist"><button type="button" class="wob-link-button" onclick="wishlist.add('{{ product_id }}');"><i class="icon-heart" aria-hidden="true"></i> {{ button_wishlist }}</button></p>
-	<p class="info is_compare"><button type="button" class="wob-link-button" onclick="compare.add('{{ product_id }}');"><i class="icon-refresh" aria-hidden="true"></i> {{ button_compare }}</button></p>
+	<p class="info is_wishlist"><button type="button" class="wob-link-button" onclick="wishlist.add('{{ product_id }}');"><i class="fa-light fa-heart" aria-hidden="true"></i> {{ button_wishlist }}</button></p>
+	<p class="info is_compare"><button type="button" class="wob-link-button" onclick="compare.add('{{ product_id }}');"><i class="fa-light fa-code-compare" aria-hidden="true"></i> {{ button_compare }}</button></p>
     {% if question_status %}
-    <p class="info is_ask"><button type="button" class="to_tabs wob-link-button" onclick="$('a[href=\'#tab-questions\']').trigger('click'); return false;"><i class="icon-question" aria-hidden="true"></i> {{ basel_button_ask }}</button></p>
+    <p class="info is_ask"><button type="button" class="to_tabs wob-link-button" onclick="$('a[href=\'#tab-questions\']').trigger('click'); return false;"><i class="fa-light fa-circle-question" aria-hidden="true"></i> {{ basel_button_ask }}</button></p>
     {% endif %}
     
     <div class="clearfix"></div>
@@ -400,10 +351,13 @@
       <p class="info tags"><b>{{ text_tags }}</b> &nbsp;<span>{% for tag in tags %}<a class="hover_uline" href="{{ tag.href }}">{{ tag.tag }}</a>{% endfor %}</span></p>
       {% endif %}
       
-  <script type='text/javascript' src='https://platform-api.sharethis.com/js/sharethis.js#property=61a636a5d0a9e10012e4df2d&product=sop' async='async'></script>
-     <!-- ShareThis BEGIN -->
-<div class="sharethis-inline-share-buttons"></div>
-<!-- ShareThis END -->
+      {% set product_share_url = share|replace({'&amp;': '&'}) %}
+      <nav class="product-share" aria-label="Podijeli proizvod">
+        <a class="product-share-link" href="https://www.facebook.com/sharer/sharer.php?u={{ product_share_url|url_encode }}" target="_blank" rel="noopener noreferrer" aria-label="Podijeli na Facebooku"><i class="fa-brands fa-facebook-f" aria-hidden="true"></i></a>
+        <a class="product-share-link" href="https://x.com/intent/post?url={{ product_share_url|url_encode }}&amp;text={{ heading_title|url_encode }}" target="_blank" rel="noopener noreferrer" aria-label="Podijeli na X-u"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i></a>
+        <a class="product-share-link" href="https://wa.me/?text={{ (heading_title ~ ' ' ~ product_share_url)|url_encode }}" target="_blank" rel="noopener noreferrer" aria-label="Podijeli na WhatsAppu"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></a>
+        <a class="product-share-link" href="mailto:?subject={{ heading_title|url_encode }}&amp;body={{ product_share_url|url_encode }}" aria-label="Podijeli e-mailom"><i class="fa-light fa-envelope" aria-hidden="true"></i></a>
+      </nav>
      </div> <!-- .info-holder ends -->
      
 	 </div> <!-- .inner ends -->
@@ -450,7 +404,7 @@
   <div class="tab-content">
     
     <div class="tab-pane active" id="tab-description">
-    {{ description }}
+    <div class="product-description-content">{{ description }}</div>
     </div>
     
     {% if product_tabs %}
@@ -498,13 +452,13 @@
 		<div id="review">
 		{% if seo_reviews %}
 		{% for review in seo_reviews %}
-		<div class="table">
-		<div class="table-cell"><i class="fa fa-user"></i></div>
+		<div class="table product-review-item">
+		<div class="table-cell"><i class="fa-light fa-user" aria-hidden="true"></i></div>
 		<div class="table-cell right">
 		<p class="author"><b>{{ review.author }}</b>  -  {{ review.date_added }}
 		<span class="rating">
 		<span class="rating_stars rating r{{ review.rating }}">
-		<i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i>
+		<i class="fa-light fa-star"></i><i class="fa-light fa-star"></i><i class="fa-light fa-star"></i><i class="fa-light fa-star"></i><i class="fa-light fa-star"></i>
 		</span>
 		</span>
 		</p>
@@ -530,21 +484,13 @@
         <div class="form-group required">
           <div class="col-sm-12 rating-stars">
             <label class="control-label">{{ entry_rating }}</label>
-            
-            <input type="radio" value="1" name="rating" id="rating1" />
-        	<label for="rating1"><i class="fa fa-star-o"></i></label>
-            
-            <input type="radio" value="2" name="rating" id="rating2" />
-        	<label for="rating2"><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i></label>
-            
-            <input type="radio" value="3" name="rating" id="rating3" />
-        	<label for="rating3"><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i></label>
-            
-            <input type="radio" value="4" name="rating" id="rating4" />
-        	<label for="rating4"><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i></label>
-            
-            <input type="radio" value="5" name="rating" id="rating5" />
-        	<label for="rating5"><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i></label>
+            <div class="product-rating-options" role="radiogroup" aria-label="{{ entry_rating }}">
+              <input type="radio" value="5" name="rating" id="rating5" /><label for="rating5" aria-label="5 zvjezdica"><i class="fa-solid fa-star" aria-hidden="true"></i></label>
+              <input type="radio" value="4" name="rating" id="rating4" /><label for="rating4" aria-label="4 zvjezdice"><i class="fa-solid fa-star" aria-hidden="true"></i></label>
+              <input type="radio" value="3" name="rating" id="rating3" /><label for="rating3" aria-label="3 zvjezdice"><i class="fa-solid fa-star" aria-hidden="true"></i></label>
+              <input type="radio" value="2" name="rating" id="rating2" /><label for="rating2" aria-label="2 zvjezdice"><i class="fa-solid fa-star" aria-hidden="true"></i></label>
+              <input type="radio" value="1" name="rating" id="rating1" /><label for="rating1" aria-label="1 zvjezdica"><i class="fa-solid fa-star" aria-hidden="true"></i></label>
+            </div>
             </div>
         </div>
         
@@ -816,7 +762,7 @@ $('button[id^=\'button-upload\']').on('click', function() {
 
 	$('#form-upload').remove();
 
-	$('body').prepend('<form enctype="multipart/form-data" id="form-upload" style="display: none;"><input type="file" name="file" /></form>');
+	$('body').prepend('<form enctype="multipart/form-data" id="form-upload" class="wob-upload-form"><input type="file" name="file" /></form>');
 
 	$('#form-upload input[name=\'file\']').trigger('click');
 
@@ -919,19 +865,6 @@ $(".to_tabs").click(function() {
     }, 1000);
 });
 
-// Sharing buttons
-{% if basel_share_btn %}
-var share_url = encodeURIComponent(window.location.href);
-var page_title = '{{ heading_title }}';
-{% if thumb %}
-var thumb = '{{ thumb }}';
-{% endif %}
-$('.fb_share').attr("href", 'https://www.facebook.com/sharer/sharer.php?u=' + share_url + '');
-$('.twitter_share').attr("href", 'https://twitter.com/intent/tweet?source=' + share_url + '&text=' + page_title + ': ' + share_url + '');
-$('.google_share').attr("href", 'https://plus.google.com/share?url=' + share_url + '');
-$('.pinterest_share').attr("href", 'http://pinterest.com/pin/create/button/?url=' + share_url + '&media=' + thumb + '&description=' + page_title + '');
-$('.vk_share').attr("href", 'http://vkontakte.ru/share.php?url=' + share_url + '');
-{% endif %}
 });
 //--></script>
 

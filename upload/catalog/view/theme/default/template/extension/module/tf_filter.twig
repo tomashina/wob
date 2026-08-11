@@ -24,6 +24,11 @@
           <div id="tf-filter-panel-{{ module_class_id }}-{{ key }}" class="collapse {{ not filter['collapse']?'in':'' }}" >
             <div class="tf-filter-group-content">
               <div data-role="rangeslider"></div>
+              <div class="tf-price-values" aria-live="polite">
+                <span><span data-tf-price-min>{{ filter['selected']['min'] }}</span> €</span>
+                <span aria-hidden="true">—</span>
+                <span><span data-tf-price-max>{{ filter['selected']['max'] }}</span> €</span>
+              </div>
               <div class="row">
                 <div class="col-xs-6"><input type="number" class="form-control" name="tf_fp[min]" value="{{ filter['selected']['min'] }}" min="{{ filter['min_price'] }}" max="{{ filter['max_price'] - 1 }}" aria-label="Minimalna cijena" /></div>
                 <div class="col-xs-6"><input type="number" class="form-control" name="tf_fp[max]" value="{{ filter['selected']['max'] }}" min="{{ filter['min_price'] + 1 }}" max="{{ filter['max_price'] }}" aria-label="Maksimalna cijena" /></div>
@@ -544,8 +549,12 @@
       slide: function( event, ui ) {
         $('[name="tf_fp[min]"]').val(ui.values[0]);
         $('[name="tf_fp[max]"]').val(ui.values[1]);
+        $('#tf-filter-{{ module_class_id }} [data-tf-price-min]').text(ui.values[0]);
+        $('#tf-filter-{{ module_class_id }} [data-tf-price-max]').text(ui.values[1]);
       },
       change: function( event, ui ) {
+        $('#tf-filter-{{ module_class_id }} [data-tf-price-min]').text(ui.values[0]);
+        $('#tf-filter-{{ module_class_id }} [data-tf-price-max]').text(ui.values[1]);
         // Hide Reset for price
         if($('[name="tf_fp[min]"]').val() !== $('[name="tf_fp[min]"]').attr('min') || $('[name="tf_fp[max]"]').val() !== $('[name="tf_fp[max]"]').attr('max')){
           $('[data-tf-reset="price"]').removeClass('hide');

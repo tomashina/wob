@@ -1,7 +1,7 @@
 {% set product_name = product.name|replace({'  ': ' '})|replace({'  ': ' '}) %}
 <div class="item single-product">
     <div class="edge">
-<div class="image" {% if columns == 'list' %}style="width:{{ img_width }}px"{% endif %}>
+<div class="image{% if columns == 'list' %} product-list-image{% endif %}">
     <a href="{{ product.href }}">
     <img src="{{ product.thumb }}" alt="{{ product_name }}" width="500" height="500" loading="lazy" decoding="async" />
     {% if product.thumb2 %}
@@ -25,9 +25,9 @@
 <a class="img-overlay" href="{{ product.href }}" aria-label="{{ product_name }}"></a>
 
 <div class="icons-wrapper">
-<button type="button" class="icon is_wishlist" aria-label="{{ button_wishlist }}" data-toggle="tooltip" data-placement="{{ tooltip_align }}" data-title="{{ button_wishlist }}" onclick="wishlist.add('{{ product.product_id }}');"><span class="icon-heart" aria-hidden="true"></span></button>
-<button type="button" class="icon is_compare" aria-label="{{ button_compare }}" onclick="compare.add('{{ product.product_id }}');" data-toggle="tooltip" data-placement="{{ tooltip_align }}" data-title="{{ button_compare }}"><span class="icon-refresh" aria-hidden="true"></span></button>
-<button type="button" class="icon is_quickview hidden-xs" aria-label="{{ basel_button_quickview }}" onclick="quickview('{{ product.product_id }}');" data-toggle="tooltip" data-placement="{{ tooltip_align }}" data-title="{{ basel_button_quickview }}"><span class="icon-magnifier-add" aria-hidden="true"></span></button>
+<button type="button" class="icon is_wishlist" aria-label="{{ button_wishlist }}" data-toggle="tooltip" data-placement="{{ tooltip_align }}" data-title="{{ button_wishlist }}" onclick="wishlist.add('{{ product.product_id }}');"><i class="fa-light fa-heart" aria-hidden="true"></i></button>
+<button type="button" class="icon is_compare" aria-label="{{ button_compare }}" onclick="compare.add('{{ product.product_id }}');" data-toggle="tooltip" data-placement="{{ tooltip_align }}" data-title="{{ button_compare }}"><i class="fa-light fa-code-compare" aria-hidden="true"></i></button>
+<button type="button" class="icon is_quickview hidden-xs" aria-label="{{ basel_button_quickview }}" onclick="quickview('{{ product.product_id }}');" data-toggle="tooltip" data-placement="{{ tooltip_align }}" data-title="{{ basel_button_quickview }}"><i class="fa-light fa-magnifying-glass-plus" aria-hidden="true"></i></button>
 </div> <!-- .icons-wrapper -->
 </div><!-- .image ends -->
 <div class="caption">
@@ -35,7 +35,7 @@
 {% if product.rating %}      
     <div class="rating">
     <span class="rating_stars rating r{{ product.rating }}">
-    <i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i>
+    <i class="fa-light fa-star"></i><i class="fa-light fa-star"></i><i class="fa-light fa-star"></i><i class="fa-light fa-star"></i><i class="fa-light fa-star"></i>
     </span>
     </div>
 {% endif %}
@@ -63,10 +63,10 @@
 <p class="description">{% if product.description %}{{ product.description }}{% endif %}</p>
 
 {% if ((product.quantity < 1) and (stock_badge_status)) %}
-  <span class="btn {% if basel_list_style == '6' %}btn-contrast{% else %}btn-outline{% endif %}" aria-disabled="true"><span class="global-cart" aria-hidden="true"></span> {{ button_cart }}</span>
+  <span class="btn {% if basel_list_style == '6' %}btn-contrast{% else %}btn-outline{% endif %}" aria-disabled="true"><i class="fa-light fa-bag-shopping" aria-hidden="true"></i> {{ button_cart }}</span>
     {% set button_cart = basel_text_out_of_stock %}
 {% else %}
- <button type="button" class="btn {% if basel_list_style == '6' %}btn-contrast{% else %}btn-outline{% endif %}" onclick="cart.add('{{ product.product_id }}', '{{ product.minimum }}');"><span class="global-cart" aria-hidden="true"></span> {{ button_cart }}</button>
+ <button type="button" class="btn {% if basel_list_style == '6' %}btn-contrast{% else %}btn-outline{% endif %}" onclick="cart.add('{{ product.product_id }}', '{{ product.minimum }}');"><i class="fa-light fa-bag-shopping" aria-hidden="true"></i> {{ button_cart }}</button>
 {% endif %}
 
 
@@ -76,9 +76,9 @@
 
 </div>
 <div class="plain-links">
-<button type="button" class="icon is_wishlist link-hover-color" onclick="wishlist.add('{{ product.product_id }}');"><span class="icon-heart" aria-hidden="true"></span> {{ button_wishlist }}</button>
-<button type="button" class="icon is_compare link-hover-color" onclick="compare.add('{{ product.product_id }}');"><span class="icon-refresh" aria-hidden="true"></span> {{ button_compare }}</button>
-<button type="button" class="icon is_quickview link-hover-color" onclick="quickview('{{ product.product_id }}');"><span class="icon-magnifier-add" aria-hidden="true"></span> {{ basel_button_quickview }}</button>
+<button type="button" class="icon is_wishlist link-hover-color" onclick="wishlist.add('{{ product.product_id }}');"><i class="fa-light fa-heart" aria-hidden="true"></i> {{ button_wishlist }}</button>
+<button type="button" class="icon is_compare link-hover-color" onclick="compare.add('{{ product.product_id }}');"><i class="fa-light fa-code-compare" aria-hidden="true"></i> {{ button_compare }}</button>
+<button type="button" class="icon is_quickview link-hover-color" onclick="quickview('{{ product.product_id }}');"><i class="fa-light fa-magnifying-glass-plus" aria-hidden="true"></i> {{ basel_button_quickview }}</button>
 </div><!-- .plain-links-->
 </div><!-- .caption-->
 {% if product.sale_end_date and countdown_status %}
