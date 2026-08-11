@@ -18,7 +18,7 @@
     {% set class = 'col-sm-12' %}
     {% endif %}
     
-    <div id="content" class="{{ class }}" style="min-height:unset">
+    <div id="content" class="{{ class }} category-content">
     {{ content_top }}
       <h1 id="page-title">{{ heading_title }}</h1>
       
@@ -36,28 +36,13 @@
       
      {% if categories and category_subs_status %}
                 <h2 class="lined-title hidden-xs"><span>{{ text_refine }}</span></h2>
-                <div class="grid-holder categories carousel grid-holder grid6 prod_module0 carousel mb-3">
+                <div class="grid-holder categories category-refinement-grid mb-3">
                     {% for category in categories %}
                         <div class="item single-product">
                             <a class="category-thumb-link" href="{{ category.href }}"><img src="{{ category.thumb }}" alt="{{ category.name }}" width="500" height="500" loading="lazy" decoding="async" /></a>
                             <a class="category-name-link" href="{{ category.href }}">{{ category.name }}</a></div>
                     {% endfor %}
                 </div>
-
-                <script>
-                    $('.grid-holder.prod_module0').slick({
-                        prevArrow: false,
-                        nextArrow: false,
-                        dots:true,
-                        respondTo:'min',
-
-                        rows:1,
-                        slidesToShow:6,slidesToScroll:2,responsive:[{breakpoint:1280,settings:{slidesToShow:6,slidesToScroll:2}},{breakpoint:960,settings:{slidesToShow:5,slidesToScroll:2}},{breakpoint:600,settings:{slidesToShow:2,slidesToScroll:1}},
-                        ]
-                    });
-                    $('.product-style2 .single-product .icon').attr('data-placement', 'top');
-                    $('[data-toggle=\'tooltip\']').tooltip({container: 'body'});
-                </script>
             {% endif %}
 	      
       {% if products %}
