@@ -1727,7 +1727,8 @@ body[class*="information-information-"] .information-copy blockquote {
 }
 
 .information-contact .contact-store-photo {
-  margin-top: 22px;
+  width: min(100%, 438px);
+  margin: 22px auto 0;
   padding: 8px;
   background: #fff;
   border: 1px solid #d8cfb4;
