@@ -45,10 +45,12 @@ function configureTracking(mysqli $database)
         "SELECT `cmpltguagaf_id` FROM `{$table}` WHERE `store_id` = 0 ORDER BY `cmpltguagaf_id` LIMIT 1"
     );
     $select->execute();
-    $result = $select->get_result();
+    $select->bind_result($trackingId);
+    $found = $select->fetch();
+    $select->close();
 
-    if ($result->num_rows) {
-        $id = (int) $result->fetch_assoc()['cmpltguagaf_id'];
+    if ($found) {
+        $id = (int) $trackingId;
         $update = $database->prepare(
             "UPDATE `{$table}` SET `status` = 1, `gaid` = '', `gafid` = '', `gtmid` = ? WHERE `cmpltguagaf_id` = ?"
         );
@@ -76,10 +78,12 @@ function upsertSetting(mysqli $database, $code, $key, $value, $storeId = 0)
     );
     $select->bind_param('iss', $storeId, $code, $key);
     $select->execute();
-    $result = $select->get_result();
+    $select->bind_result($existingSettingId);
+    $found = $select->fetch();
+    $select->close();
 
-    if ($result->num_rows) {
-        $settingId = (int) $result->fetch_assoc()['setting_id'];
+    if ($found) {
+        $settingId = (int) $existingSettingId;
         $update = $database->prepare(
             "UPDATE `{$table}` SET `value` = ?, `serialized` = 0 WHERE `setting_id` = ?"
         );
