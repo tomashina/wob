@@ -409,6 +409,7 @@ class ControllerExtensionFeedBoostSitemap extends Controller {
 
 				$items = isset($this->request->post['feed_boost_sitemap_item']) ? (array)$this->request->post['feed_boost_sitemap_item'] : [];
 				$limit = isset($this->request->post['feed_boost_sitemap_item_limit']) ? (int)$this->request->post['feed_boost_sitemap_item_limit'] : 0;
+				$generation_items = $items;
 
 				if (!$items) {
 					throw new RuntimeException($this->language->get('error_no_items'));
@@ -418,50 +419,62 @@ class ControllerExtensionFeedBoostSitemap extends Controller {
 					throw new RuntimeException($this->language->get('error_item_limit'));
 				}
 
+				if (isset($this->request->post['generate_item'])) {
+					$generate_item = is_string($this->request->post['generate_item']) ? $this->request->post['generate_item'] : '';
+					unset($this->request->post['generate_item']);
+
+					if (!in_array($generate_item, $items, true)) {
+						throw new RuntimeException($this->language->get('error_generate_item'));
+					}
+
+					$generation_items = [$generate_item];
+				}
+
 				$this->model_setting_setting->editSetting('feed_boost_sitemap', $this->request->post);
 
 				/* Journal3 Blog */
 				if (defined('JOURNAL3_INSTALLED')) {
 					$this->load->model('extension/feed/boost_sitemap');
 
-					if (in_array('journal3blogpost', $items, true)) {
+					if (in_array('journal3blogpost', $generation_items, true)) {
 						$this->generateJournal3BlogPostSitemap($limit);
 					}
 
-					if (in_array('journal3blogcategory', $items, true)) {
+					if (in_array('journal3blogcategory', $generation_items, true)) {
 						$this->model_extension_feed_boost_sitemap->alterTableBlogCategory();
 						$this->generateJournal3BlogCategorySitemap($limit);
 					}
 				}
 
-				if (in_array('product', $items, true)) {
+				if (in_array('product', $generation_items, true)) {
 					$this->generateProductSitemap($limit);
 				}
 
-				if (in_array('category', $items, true)) {
+				if (in_array('category', $generation_items, true)) {
 					$this->generateCategorySitemap($limit);
 				}
 
-				if (in_array('category_product', $items, true)) {
+				if (in_array('category_product', $generation_items, true)) {
 					$this->generateCategoryToProductSitemap($limit);
 				}
 
-				if (in_array('information', $items, true)) {
+				if (in_array('information', $generation_items, true)) {
 					$this->generateInformationSitemap($limit);
 				}
 
-				if (in_array('manufacturer', $items, true)) {
+				if (in_array('manufacturer', $generation_items, true)) {
 					$this->generateManufacturerSitemap($limit);
 				}
 
-				if (in_array('manufacturer_product', $items, true)) {
+				if (in_array('manufacturer_product', $generation_items, true)) {
 					$this->generateManufacturerToProductSitemap($limit);
 				}
 
-				if (in_array('custom_link', $items, true)) {
+				if (in_array('custom_link', $generation_items, true)) {
 					$this->generateCustomLinkSitemap($limit);
 				}
 
+				$json['files'] = count($this->files);
 				$json['success'] = sprintf($this->language->get('text_generate_success'), count($this->files));
 			} catch (Throwable $exception) {
 				$this->log->write('Boost Sitemap generation failed: ' . $exception->getMessage());

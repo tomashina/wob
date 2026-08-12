@@ -86,6 +86,7 @@ $_['tab_custom_link'] 		= 'Custom Links';
 $_['error_permission'] 		= 'Warning: You do not have permission to modify Boost Sitemap feed!';
 $_['error_no_items']        = 'Select at least one sitemap type to generate.';
 $_['error_item_limit']      = 'The number of items per file must be greater than zero.';
+$_['error_generate_item']    = 'The requested sitemap type is not selected.';
 
 // Success
 $_['success_keyword'] 		= 'Success: %s keywords was generated successfully!';

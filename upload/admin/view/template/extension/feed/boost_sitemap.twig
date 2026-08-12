@@ -264,35 +264,62 @@
 	
 	function generateFiles(elem, action) {
 		var $btn = $(elem);
+		var items = $('#form-feed input[name="feed_boost_sitemap_item[]"]:checked').map(function() {
+			return this.value;
+		}).get();
+		var formData = $('#form-feed').serializeArray();
+		var current = 0;
+		var totalFiles = 0;
 		$('#message').empty();
 
-		$.ajax({
-			url: action,
-			data: $('#form-feed').serialize(),
-			dataType: 'json',
-			type: 'post',
-			beforeSend: function() {
-				$btn.button('loading');
-			},
-			complete: function() {
-				$btn.button('reset');
-			},
-			success: function(json) {
-				if (json.error) {
-					showBoostSitemapMessage('danger', json.error);
-					return;
-				}
+		if (!items.length) {
+			showBoostSitemapMessage('danger', 'Select at least one sitemap type to generate.');
+			return;
+		}
 
-				showBoostSitemapMessage('success', json.success || 'Sitemap files generated.');
+		$btn.button('loading');
+
+		function finishWithError(message) {
+			$btn.button('reset');
+			showBoostSitemapMessage('danger', message);
+		}
+
+		function generateNext() {
+			if (current >= items.length) {
+				$btn.button('reset');
+				showBoostSitemapMessage('success', 'Success: ' + totalFiles + ' sitemap file(s) generated.');
 				setTimeout(function() {
 					location.reload(true);
 				}, 800);
-			},
-			error: function(xhr) {
-				var message = xhr.responseText ? $('<div>').html(xhr.responseText).text().trim() : 'Sitemap generation failed.';
-				showBoostSitemapMessage('danger', message);
+				return;
 			}
-		});
+
+			showBoostSitemapMessage('info', 'Generating sitemap group ' + (current + 1) + ' of ' + items.length + '...');
+
+			$.ajax({
+				url: action,
+				data: $.param(formData.concat([{
+					name: 'generate_item',
+					value: items[current]
+				}])),
+				dataType: 'json',
+				type: 'post'
+			}).done(function(json) {
+				if (json.error) {
+					finishWithError(json.error);
+					return;
+				}
+
+				totalFiles += parseInt(json.files || 0, 10);
+				current++;
+				generateNext();
+			}).fail(function(xhr) {
+				var message = xhr.responseText ? $('<div>').html(xhr.responseText).text().trim() : 'Sitemap generation failed.';
+				finishWithError(message);
+			});
+		}
+
+		generateNext();
 	}
 
 	function showBoostSitemapMessage(type, message) {
