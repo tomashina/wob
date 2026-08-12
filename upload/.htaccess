@@ -17,6 +17,11 @@ Options -Indexes
 # Deny from all
 </FilesMatch>
 
+# Public machine-readable text files use UTF-8.
+<FilesMatch "(?i)^(?:robots|llms)\.txt$">
+ Header set Content-Type "text/plain; charset=UTF-8"
+</FilesMatch>
+
 # SEO URL Settings
 RewriteEngine On
 # If your opencart installation does not run on the main web folder make sure you folder it does run in ie. / becomes /shop/
