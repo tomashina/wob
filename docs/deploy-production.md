@@ -17,6 +17,8 @@ git restore --source=HEAD --staged --worktree storagedijana/storagedijana/modifi
 git pull --ff-only origin main
 php scripts/apply-tracking-consent.php
 php scripts/apply-home-salon-gateway.php
+php scripts/repair-multilingual-seo.php
+php scripts/repair-multilingual-seo.php --apply
 php scripts/apply-seo-ai.php --refresh
 git status --short
 ```
@@ -33,7 +35,28 @@ cd /home/dmb/worldofbeauty.hr
 git pull --ff-only origin main
 php scripts/apply-tracking-consent.php
 php scripts/apply-home-salon-gateway.php
+php scripts/repair-multilingual-seo.php
+php scripts/repair-multilingual-seo.php --apply
 php scripts/apply-seo-ai.php --refresh
+```
+
+Prva naredba za višejezični SEO je obavezni dry-run. Pregledajte broj meta
+zapisa, zajedničkih HR/EN aliasa i aliasa koji nedostaju prije pokretanja
+`--apply`. Apply čuva postojeći zajednički slug kao hrvatski URL, izrađuje novi
+engleski slug i sinkronizira HuntBee hreflang OCMOD. Budući da starije OpenCart
+tablice koriste MyISAM, prije prve promjene zapisuje recovery JSON izvan web
+roota. Ako apply ne uspije, skripta automatski vraća stare vrijednosti; isti se
+backup može ručno vratiti naredbom:
+
+```bash
+php scripts/repair-multilingual-seo.php --restore=/puna/putanja/do/backupa.json
+```
+
+Nakon applyja u OpenCart administraciji ponovno generirajte Boost Sitemap
+datoteke (product, category i information), a zatim provjerite rezultat:
+
+```bash
+php scripts/audit-seo-integrity.php --strict
 ```
 
 ## Brza provjera nakon deploya

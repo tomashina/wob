@@ -74,6 +74,7 @@ function main(
         'weight_class_id' => resolveHabysWeightClassId($db),
         'length_class_id' => getConfigInt($db, 'config_length_class_id', 1),
         'tax_class_id' => resolveHabysTaxClassId($db),
+        'default_language' => getConfigString($db, 'config_language', (string) $languages[0]['code']),
     ];
 
     $manufacturerId = ensureManufacturer($db, 'Habys', $dryRun);
@@ -543,6 +544,28 @@ function getConfigInt(mysqli $db, string $key, int $fallback): int
     return (int) $row['value'];
 }
 
+function getConfigString(mysqli $db, string $key, string $fallback): string
+{
+    $table = DB_PREFIX . 'setting';
+    $escapedKey = $db->real_escape_string($key);
+    $result = $db->query(
+        "SELECT `value`
+         FROM `{$table}`
+         WHERE store_id = " . TARGET_STORE_ID . " AND `key` = '{$escapedKey}'
+         ORDER BY setting_id DESC
+         LIMIT 1"
+    );
+
+    if ($result->num_rows === 0) {
+        return $fallback;
+    }
+
+    $row = $result->fetch_assoc();
+    $value = trim((string) $row['value']);
+
+    return $value !== '' ? $value : $fallback;
+}
+
 function resolveHabysTaxClassId(mysqli $db): int
 {
     $configuredTaxClassId = getConfigInt($db, 'config_tax_class_id', 0);
@@ -664,9 +687,25 @@ function mapFeedProduct(SimpleXMLElement $product): ?array
     }
 
     $sourceKey = SOURCE_PREFIX . ':' . $productId;
+    $names = localizedValueMap($product->description->name);
+    $descriptions = localizedValueMap($product->description->long_desc);
     $name = firstLocalizedValue($product->description->name, 'eng');
-    $description = firstLocalizedValue($product->description->long_desc, 'eng');
-    $description = normalizeDescriptionHtml($description);
+    $description = normalizeDescriptionHtml(firstLocalizedValue($product->description->long_desc, 'eng'));
+    $translations = [];
+
+    foreach (array_unique(array_merge(array_keys($names), array_keys($descriptions))) as $languageCode) {
+        $translations[$languageCode] = [
+            'name' => isset($names[$languageCode]) && $names[$languageCode] !== '' ? $names[$languageCode] : $name,
+            'description' => normalizeDescriptionHtml($descriptions[$languageCode] ?? $description),
+        ];
+    }
+
+    if (!$translations) {
+        $translations['eng'] = [
+            'name' => $name,
+            'description' => $description,
+        ];
+    }
 
     $size = null;
     if (isset($product->sizes->size)) {
@@ -728,6 +767,7 @@ function mapFeedProduct(SimpleXMLElement $product): ?array
         'product_id_external' => $productId,
         'name' => $name !== '' ? $name : $sku,
         'description' => $description,
+        'translations' => $translations,
         'sku' => truncateText($sku, 64),
         'model' => truncateText($sku, 64),
         'ean' => truncateText($ean, 32),
@@ -864,6 +904,34 @@ function firstLocalizedValue($nodes, string $preferredLang): string
     }
 
     return $fallback;
+}
+
+function localizedValueMap($nodes): array
+{
+    $values = [];
+
+    if (!$nodes) {
+        return $values;
+    }
+
+    foreach ($nodes as $node) {
+        $languageCode = strtolower(trim((string) $node->attributes('xml', true)->lang));
+        $value = trim((string) $node);
+
+        if ($value === '') {
+            continue;
+        }
+
+        if ($languageCode === '') {
+            $languageCode = 'default';
+        }
+
+        if (!isset($values[$languageCode])) {
+            $values[$languageCode] = $value;
+        }
+    }
+
+    return $values;
 }
 
 function truncateText(string $value, int $length): string
@@ -1023,8 +1091,6 @@ function upsertProduct(
     $db->begin_transaction();
 
     try {
-        $nameEscaped = $db->real_escape_string($product['name']);
-        $descriptionEscaped = $db->real_escape_string($product['description']);
         $skuEscaped = $db->real_escape_string($product['sku']);
         $modelEscaped = $db->real_escape_string($product['model']);
         $eanEscaped = $db->real_escape_string($product['ean']);
@@ -1103,6 +1169,13 @@ function upsertProduct(
 
         foreach ($languages as $language) {
             $languageId = (int) $language['language_id'];
+            $translation = resolveProductTranslation($product, $language);
+            $nameEscaped = $db->real_escape_string($translation['name']);
+            $descriptionEscaped = $db->real_escape_string($translation['description']);
+            $metaTitleEscaped = $db->real_escape_string(buildImporterMetaTitle($translation['name']));
+            $metaDescriptionEscaped = $db->real_escape_string(
+                buildImporterMetaDescription($translation['name'], $translation['description'], (string) $language['code'])
+            );
             $db->query(
                 "INSERT INTO `{$productDescriptionTable}` SET
                     product_id = {$productId},
@@ -1110,8 +1183,8 @@ function upsertProduct(
                     name = '{$nameEscaped}',
                     description = '{$descriptionEscaped}',
                     tag = '',
-                    meta_title = '{$nameEscaped}',
-                    meta_description = '{$nameEscaped}',
+                    meta_title = '{$metaTitleEscaped}',
+                    meta_description = '{$metaDescriptionEscaped}',
                     meta_keyword = ''"
             );
         }
@@ -1131,7 +1204,13 @@ function upsertProduct(
             }
         }
 
-        ensureSeoUrl($db, $productId, $product['name'], $languages);
+        ensureSeoUrl(
+            $db,
+            $productId,
+            $product,
+            $languages,
+            isset($defaults['default_language']) ? (string) $defaults['default_language'] : ''
+        );
         $db->commit();
     } catch (Throwable $exception) {
         $db->rollback();
@@ -1159,7 +1238,97 @@ function ensureCategoryAssignment(mysqli $db, int $productId, int $categoryId): 
     }
 }
 
-function ensureSeoUrl(mysqli $db, int $productId, string $name, array $languages): void
+function resolveProductTranslation(array $product, array $language): array
+{
+    $languageCode = strtolower((string) ($language['code'] ?? ''));
+    $languagePrefix = substr($languageCode, 0, 2);
+    $aliases = [$languageCode, $languagePrefix];
+
+    if ($languagePrefix === 'en') {
+        $aliases = array_merge($aliases, ['eng']);
+    } elseif ($languagePrefix === 'hr') {
+        $aliases = array_merge($aliases, ['hrv', 'cro']);
+    }
+
+    $translations = isset($product['translations']) && is_array($product['translations'])
+        ? $product['translations']
+        : [];
+
+    foreach (array_unique($aliases) as $alias) {
+        if (!isset($translations[$alias]) || !is_array($translations[$alias])) {
+            continue;
+        }
+
+        $name = trim((string) ($translations[$alias]['name'] ?? ''));
+        $description = trim((string) ($translations[$alias]['description'] ?? ''));
+
+        if ($name !== '' || $description !== '') {
+            return [
+                'name' => $name !== '' ? $name : (string) $product['name'],
+                'description' => $description !== '' ? $description : (string) $product['description'],
+            ];
+        }
+    }
+
+    return [
+        'name' => (string) $product['name'],
+        'description' => (string) $product['description'],
+    ];
+}
+
+function buildImporterMetaTitle(string $name): string
+{
+    return truncateMetaText(trim($name) . ' | World of Beauty', 65);
+}
+
+function buildImporterMetaDescription(string $name, string $description, string $languageCode): string
+{
+    $plainText = html_entity_decode($description, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $plainText = html_entity_decode($plainText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $plainText = preg_replace('/\s+/u', ' ', trim(strip_tags($plainText)));
+
+    $comparablePlainText = function_exists('mb_strtolower')
+        ? mb_strtolower((string) $plainText, 'UTF-8')
+        : strtolower((string) $plainText);
+    $comparableName = function_exists('mb_strtolower')
+        ? mb_strtolower(trim($name), 'UTF-8')
+        : strtolower(trim($name));
+
+    if ($plainText === '' || $comparablePlainText === $comparableName) {
+        $plainText = strpos(strtolower($languageCode), 'hr') === 0
+            ? $name . ' – profesionalna oprema za salone uz sigurnu kupnju, brzu isporuku i stručnu podršku.'
+            : $name . ' – professional salon equipment with secure shopping, fast delivery and expert support.';
+    }
+
+    return truncateMetaText((string) $plainText, 160);
+}
+
+function truncateMetaText(string $value, int $length): string
+{
+    $value = preg_replace('/\s+/u', ' ', trim($value));
+    $textLength = function_exists('mb_strlen') ? mb_strlen($value, 'UTF-8') : strlen($value);
+
+    if ($textLength <= $length) {
+        return $value;
+    }
+
+    $short = function_exists('mb_substr')
+        ? mb_substr($value, 0, $length - 1, 'UTF-8')
+        : substr($value, 0, $length - 1);
+    $space = function_exists('mb_strrpos')
+        ? mb_strrpos($short, ' ', 0, 'UTF-8')
+        : strrpos($short, ' ');
+
+    if ($space !== false && $space > (int) ($length * 0.7)) {
+        $short = function_exists('mb_substr')
+            ? mb_substr($short, 0, $space, 'UTF-8')
+            : substr($short, 0, $space);
+    }
+
+    return rtrim($short, ' ,.;:-') . '…';
+}
+
+function ensureSeoUrl(mysqli $db, int $productId, array $product, array $languages, string $defaultLanguageCode = ''): void
 {
     $table = DB_PREFIX . 'seo_url';
     $queryString = 'product_id=' . $productId;
@@ -1171,6 +1340,17 @@ function ensureSeoUrl(mysqli $db, int $productId, string $name, array $languages
         $existingByLanguage[(int) $row['store_id'] . ':' . (int) $row['language_id']] = $row;
     }
 
+    usort($languages, static function (array $left, array $right) use ($defaultLanguageCode): int {
+        $leftDefault = strcasecmp((string) ($left['code'] ?? ''), $defaultLanguageCode) === 0;
+        $rightDefault = strcasecmp((string) ($right['code'] ?? ''), $defaultLanguageCode) === 0;
+
+        if ($leftDefault === $rightDefault) {
+            return (int) ($left['language_id'] ?? 0) <=> (int) ($right['language_id'] ?? 0);
+        }
+
+        return $leftDefault ? -1 : 1;
+    });
+
     foreach ($languages as $language) {
         $languageId = (int) $language['language_id'];
         $key = TARGET_STORE_ID . ':' . $languageId;
@@ -1179,7 +1359,16 @@ function ensureSeoUrl(mysqli $db, int $productId, string $name, array $languages
             continue;
         }
 
-        $keyword = buildUniqueSeoKeyword($db, $name . '-' . $productId, $queryString, TARGET_STORE_ID, $languageId);
+        $translation = resolveProductTranslation($product, $language);
+        $languageSuffix = substr(strtolower((string) ($language['code'] ?? '')), 0, 2);
+        $keyword = buildUniqueSeoKeyword(
+            $db,
+            $translation['name'] . '-' . $productId,
+            $queryString,
+            TARGET_STORE_ID,
+            $languageId,
+            $languageSuffix
+        );
         $keywordEscaped = $db->real_escape_string($keyword);
 
         $db->query(
@@ -1192,7 +1381,14 @@ function ensureSeoUrl(mysqli $db, int $productId, string $name, array $languages
     }
 }
 
-function buildUniqueSeoKeyword(mysqli $db, string $seed, string $queryString, int $storeId, int $languageId): string
+function buildUniqueSeoKeyword(
+    mysqli $db,
+    string $seed,
+    string $queryString,
+    int $storeId,
+    int $languageId,
+    string $languageSuffix = ''
+): string
 {
     $table = DB_PREFIX . 'seo_url';
     $base = slugify($seed);
@@ -1201,15 +1397,16 @@ function buildUniqueSeoKeyword(mysqli $db, string $seed, string $queryString, in
         $base = 'habys-product';
     }
 
+    $base = substr($base, 0, 240);
+    $languageSuffix = slugify($languageSuffix);
     $candidate = $base;
-    $suffix = 2;
+    $attempt = 0;
     while (true) {
         $candidateEscaped = $db->real_escape_string($candidate);
         $result = $db->query(
-            "SELECT seo_url_id, `query`
+            "SELECT seo_url_id, language_id, `query`
              FROM `{$table}`
              WHERE store_id = {$storeId}
-               AND language_id = {$languageId}
                AND keyword = '{$candidateEscaped}'
              LIMIT 1"
         );
@@ -1219,13 +1416,32 @@ function buildUniqueSeoKeyword(mysqli $db, string $seed, string $queryString, in
         }
 
         $row = $result->fetch_assoc();
-        if ((string) $row['query'] === $queryString) {
+        if ((string) $row['query'] === $queryString && (int) $row['language_id'] === $languageId) {
             return $candidate;
         }
 
-        $candidate = $base . '-' . $suffix;
-        $suffix++;
+        $attempt++;
+
+        if ($languageSuffix !== '') {
+            $suffix = $attempt === 1 ? $languageSuffix : $languageSuffix . '-' . $attempt;
+        } else {
+            $suffix = (string) ($attempt + 1);
+        }
+
+        $candidate = composeSeoKeyword($base, $suffix);
     }
+}
+
+function composeSeoKeyword(string $base, string $suffix): string
+{
+    $suffix = slugify($suffix);
+
+    if ($suffix === '') {
+        return substr($base, 0, 240);
+    }
+
+    $stemLength = max(1, 240 - strlen($suffix) - 1);
+    return rtrim(substr($base, 0, $stemLength), '-') . '-' . $suffix;
 }
 
 function slugify(string $value): string

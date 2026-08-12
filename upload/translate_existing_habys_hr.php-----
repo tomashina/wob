@@ -346,13 +346,15 @@ function updateCroatianHabysDescription(
     $descriptionTable = DB_PREFIX . 'product_description';
     $nameEscaped = $db->real_escape_string($name);
     $descriptionEscaped = $db->real_escape_string($description);
+    $metaTitleEscaped = $db->real_escape_string(buildImporterMetaTitle($name));
+    $metaDescriptionEscaped = $db->real_escape_string(buildImporterMetaDescription($name, $description, 'hr-hr'));
 
     $db->query(
         "UPDATE `{$descriptionTable}` SET
             name = '{$nameEscaped}',
             description = '{$descriptionEscaped}',
-            meta_title = '{$nameEscaped}',
-            meta_description = '{$nameEscaped}'
+            meta_title = '{$metaTitleEscaped}',
+            meta_description = '{$metaDescriptionEscaped}'
          WHERE product_id = {$productId}
            AND language_id = {$languageId}"
     );
