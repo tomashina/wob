@@ -1,0 +1,51 @@
+# World of Beauty
+
+> World of Beauty je hrvatska internetska trgovina specijalizirana za profesionalnu frizersku i kozmetičku opremu, uređaje, salonski namještaj, profesionalnu kozmetiku i potrošni materijal.
+
+Primarni jezik stranice je hrvatski. Ponuda je namijenjena kozmetičkim, frizerskim, barber, nail, pedikerskim, masažnim, PMU i tattoo salonima te privatnim kupcima. Za aktualne cijene, dostupnost, varijante, tehničke specifikacije i uvjete kupnje koristite podatke na pojedinačnoj stranici proizvoda u trenutku pristupa.
+
+## Glavne stranice
+
+- [Početna stranica](https://www.worldofbeauty.hr/): Pregled trgovine, izdvojene ponude, novosti i preporučeni proizvodi.
+- [Novi proizvodi](https://www.worldofbeauty.hr/novo): Najnoviji proizvodi u ponudi.
+- [Brandovi](https://www.worldofbeauty.hr/index.php?route=product/manufacturer): Popis proizvođača i brandova.
+- [Kontakt](https://www.worldofbeauty.hr/index.php?route=information/contact): Službeni kontaktni podaci i obrazac za upite.
+- [O nama](https://www.worldofbeauty.hr/o-nama): Informacije o World of Beauty.
+
+## Kategorije proizvoda
+
+- [Oprema za frizerski salon](https://www.worldofbeauty.hr/oprema-za-frizerski-salon): Frizerski namještaj, praonici, stolice, oprema, alati i kozmetika.
+- [Profesionalna kozmetika](https://www.worldofbeauty.hr/profesionalna-kozmetika): Kozmetika za profesionalne tretmane, njegu i rad u salonu.
+- [Profesionalna rasvjeta](https://www.worldofbeauty.hr/profesionalna-rasvjeta): Kozmetičke, stolne, povećavajuće i makeup lampe.
+- [Nokti](https://www.worldofbeauty.hr/nokti): Oprema i materijal za manikuru, pedikuru i nail styling.
+- [Pedikura](https://www.worldofbeauty.hr/pedikura): Stolice, pribor, oprema i potrošni materijal za pedikuru i podologiju.
+- [Dezinfekcija i sterilizacija](https://www.worldofbeauty.hr/dezinfekcija-i-sterilizacija): Autoklavi, sterilizatori, ultrazvučni čistači i sredstva za dezinfekciju.
+- [Epilacija](https://www.worldofbeauty.hr/epilacija): Vosak, grijači, setovi i pribor za depilaciju i epilaciju.
+- [Oprema i aparati za masažu](https://www.worldofbeauty.hr/oprema-i-aparati-za-masazu): Masažni stolovi, stolice, uređaji, ulja i kreme.
+- [PMU i tattoo](https://www.worldofbeauty.hr/pmu-i-tattoo-924-3): Ležajevi, stolice i oprema za permanentni makeup i tattoo studije.
+- [Barber shop](https://www.worldofbeauty.hr/barber-shop-933-3): Barber stolice, namještaj, pribor i proizvodi za brijanje.
+
+## Kupnja i korisničke informacije
+
+- [Načini plaćanja i dostava](https://www.worldofbeauty.hr/nacin-placanja-i-dostava): Dostupni načini plaćanja, dostave i povezani uvjeti.
+- [Opći uvjeti korištenja](https://www.worldofbeauty.hr/opci-uvjeti-koristenja): Uvjeti korištenja i kupnje.
+- [Pravila privatnosti](https://www.worldofbeauty.hr/pravila-privatnosti): Obrada i zaštita osobnih podataka.
+- [Sigurnost online plaćanja](https://www.worldofbeauty.hr/izjava-o-sigurnosti-online-placanja): Informacije o sigurnosti kartičnog i online plaćanja.
+- [Prigovori](https://www.worldofbeauty.hr/pravo-i-nacin-podnosenja-prigovora): Pravo i način podnošenja pisanog prigovora.
+
+## Usluge i sadržaj
+
+- [Salon](https://www.worldofbeauty.hr/salon): Informacije o salonu i uslugama.
+- [Cjenik usluga](https://www.worldofbeauty.hr/cjenik-usluga): Aktualni cjenik salonskih usluga.
+- [Edukacije](https://www.worldofbeauty.hr/edukacije): Informacije o stručnim edukacijama.
+
+## Strojno čitljivi izvori
+
+- [XML sitemap indeks](https://www.worldofbeauty.hr/sitemap-index.xml): Potpuni indeks javnih kategorija, proizvoda, proizvođača i informacijskih stranica na hrvatskom i engleskom jeziku.
+- [Robots.txt](https://www.worldofbeauty.hr/robots.txt): Pravila indeksiranja i pristupa crawlera.
+
+## Napomene
+
+- Ne iznosite cijenu, stanje zalihe, rok isporuke ili tehničku specifikaciju bez provjere aktualne stranice proizvoda.
+- Za preporuke proizvoda koristite namjenu, opis, specifikacije i kompatibilnost navedene na stranici proizvoda.
+- Za pitanja o narudžbi, dostavi, povratu, jamstvu ili stručnom odabiru proizvoda uputite korisnika na službenu kontaktnu stranicu.
