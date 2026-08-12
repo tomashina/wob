@@ -264,6 +264,8 @@
 	
 	function generateFiles(elem, action) {
 		var $btn = $(elem);
+		$('#message').empty();
+
 		$.ajax({
 			url: action,
 			data: $('#form-feed').serialize(),
@@ -275,10 +277,40 @@
 			complete: function() {
 				$btn.button('reset');
 			},
-			success: function() {
-				location.reload(true);
+			success: function(json) {
+				if (json.error) {
+					showBoostSitemapMessage('danger', json.error);
+					return;
+				}
+
+				showBoostSitemapMessage('success', json.success || 'Sitemap files generated.');
+				setTimeout(function() {
+					location.reload(true);
+				}, 800);
+			},
+			error: function(xhr) {
+				var message = xhr.responseText ? $('<div>').html(xhr.responseText).text().trim() : 'Sitemap generation failed.';
+				showBoostSitemapMessage('danger', message);
 			}
 		});
+	}
+
+	function showBoostSitemapMessage(type, message) {
+		var $alert = $('<div>', {
+			'class': 'alert alert-' + type + ' alert-dismissible'
+		}).append($('<i>', {
+			'class': type === 'success' ? 'fa fa-check-circle' : 'fa fa-exclamation-circle'
+		})).append(document.createTextNode(' ' + message));
+
+		$alert.append($('<button>', {
+			type: 'button',
+			'class': 'close',
+			'data-dismiss': 'alert',
+			text: '\u00d7'
+		}));
+
+		$('#message').empty().append($alert);
+		window.scrollTo(0, 0);
 	}
 	
 	function getCustomLinks() {
