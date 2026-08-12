@@ -325,6 +325,38 @@ class ControllerExtensionFeedBoostSitemap extends Controller {
 	}
 
 	/**
+	 * Remove files left behind by an older generation with a different page count.
+	 *
+	 * @param string $item
+	 * @return void
+	 */
+	protected function removeObsoleteSitemapFiles($item) {
+		$types = [
+			'journal3blogpost' => 'blog_post',
+			'journal3blogcategory' => 'blog_category'
+		];
+		$type = isset($types[$item]) ? $types[$item] : $item;
+		$languagePart = $type === 'custom_link' ? '' : '\\d+_';
+		$pattern = '/^sitemap_\\d+_' . $languagePart . preg_quote($type, '/') . '(?:_\\d+)?\\.xml$/';
+		$generated = array_map('basename', $this->files);
+		$existing = glob($this->directory . 'sitemap_*.xml');
+
+		if (!$existing) {
+			return;
+		}
+
+		foreach ($existing as $file) {
+			$name = basename($file);
+
+			if (preg_match($pattern, $name) && !in_array($name, $generated, true)) {
+				if (!unlink($file)) {
+					throw new RuntimeException(sprintf('Unable to remove obsolete sitemap file: %s', $file));
+				}
+			}
+		}
+	}
+
+	/**
 	 * Escape dynamic content for use inside XML text nodes.
 	 *
 	 * @param mixed $value
@@ -438,40 +470,49 @@ class ControllerExtensionFeedBoostSitemap extends Controller {
 
 					if (in_array('journal3blogpost', $generation_items, true)) {
 						$this->generateJournal3BlogPostSitemap($limit);
+						$this->removeObsoleteSitemapFiles('journal3blogpost');
 					}
 
 					if (in_array('journal3blogcategory', $generation_items, true)) {
 						$this->model_extension_feed_boost_sitemap->alterTableBlogCategory();
 						$this->generateJournal3BlogCategorySitemap($limit);
+						$this->removeObsoleteSitemapFiles('journal3blogcategory');
 					}
 				}
 
 				if (in_array('product', $generation_items, true)) {
 					$this->generateProductSitemap($limit);
+					$this->removeObsoleteSitemapFiles('product');
 				}
 
 				if (in_array('category', $generation_items, true)) {
 					$this->generateCategorySitemap($limit);
+					$this->removeObsoleteSitemapFiles('category');
 				}
 
 				if (in_array('category_product', $generation_items, true)) {
 					$this->generateCategoryToProductSitemap($limit);
+					$this->removeObsoleteSitemapFiles('category_product');
 				}
 
 				if (in_array('information', $generation_items, true)) {
 					$this->generateInformationSitemap($limit);
+					$this->removeObsoleteSitemapFiles('information');
 				}
 
 				if (in_array('manufacturer', $generation_items, true)) {
 					$this->generateManufacturerSitemap($limit);
+					$this->removeObsoleteSitemapFiles('manufacturer');
 				}
 
 				if (in_array('manufacturer_product', $generation_items, true)) {
 					$this->generateManufacturerToProductSitemap($limit);
+					$this->removeObsoleteSitemapFiles('manufacturer_product');
 				}
 
 				if (in_array('custom_link', $generation_items, true)) {
 					$this->generateCustomLinkSitemap($limit);
+					$this->removeObsoleteSitemapFiles('custom_link');
 				}
 
 				$json['files'] = count($this->files);
@@ -1039,19 +1080,21 @@ class ControllerExtensionFeedBoostSitemap extends Controller {
 						$products = $this->model_extension_feed_boost_sitemap->getProducts($params);
 					
 						foreach ($products as $product) {
+							$output .= '<url>';
+							$output .= '  <loc>' . $this->escapeXml($this->link($store['url'], 'product/product', 'product_id=' . $product['product_id'], $store['store_id'], $language['language_id'])) . '</loc>';
+							$output .= '  <changefreq>weekly</changefreq>';
+							$output .= '  <lastmod>' . date('c', strtotime($product['date_modified'])) . '</lastmod>';
+							$output .= '  <priority>1.0</priority>';
+
 							if ($product['image']) {
-								$output .= '<url>';
-								$output .= '  <loc>' . $this->escapeXml($this->link($store['url'], 'product/product', 'product_id=' . $product['product_id'], $store['store_id'], $language['language_id'])) . '</loc>';
-								$output .= '  <changefreq>weekly</changefreq>';
-								$output .= '  <lastmod>' . date('c', strtotime($product['date_modified'])) . '</lastmod>';
-								$output .= '  <priority>1.0</priority>';
 								$output .= '  <image:image>';
 								$output .= '  <image:loc>' . $this->escapeXml($this->model_extension_feed_boost_sitemap->resizeImage($product['image'], $width, $height, $store['url'])) . '</image:loc>';
 								$output .= '  <image:caption>' . $this->escapeXml($product['name']) . '</image:caption>';
 								$output .= '  <image:title>' . $this->escapeXml($product['name']) . '</image:title>';
 								$output .= '  </image:image>';
-								$output .= '</url>';
 							}
+
+							$output .= '</url>';
 						}
 					
 						$output .= '</urlset>';

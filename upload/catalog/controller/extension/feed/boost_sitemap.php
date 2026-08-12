@@ -7,6 +7,12 @@ class ControllerExtensionFeedBoostSitemap extends Controller {
 			return $this->notFound();
 		}
 
+		$generatedFiles = $this->getGeneratedSitemapFiles();
+
+		if ($generatedFiles) {
+			return $this->generatedSitemapIndex($generatedFiles);
+		}
+
 		$types = array('product', 'category', 'information');
 		$output = '<?xml version="1.0" encoding="UTF-8"?>';
 		$output .= '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
@@ -30,6 +36,61 @@ class ControllerExtensionFeedBoostSitemap extends Controller {
 
 				$output .= '</sitemap>';
 			}
+		}
+
+		$output .= '</sitemapindex>';
+		$this->xmlResponse($output);
+	}
+
+	private function getGeneratedSitemapFiles() {
+		$directory = rtrim(dirname(DIR_SYSTEM), '/\\') . DIRECTORY_SEPARATOR . 'sitemaps' . DIRECTORY_SEPARATOR;
+
+		if (!is_dir($directory)) {
+			return array();
+		}
+
+		$pattern = $directory . 'sitemap_' . (int) $this->config->get('config_store_id') . '_*.xml';
+		$files = glob($pattern);
+
+		if (!$files) {
+			return array();
+		}
+
+		sort($files, SORT_NATURAL);
+
+		return array_values(array_filter($files, function($file) {
+			$name = basename($file);
+
+			if (!is_file($file) || filesize($file) === 0) {
+				return false;
+			}
+
+			// Ignore an older single-file sitemap when a later paginated
+			// generation for the same entity is present.
+			if (!preg_match('/_\d+\.xml$/', $name)) {
+				$paginatedFiles = glob(substr($file, 0, -4) . '_[0-9]*.xml');
+
+				if ($paginatedFiles) {
+					return false;
+				}
+			}
+
+			// These variants duplicate product URLs with alternate category or
+			// manufacturer paths. Keep only canonical entity sitemap files.
+			return strpos($name, '_category_product') === false
+				&& strpos($name, '_manufacturer_product') === false;
+		}));
+	}
+
+	private function generatedSitemapIndex($files) {
+		$output = '<?xml version="1.0" encoding="UTF-8"?>';
+		$output .= '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+
+		foreach ($files as $file) {
+			$output .= '<sitemap>';
+			$output .= '<loc>' . $this->xml($this->storeUrl() . 'sitemaps/' . rawurlencode(basename($file))) . '</loc>';
+			$output .= '<lastmod>' . $this->xml(date('c', filemtime($file))) . '</lastmod>';
+			$output .= '</sitemap>';
 		}
 
 		$output .= '</sitemapindex>';
