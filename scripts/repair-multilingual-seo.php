@@ -241,7 +241,8 @@ function mseoPlanSeoUrls(
         "ON en.`store_id` = hr.`store_id` AND en.`query` = hr.`query` AND en.`keyword` = hr.`keyword` " .
         "WHERE hr.`store_id` = '{$storeId}' AND hr.`language_id` = '{$croatianId}' " .
         "AND en.`language_id` = '{$englishId}' " .
-        "AND (hr.`query` LIKE 'product_id=%' OR hr.`query` LIKE 'category_id=%' OR hr.`query` LIKE 'information_id=%') " .
+        "AND (hr.`query` LIKE 'product_id=%' OR hr.`query` LIKE 'category_id=%' " .
+        "OR hr.`query` LIKE 'manufacturer_id=%' OR hr.`query` LIKE 'information_id=%') " .
         "ORDER BY en.`seo_url_id`"
     );
 
@@ -292,6 +293,16 @@ function mseoPlanSeoUrls(
                     "JOIN `" . DB_PREFIX . "information_description` id ON id.information_id = i.information_id AND id.language_id = '{$languageId}'",
                 'where' => 'i.status = 1',
                 'query_prefix' => 'information_id='
+            ),
+            array(
+                'type' => 'manufacturer',
+                'id' => 'm.manufacturer_id',
+                'name' => 'm.name',
+                'from' => "`" . DB_PREFIX . "manufacturer` m " .
+                    "JOIN `" . DB_PREFIX . "manufacturer_to_store` m2s " .
+                    "ON m2s.manufacturer_id = m.manufacturer_id AND m2s.store_id = '{$storeId}'",
+                'where' => '1 = 1',
+                'query_prefix' => 'manufacturer_id='
             )
         );
 

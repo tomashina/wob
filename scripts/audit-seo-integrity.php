@@ -153,7 +153,11 @@ function mseoAuditSitemaps(string $directory, int $storeId): array
         $valid = true;
         try {
             while ($reader->read()) {
-                if ($reader->nodeType !== XMLReader::ELEMENT || $reader->localName !== 'loc') {
+                if (
+                    $reader->nodeType !== XMLReader::ELEMENT ||
+                    $reader->localName !== 'loc' ||
+                    $reader->namespaceURI !== 'http://www.sitemaps.org/schemas/sitemap/0.9'
+                ) {
                     continue;
                 }
 
