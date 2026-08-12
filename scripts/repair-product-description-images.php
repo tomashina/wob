@@ -52,7 +52,14 @@ function pdiMain(array $argv): void
             throw new RuntimeException('The PHP cURL extension is required to mirror external images.');
         }
 
-        $download = pdiMirrorImages(array_keys($plan['urls']), $timeout, $maxBytes);
+        $download = pdiMirrorImages(
+            array_keys($plan['urls']),
+            $timeout,
+            $maxBytes,
+            function () use ($database): void {
+                $database->query('SELECT 1');
+            }
+        );
         $updates = array();
         foreach ($plan['rows'] as $row) {
             $transformed = pdiTransformDescription($row['description'], $row['name'], $download['map']);
@@ -240,7 +247,7 @@ function pdiSetImageAttribute(string $tag, string $attribute, string $value): st
     return substr($tag, 0, -1) . ' ' . $attribute . '="' . $escaped . '">';
 }
 
-function pdiMirrorImages(array $urls, int $timeout, int $maxBytes): array
+function pdiMirrorImages(array $urls, int $timeout, int $maxBytes, callable $heartbeat = null): array
 {
     $directory = rtrim(DIR_IMAGE, '/\\') . '/catalog/seo-description';
     if (!is_dir($directory) && !mkdir($directory, 0755, true) && !is_dir($directory)) {
@@ -252,6 +259,9 @@ function pdiMirrorImages(array $urls, int $timeout, int $maxBytes): array
     $unavailable = array();
     $total = count($urls);
     foreach (array_values($urls) as $index => $url) {
+        if ($heartbeat !== null && $index % 25 === 0) {
+            $heartbeat();
+        }
         pdiAssertPublicUrl($url);
         $hash = hash('sha256', $url);
         $existing = glob($directory . '/' . $hash . '.*');
@@ -288,6 +298,10 @@ function pdiMirrorImages(array $urls, int $timeout, int $maxBytes): array
         if (($index + 1) % 100 === 0 || $index + 1 === $total) {
             echo 'Mirrored images: ' . ($index + 1) . '/' . $total . PHP_EOL;
         }
+    }
+
+    if ($heartbeat !== null) {
+        $heartbeat();
     }
 
     return array('map' => $map, 'created_files' => $created, 'unavailable_urls' => $unavailable);
