@@ -76,6 +76,12 @@
 	$(function () {
 		$(selector).each(function () {
 			var $input = $(this);
+
+			// Mega Smart Search owns inputs wrapped by its typeahead instance.
+			if ($input.closest('.msmart-search-live-filter').length) {
+				return;
+			}
+
 			var timer = null;
 			var request = null;
 

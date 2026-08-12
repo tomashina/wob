@@ -20,6 +20,7 @@ $_['text_confirm']	 		= 'Are you sure want to delete it?';
 $_['text_empty'] 			= 'No data available!'; 
 $_['text_enabled'] 			= 'Enabled'; 
 $_['text_disabled']			= 'Disabled'; 
+$_['text_generate_success'] = 'Success: %s sitemap file(s) generated.';
 
 
 $_['text_always']			= 'Always';
@@ -83,6 +84,8 @@ $_['tab_custom_link'] 		= 'Custom Links';
 
 // Error
 $_['error_permission'] 		= 'Warning: You do not have permission to modify Boost Sitemap feed!';
+$_['error_no_items']        = 'Select at least one sitemap type to generate.';
+$_['error_item_limit']      = 'The number of items per file must be greater than zero.';
 
 // Success
 $_['success_keyword'] 		= 'Success: %s keywords was generated successfully!';
