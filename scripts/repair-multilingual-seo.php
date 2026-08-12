@@ -150,11 +150,16 @@ function mseoPlanProductMeta(mysqli $database, int $storeId, int $croatianId, in
         "SELECT hr.`product_id`, hr.`name` AS hr_name, hr.`description` AS hr_description, " .
         "hr.`meta_title` AS hr_meta_title, hr.`meta_description` AS hr_meta_description, " .
         "en.`name` AS en_name, en.`description` AS en_description, " .
-        "en.`meta_title` AS en_meta_title, en.`meta_description` AS en_meta_description " .
+        "en.`meta_title` AS en_meta_title, en.`meta_description` AS en_meta_description, " .
+        "hrl.`code` AS hr_language_code, enl.`code` AS en_language_code, " .
+        "COALESCE(m.`name`, '') AS manufacturer_name " .
         "FROM `{$table}` hr " .
         "JOIN `{$table}` en ON en.`product_id` = hr.`product_id` AND en.`language_id` = '{$englishId}' " .
+        "JOIN `" . DB_PREFIX . "language` hrl ON hrl.`language_id` = hr.`language_id` AND hrl.`status` = 1 " .
+        "JOIN `" . DB_PREFIX . "language` enl ON enl.`language_id` = en.`language_id` AND enl.`status` = 1 " .
         "JOIN `" . DB_PREFIX . "product` p ON p.`product_id` = hr.`product_id` AND p.`status` = 1 " .
         "JOIN `" . DB_PREFIX . "product_to_store` p2s ON p2s.`product_id` = p.`product_id` AND p2s.`store_id` = '{$storeId}' " .
+        "LEFT JOIN `" . DB_PREFIX . "manufacturer` m ON m.`manufacturer_id` = p.`manufacturer_id` " .
         "WHERE hr.`language_id` = '{$croatianId}' ORDER BY hr.`product_id`"
     );
     $plan = array();
@@ -183,36 +188,142 @@ function mseoPlanProductMeta(mysqli $database, int $storeId, int $croatianId, in
             true
         );
         $descriptionDiffers = mseoComparable($row['hr_description']) !== mseoComparable($row['en_description']);
-        $repairTitle = $titleBroken || $titleLooksEnglish;
+        $repairTitle = $titleBroken || $titleLooksEnglish || mseoTextLength($row['hr_meta_title']) > 65;
         $repairDescription = $descriptionBroken || (
             $descriptionDiffers && mseoComparable($row['hr_meta_description']) === mseoComparable($row['en_meta_description'])
+        ) || mseoTextLength($row['hr_meta_description']) > 160;
+
+        if (!$repairTitle && !$repairDescription) {
+            // English metadata is checked independently below.
+        } else {
+            $title = $repairTitle
+                ? mseoProductTitle($row['hr_name'], $row['manufacturer_name'])
+                : $row['hr_meta_title'];
+            $description = $row['hr_meta_description'];
+            if ($repairDescription) {
+                $description = $descriptionBroken || (
+                    $descriptionDiffers && mseoComparable($row['hr_meta_description']) === mseoComparable($row['en_meta_description'])
+                )
+                    ? mseoProductDescription($row['hr_name'], $row['hr_description'], true)
+                    : mseoTruncate($row['hr_meta_description'], 160);
+            }
+
+            $plan[$row['product_id'] . ':' . $croatianId] = array(
+                'product_id' => (int)$row['product_id'],
+                'language_id' => $croatianId,
+                'language_code' => $row['hr_language_code'],
+                'name' => $row['hr_name'],
+                'meta_title' => $title,
+                'meta_description' => $description,
+                'old_meta_title' => $row['hr_meta_title'],
+                'old_meta_description' => $row['hr_meta_description'],
+                'repair_title' => $repairTitle,
+                'repair_description' => $repairDescription
+            );
+        }
+
+        $englishTitleBroken = mseoBrokenMeta($row['en_meta_title']);
+        $englishTitleLooksCroatian = $nameDiffers && in_array(
+            mseoComparable($row['en_meta_title']),
+            array(
+                mseoComparable($row['hr_meta_title']),
+                mseoComparable($row['hr_name']),
+                mseoComparable($row['hr_name'] . ' | World of Beauty')
+            ),
+            true
         );
+        $englishDescriptionBroken = mseoBrokenMeta($row['en_meta_description']) || in_array(
+            mseoComparable($row['en_meta_description']),
+            array(mseoComparable($row['en_name']), mseoComparable($row['en_meta_title'])),
+            true
+        );
+        $repairEnglishTitle = $englishTitleBroken || $englishTitleLooksCroatian || mseoTextLength($row['en_meta_title']) > 65;
+        $repairEnglishDescription = $englishDescriptionBroken || (
+            $descriptionDiffers && mseoComparable($row['en_meta_description']) === mseoComparable($row['hr_meta_description'])
+        ) || mseoTextLength($row['en_meta_description']) > 160;
+
+        if (!$repairEnglishTitle && !$repairEnglishDescription) {
+            continue;
+        }
+
+        $englishDescription = $row['en_meta_description'];
+        if ($repairEnglishDescription) {
+            $englishDescription = $englishDescriptionBroken || (
+                $descriptionDiffers && mseoComparable($row['en_meta_description']) === mseoComparable($row['hr_meta_description'])
+            )
+                ? mseoProductDescription($row['en_name'], $row['en_description'], false)
+                : mseoTruncate($row['en_meta_description'], 160);
+        }
+
+        $plan[$row['product_id'] . ':' . $englishId] = array(
+            'product_id' => (int)$row['product_id'],
+            'language_id' => $englishId,
+            'language_code' => $row['en_language_code'],
+            'name' => $row['en_name'],
+            'meta_title' => $repairEnglishTitle
+                ? mseoProductTitle($row['en_name'], $row['manufacturer_name'])
+                : $row['en_meta_title'],
+            'meta_description' => $englishDescription,
+            'old_meta_title' => $row['en_meta_title'],
+            'old_meta_description' => $row['en_meta_description'],
+            'repair_title' => $repairEnglishTitle,
+            'repair_description' => $repairEnglishDescription
+        );
+    }
+
+    $allLanguages = $database->query(
+        "SELECT pd.`product_id`, pd.`language_id`, l.`code` AS language_code, pd.`name`, pd.`description`, " .
+        "pd.`meta_title`, pd.`meta_description`, COALESCE(m.`name`, '') AS manufacturer_name " .
+        "FROM `{$table}` pd " .
+        "JOIN `" . DB_PREFIX . "language` l ON l.`language_id` = pd.`language_id` AND l.`status` = 1 " .
+        "JOIN `" . DB_PREFIX . "product` p ON p.`product_id` = pd.`product_id` AND p.`status` = 1 " .
+        "JOIN `" . DB_PREFIX . "product_to_store` p2s ON p2s.`product_id` = p.`product_id` AND p2s.`store_id` = '{$storeId}' " .
+        "LEFT JOIN `" . DB_PREFIX . "manufacturer` m ON m.`manufacturer_id` = p.`manufacturer_id` " .
+        "ORDER BY pd.`product_id`, pd.`language_id`"
+    );
+
+    while ($row = $allLanguages->fetch_assoc()) {
+        $key = $row['product_id'] . ':' . $row['language_id'];
+        if (isset($plan[$key])) {
+            continue;
+        }
+
+        $titleBroken = mseoBrokenMeta($row['meta_title']);
+        $descriptionBroken = mseoBrokenMeta($row['meta_description']) || in_array(
+            mseoComparable($row['meta_description']),
+            array(mseoComparable($row['name']), mseoComparable($row['meta_title'])),
+            true
+        );
+        $repairTitle = $titleBroken || mseoTextLength($row['meta_title']) > 65;
+        $repairDescription = $descriptionBroken || mseoTextLength($row['meta_description']) > 160;
 
         if (!$repairTitle && !$repairDescription) {
             continue;
         }
 
-        $title = $repairTitle
-            ? mseoTruncate($row['hr_name'] . ' | World of Beauty', 65)
-            : $row['hr_meta_title'];
-        $description = $repairDescription
-            ? mseoProductDescription($row['hr_name'], $row['hr_description'], true)
-            : $row['hr_meta_description'];
-
-        $plan[] = array(
+        $isCroatian = strpos(strtolower($row['language_code']), 'hr') === 0;
+        $plan[$key] = array(
             'product_id' => (int)$row['product_id'],
-            'language_id' => $croatianId,
-            'name' => $row['hr_name'],
-            'meta_title' => $title,
-            'meta_description' => $description,
-            'old_meta_title' => $row['hr_meta_title'],
-            'old_meta_description' => $row['hr_meta_description'],
+            'language_id' => (int)$row['language_id'],
+            'language_code' => $row['language_code'],
+            'name' => $row['name'],
+            'meta_title' => $repairTitle
+                ? mseoProductTitle($row['name'], $row['manufacturer_name'])
+                : $row['meta_title'],
+            'meta_description' => $repairDescription
+                ? ($descriptionBroken
+                    ? mseoProductDescription($row['name'], $row['description'], $isCroatian)
+                    : mseoTruncate($row['meta_description'], 160))
+                : $row['meta_description'],
+            'old_meta_title' => $row['meta_title'],
+            'old_meta_description' => $row['meta_description'],
             'repair_title' => $repairTitle,
             'repair_description' => $repairDescription
         );
     }
 
-    return $plan;
+    ksort($plan, SORT_NATURAL);
+    return array_values($plan);
 }
 
 function mseoPlanSeoUrls(
@@ -400,10 +511,15 @@ function mseoPrintPlan(
 ): void {
     $titleRepairs = 0;
     $descriptionRepairs = 0;
+    $repairsByLanguage = array();
 
     foreach ($metaPlan as $change) {
         $titleRepairs += $change['repair_title'] ? 1 : 0;
         $descriptionRepairs += $change['repair_description'] ? 1 : 0;
+        $languageCode = isset($change['language_code']) ? $change['language_code'] : (string)$change['language_id'];
+        $repairsByLanguage[$languageCode] = isset($repairsByLanguage[$languageCode])
+            ? $repairsByLanguage[$languageCode] + 1
+            : 1;
     }
 
     $missingByType = array();
@@ -414,9 +530,12 @@ function mseoPrintPlan(
 
     echo 'Mode: ' . ($apply ? 'APPLY' : 'DRY RUN') . PHP_EOL;
     echo 'Store: ' . $storeId . PHP_EOL;
-    echo 'Croatian product meta rows: ' . count($metaPlan) . PHP_EOL;
+    echo 'Product meta rows (all active languages): ' . count($metaPlan) . PHP_EOL;
     echo '  meta titles: ' . $titleRepairs . PHP_EOL;
     echo '  meta descriptions: ' . $descriptionRepairs . PHP_EOL;
+    foreach ($repairsByLanguage as $languageCode => $count) {
+        echo '  ' . $languageCode . ' rows: ' . $count . PHP_EOL;
+    }
     echo 'Shared HR/EN aliases to split (HR preserved): ' . count($urlPlan['updates']) . PHP_EOL;
     echo 'Missing active entity aliases to create: ' . count($urlPlan['inserts']) . PHP_EOL;
 
@@ -714,6 +833,30 @@ function mseoBrokenMeta(string $value): bool
 {
     $value = trim(html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
     return $value === '' || preg_match('/\{[^}]+\}/', $value) === 1;
+}
+
+function mseoTextLength(string $value): int
+{
+    $value = preg_replace('/\s+/u', ' ', trim(strip_tags(html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8'))));
+    return function_exists('mb_strlen') ? mb_strlen($value, 'UTF-8') : strlen($value);
+}
+
+function mseoProductTitle(string $name, string $manufacturer = ''): string
+{
+    $name = preg_replace('/\s+/u', ' ', trim(strip_tags(html_entity_decode($name, ENT_QUOTES | ENT_HTML5, 'UTF-8'))));
+    $manufacturer = preg_replace('/\s+/u', ' ', trim(strip_tags(html_entity_decode($manufacturer, ENT_QUOTES | ENT_HTML5, 'UTF-8'))));
+    $base = $name;
+
+    if ($manufacturer !== '' && strpos(mseoComparable($name), mseoComparable($manufacturer)) === false) {
+        $base .= ' | ' . $manufacturer;
+    }
+
+    $withSiteName = $base . ' | World of Beauty';
+    if (mseoTextLength($withSiteName) <= 65) {
+        return $withSiteName;
+    }
+
+    return mseoTruncate($base, 65);
 }
 
 function mseoProductDescription(string $name, string $description, bool $croatian): string

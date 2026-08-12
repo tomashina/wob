@@ -49,9 +49,18 @@
 		'<a aria-label="' . $email_label . ': $1" href="mailto:$1"',
 		$data['promo_message']
 	);
-	$data['promo_message'] = preg_replace(
+	$data['promo_message'] = preg_replace_callback(
 		'/<a\s+href="tel:([^"]+)"/i',
-		'<a aria-label="' . $phone_label . ': $1" href="tel:$1"',
+		function ($matches) use ($phone_label) {
+			$raw_phone = html_entity_decode($matches[1], ENT_QUOTES, 'UTF-8');
+			$digits = preg_replace('/[^0-9]/', '', $raw_phone);
+			if (strlen($digits) < 7) {
+				return $matches[0];
+			}
+			$destination = (strpos(ltrim($raw_phone), '+') === 0 ? '+' : '') . $digits;
+			$label = htmlspecialchars($phone_label . ': ' . trim($raw_phone), ENT_QUOTES, 'UTF-8');
+			return '<a aria-label="' . $label . '" href="tel:' . $destination . '"';
+		},
 		$data['promo_message']
 	);
 	$data['promo_message2'] = '';

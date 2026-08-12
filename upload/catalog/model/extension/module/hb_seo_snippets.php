@@ -31,6 +31,47 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 		return strpos($language, 'hr') === 0 ? 'Početna' : 'Home';
 	}
 
+	private function normalizeGtin($value) {
+		$value = trim((string)$value);
+		if ($value === '' || !preg_match('/^[0-9\s-]+$/', $value)) {
+			return '';
+		}
+
+		$gtin = preg_replace('/[^0-9]/', '', $value);
+		$length = strlen($gtin);
+		if (!in_array($length, array(8, 12, 13, 14), true)) {
+			return '';
+		}
+		if (count(array_unique(str_split($gtin))) === 1) {
+			return '';
+		}
+
+		$sum = 0;
+		$weight = 3;
+		for ($index = $length - 2; $index >= 0; $index--) {
+			$sum += (int)$gtin[$index] * $weight;
+			$weight = $weight === 3 ? 1 : 3;
+		}
+
+		$checkDigit = (10 - ($sum % 10)) % 10;
+		return $checkDigit === (int)$gtin[$length - 1] ? $gtin : '';
+	}
+
+	private function uniqueProductGtin($value, $product_id) {
+		$gtin = $this->normalizeGtin($value);
+		if ($gtin === '') {
+			return '';
+		}
+
+		$query = $this->db->query(
+			"SELECT product_id FROM " . DB_PREFIX . "product " .
+			"WHERE status = 1 AND product_id <> '" . (int)$product_id . "' " .
+			"AND REPLACE(REPLACE(TRIM(ean), ' ', ''), '-', '') = '" . $this->db->escape($gtin) . "' LIMIT 1"
+		);
+
+		return $query->num_rows ? '' : $gtin;
+	}
+
 	public function get_stock_status_id($product_id) {
 		$query = $this->db->query("SELECT stock_status_id FROM ".DB_PREFIX."product WHERE product_id = '".(int)$product_id."'");
 		if ($query->row) {
@@ -95,6 +136,7 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 					$sku = trim((string)$product_info['model']);
 				}
 				$mpn = trim((string)$product_info['mpn']);
+				$gtin = $this->uniqueProductGtin(isset($product_info['ean']) ? $product_info['ean'] : '', $product_id);
 
 				$product_images = [];
 
@@ -390,6 +432,9 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 				}
 				if ($mpn !== '') {
 					$product_snippet['mpn'] = $mpn;
+				}
+				if ($gtin !== '') {
+					$product_snippet['gtin' . strlen($gtin)] = $gtin;
 				}
 				if (!empty($brand)) {
 					$product_snippet['brand'] = $brand;

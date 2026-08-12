@@ -1,8 +1,8 @@
 # Produkcijski deploy
 
 Sve SEO, Consent Mode, GTM, ecommerce, UI i checkout izmjene objavljuju se iz
-grane `main`. Produkcijske konfiguracije i slike nisu dio Gita i deploy ih ne
-mijenja.
+grane `main`. Produkcijske konfiguracije i slike nisu dio Gita; zasebna SEO
+migracija samo kopira slike iz opisa proizvoda u lokalni image direktorij.
 
 ## Prije prvog deploya ovog paketa
 
@@ -19,6 +19,8 @@ php scripts/apply-tracking-consent.php
 php scripts/apply-home-salon-gateway.php
 php scripts/repair-multilingual-seo.php
 php scripts/repair-multilingual-seo.php --apply
+php scripts/repair-product-description-images.php
+php scripts/repair-product-description-images.php --apply
 php scripts/apply-seo-ai.php --refresh
 git status --short
 ```
@@ -37,6 +39,8 @@ php scripts/apply-tracking-consent.php
 php scripts/apply-home-salon-gateway.php
 php scripts/repair-multilingual-seo.php
 php scripts/repair-multilingual-seo.php --apply
+php scripts/repair-product-description-images.php
+php scripts/repair-product-description-images.php --apply
 php scripts/apply-seo-ai.php --refresh
 ```
 
@@ -50,6 +54,16 @@ backup može ručno vratiti naredbom:
 
 ```bash
 php scripts/repair-multilingual-seo.php --restore=/puna/putanja/do/backupa.json
+```
+
+Migracija slika također prvo radi dry-run. Na `--apply` preuzima vanjske slike,
+sprema ih pod `image/catalog/seo-description`, dodaje opisni `alt`,
+`loading="lazy"` i `decoding="async"`, pa tek onda mijenja opise u bazi. Ako i
+jedna slika nije dostupna, baza ostaje netaknuta. Recovery JSON za opise može se
+ručno vratiti naredbom:
+
+```bash
+php scripts/repair-product-description-images.php --restore=/puna/putanja/do/backupa.json
 ```
 
 Nakon applyja u OpenCart administraciji ponovno generirajte Boost Sitemap

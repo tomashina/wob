@@ -16,6 +16,8 @@ $sitemapDirectory = isset($options['sitemap-dir'])
 require_once $projectRoot . '/upload/config.php';
 define('MULTILINGUAL_SEO_LIBRARY_ONLY', true);
 require_once $projectRoot . '/scripts/repair-multilingual-seo.php';
+define('PRODUCT_DESCRIPTION_IMAGE_LIBRARY_ONLY', true);
+require_once $projectRoot . '/scripts/repair-product-description-images.php';
 
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $database = new mysqli(DB_HOSTNAME, DB_USERNAME, DB_PASSWORD, DB_DATABASE, (int)DB_PORT);
@@ -34,6 +36,7 @@ try {
     $urlPlan = mseoPlanSeoUrls($database, $storeId, $languages, $croatianId, $englishId);
     $ocmodPlan = mseoPlanOcmodSync($database, $projectRoot);
     $duplicates = mseoDuplicateKeywordStats($database, $storeId);
+    $descriptionImages = pdiPlan($database, $storeId);
     $sitemaps = mseoAuditSitemaps($sitemapDirectory, $storeId);
 
     $titleRepairs = 0;
@@ -44,13 +47,17 @@ try {
     }
 
     echo 'Database SEO integrity (store ' . $storeId . ')' . PHP_EOL;
-    echo '  Croatian product meta rows needing repair: ' . count($metaPlan) . PHP_EOL;
+    echo '  Product meta rows needing repair: ' . count($metaPlan) . PHP_EOL;
     echo '    titles: ' . $titleRepairs . PHP_EOL;
     echo '    descriptions: ' . $descriptionRepairs . PHP_EOL;
     echo '  shared HR/EN aliases: ' . count($urlPlan['updates']) . PHP_EOL;
     echo '  missing active entity aliases: ' . count($urlPlan['inserts']) . PHP_EOL;
     echo '  globally duplicated keywords: ' . $duplicates['groups'] . ' groups / ' . $duplicates['extra_rows'] . ' extra rows' . PHP_EOL;
     echo '  hreflang OCMOD: ' . $ocmodPlan['status'] . PHP_EOL;
+    echo '  product descriptions with image issues: ' . count($descriptionImages['rows']) . PHP_EOL;
+    echo '    external image references: ' . $descriptionImages['stats']['external_images'] . PHP_EOL;
+    echo '    images missing alt text: ' . $descriptionImages['stats']['missing_alt'] . PHP_EOL;
+    echo '    images missing loading=lazy: ' . $descriptionImages['stats']['missing_lazy'] . PHP_EOL;
 
     echo PHP_EOL . 'Generated sitemap integrity' . PHP_EOL;
     echo '  directory: ' . $sitemapDirectory . PHP_EOL;
@@ -68,6 +75,7 @@ try {
         + count($urlPlan['updates'])
         + count($urlPlan['inserts'])
         + $duplicates['groups']
+        + count($descriptionImages['rows'])
         + $sitemaps['duplicate_entries']
         + $sitemaps['dynamic_urls']
         + $sitemaps['malformed_files'];

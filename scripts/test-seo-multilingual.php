@@ -9,6 +9,8 @@ define('HABYS_IMPORT_LIBRARY_ONLY', true);
 require_once dirname(__DIR__) . '/upload/import_habys_new_offer.php';
 define('MULTILINGUAL_SEO_LIBRARY_ONLY', true);
 require_once dirname(__DIR__) . '/scripts/repair-multilingual-seo.php';
+define('PRODUCT_DESCRIPTION_IMAGE_LIBRARY_ONLY', true);
+require_once dirname(__DIR__) . '/scripts/repair-product-description-images.php';
 
 if (!defined('DB_PREFIX')) {
     define('DB_PREFIX', 'oc_');
@@ -56,6 +58,20 @@ $longOccupied = array($longBase => array(1 => true));
 $longUnique = mseoUniqueKeyword($longOccupied, $longBase, 'en', 42);
 seoTestAssert(strlen($longUnique) <= 240 && substr($longUnique, -3) === '-en', 'Long unique slug lost its language suffix.');
 seoTestAssert(strlen(composeSeoKeyword($longBase, 'en-2')) <= 240, 'Importer slug candidate exceeded its limit.');
+seoTestAssert(mseoTextLength(mseoProductTitle(str_repeat('Dugi naziv ', 20), 'Habys')) <= 65, 'Product meta title exceeded 65 characters.');
+seoTestAssert(strpos(mseoProductTitle('Stol za masažu', 'Habys'), 'Stol za masažu | Habys') === 0, 'Product meta title lost product and brand identity.');
+
+$imageRepair = pdiTransformDescription(
+    '<p><img src="https://cdn.example.com/product.jpg" alt=""></p>',
+    'Stol za masažu',
+    array('https://cdn.example.com/product.jpg' => 'image/catalog/seo-description/image.jpg')
+);
+seoTestAssert(strpos($imageRepair['html'], 'src="image/catalog/seo-description/image.jpg"') !== false, 'External description image was not localized.');
+seoTestAssert(strpos($imageRepair['html'], 'alt="Stol za masažu"') !== false, 'Description image alt text was not repaired.');
+seoTestAssert(strpos($imageRepair['html'], 'loading="lazy"') !== false, 'Description image lazy loading was not added.');
+seoTestAssert(strpos($imageRepair['html'], 'decoding="async"') !== false, 'Description image async decoding was not added.');
+$imageRepairAgain = pdiTransformDescription($imageRepair['html'], 'Stol za masažu');
+seoTestAssert(!$imageRepairAgain['changed'] && $imageRepairAgain['external_images'] === 0, 'Description image repair is not idempotent.');
 
 if (!class_exists('Model', false)) {
     class Model {
@@ -139,6 +155,39 @@ class SeoTestLanguages {
     }
 }
 
+class SeoTestGtinDatabase {
+    private $duplicate;
+
+    public function __construct(bool $duplicate) {
+        $this->duplicate = $duplicate;
+    }
+
+    public function escape(string $value): string {
+        return addslashes($value);
+    }
+
+    public function query(string $sql): SeoTestResult {
+        return $this->duplicate
+            ? new SeoTestResult(array('product_id' => 99))
+            : new SeoTestResult();
+    }
+}
+
+require_once dirname(__DIR__) . '/upload/catalog/model/extension/module/hb_seo_snippets.php';
+$snippetModel = new ModelExtensionModuleHbSeoSnippets();
+$normalizeGtin = new ReflectionMethod($snippetModel, 'normalizeGtin');
+$normalizeGtin->setAccessible(true);
+seoTestAssert($normalizeGtin->invoke($snippetModel, '4006381333931') === '4006381333931', 'Valid GTIN-13 was rejected.');
+seoTestAssert($normalizeGtin->invoke($snippetModel, '4006381333932') === '', 'Invalid GTIN check digit was accepted.');
+seoTestAssert($normalizeGtin->invoke($snippetModel, 'not-an-ean') === '', 'Non-numeric GTIN was accepted.');
+seoTestAssert($normalizeGtin->invoke($snippetModel, '0000000000000') === '', 'Placeholder GTIN was accepted.');
+$uniqueGtin = new ReflectionMethod($snippetModel, 'uniqueProductGtin');
+$uniqueGtin->setAccessible(true);
+$snippetModel->db = new SeoTestGtinDatabase(false);
+seoTestAssert($uniqueGtin->invoke($snippetModel, '4006381333931', 42) === '4006381333931', 'Unique GTIN was rejected.');
+$snippetModel->db = new SeoTestGtinDatabase(true);
+seoTestAssert($uniqueGtin->invoke($snippetModel, '4006381333931', 42) === '', 'Duplicate GTIN was published.');
+
 require_once dirname(__DIR__) . '/upload/catalog/model/extension/module/hb_seourl.php';
 $hreflang = new ModelExtensionModuleHbSeourl();
 $hreflang->config = new SeoTestConfig();
@@ -156,4 +205,4 @@ $categoryAlternates = $hreflang->hreflang('product/category', array('path' => '2
 seoTestContains('href="https://www.worldofbeauty.hr/hr-kategorija?page=2"', $categoryAlternates, 'Category hreflang lost pagination.');
 seoTestContains('href="https://www.worldofbeauty.hr/en-category?page=2"', $categoryAlternates, 'English category hreflang lost pagination.');
 
-echo 'All multilingual SEO tests passed.' . PHP_EOL;
+echo 'All SEO integrity tests passed.' . PHP_EOL;

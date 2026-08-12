@@ -1,5 +1,39 @@
 <?php
 	$lang_id = $this->config->get('config_language_id');
+	$is_croatian = strpos(strtolower((string)$this->config->get('config_language')), 'hr') === 0;
+	$footer_phone_label = $is_croatian ? 'Telefon' : 'Phone';
+	$normalize_footer_phone_links = function ($html) use ($footer_phone_label) {
+		return preg_replace_callback(
+			'/<a\b[^>]*\bhref=(["\'])tel:[^"\']*\1[^>]*>.*?<\/a>/is',
+			function ($matches) use ($footer_phone_label) {
+				$anchor = $matches[0];
+				$text = trim(preg_replace('/\s+/u', ' ', strip_tags(html_entity_decode($anchor, ENT_QUOTES, 'UTF-8'))));
+				$raw_phone = '';
+
+				if (preg_match('/\+?\d(?:[\s().\/-]*\d){6,}/', $text, $phone_match)) {
+					$raw_phone = $phone_match[0];
+				} elseif (preg_match('/\bhref=(["\'])tel:([^"\']*)\1/i', $anchor, $href_match)) {
+					$raw_phone = html_entity_decode($href_match[2], ENT_QUOTES, 'UTF-8');
+				}
+
+				$digits = preg_replace('/[^0-9]/', '', $raw_phone);
+				if (strlen($digits) < 7) {
+					return $anchor;
+				}
+
+				$destination = (strpos(ltrim($raw_phone), '+') === 0 ? '+' : '') . $digits;
+				$anchor = preg_replace('/\bhref=(["\'])tel:[^"\']*\1/i', 'href="tel:' . $destination . '"', $anchor, 1);
+
+				if (stripos($anchor, 'aria-label=') === false) {
+					$label = htmlspecialchars($footer_phone_label . ': ' . trim($raw_phone), ENT_QUOTES, 'UTF-8');
+					$anchor = preg_replace('/<a\b/i', '<a aria-label="' . $label . '"', $anchor, 1);
+				}
+
+				return $anchor;
+			},
+			(string)$html
+		);
+	};
 	
 	// Footer positions
 	if ($this->config->get('theme_default_directory') == 'basel') {
@@ -42,6 +76,9 @@
 	$data['footer_block_title'] = html_entity_decode($footer_block_title[$lang_id], ENT_QUOTES, 'UTF-8');	
 	if (isset($basel_copyright[$lang_id])) 
 	$data['basel_copyright'] = html_entity_decode(str_replace('{year}',date("Y"),$basel_copyright[$lang_id]), ENT_QUOTES, 'UTF-8');
+	foreach (array('footer_block_1', 'footer_block_2', 'footer_infoline_1', 'footer_infoline_2', 'footer_infoline_3', 'basel_copyright') as $footer_html_key) {
+		$data[$footer_html_key] = $normalize_footer_phone_links($data[$footer_html_key]);
+	}
 	$data['custom_links'] = $this->config->get('overwrite_footer_links');
 	$data['sticky_columns'] = $this->config->get('basel_sticky_columns');
 	$data['basel_version'] = $this->config->get('basel_theme_version');
@@ -124,4 +161,4 @@
 	if ( ($this->config->get('basel_cookie_bar_status')) && (!isset($_COOKIE['basel_cookie'])) ) {
 	$data['view_cookie_bar'] = true;
 	setcookie("basel_cookie", "1", time()+60*60*24*30);
-	}	
+	}
