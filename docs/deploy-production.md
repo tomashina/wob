@@ -21,6 +21,8 @@ php scripts/repair-multilingual-seo.php
 php scripts/repair-multilingual-seo.php --apply
 php scripts/repair-product-description-images.php
 php scripts/repair-product-description-images.php --apply
+php scripts/disable-empty-catalog.php
+php scripts/disable-empty-catalog.php --apply
 php scripts/apply-seo-ai.php --refresh
 git status --short
 ```
@@ -41,6 +43,8 @@ php scripts/repair-multilingual-seo.php
 php scripts/repair-multilingual-seo.php --apply
 php scripts/repair-product-description-images.php
 php scripts/repair-product-description-images.php --apply
+php scripts/disable-empty-catalog.php
+php scripts/disable-empty-catalog.php --apply
 php scripts/apply-seo-ai.php --refresh
 ```
 
@@ -59,11 +63,21 @@ php scripts/repair-multilingual-seo.php --restore=/puna/putanja/do/backupa.json
 Migracija slika također prvo radi dry-run. Na `--apply` preuzima vanjske slike,
 sprema ih pod `image/catalog/seo-description`, dodaje opisni `alt`,
 `loading="lazy"` i `decoding="async"`, pa tek onda mijenja opise u bazi. Ako i
-jedna slika nije dostupna, baza ostaje netaknuta. Recovery JSON za opise može se
-ručno vratiti naredbom:
+jedna slika ima privremenu mrežnu/TLS grešku, baza ostaje netaknuta; trajni HTTP
+404/410 uklanja samo neispravan `<img>` tag. Recovery JSON za opise može se ručno
+vratiti naredbom:
 
 ```bash
 php scripts/repair-product-description-images.php --restore=/puna/putanja/do/backupa.json
+```
+
+Čišćenje kataloga gasi aktivne proizvode koji nemaju nijednu fizički postojeću
+glavnu ili dodatnu sliku. Zatim gasi samo kategorije koje nemaju aktivan proizvod
+ni u jednoj podkategoriji. I ova skripta prvo radi dry-run i zapisuje recovery
+JSON prije promjene statusa:
+
+```bash
+php scripts/disable-empty-catalog.php --restore=/puna/putanja/do/backupa.json
 ```
 
 Nakon applyja u OpenCart administraciji ponovno generirajte Boost Sitemap

@@ -11,6 +11,8 @@ define('MULTILINGUAL_SEO_LIBRARY_ONLY', true);
 require_once dirname(__DIR__) . '/scripts/repair-multilingual-seo.php';
 define('PRODUCT_DESCRIPTION_IMAGE_LIBRARY_ONLY', true);
 require_once dirname(__DIR__) . '/scripts/repair-product-description-images.php';
+define('EMPTY_CATALOG_LIBRARY_ONLY', true);
+require_once dirname(__DIR__) . '/scripts/disable-empty-catalog.php';
 
 if (!defined('DB_PREFIX')) {
     define('DB_PREFIX', 'oc_');
@@ -72,6 +74,23 @@ seoTestAssert(strpos($imageRepair['html'], 'loading="lazy"') !== false, 'Descrip
 seoTestAssert(strpos($imageRepair['html'], 'decoding="async"') !== false, 'Description image async decoding was not added.');
 $imageRepairAgain = pdiTransformDescription($imageRepair['html'], 'Stol za masažu');
 seoTestAssert(!$imageRepairAgain['changed'] && $imageRepairAgain['external_images'] === 0, 'Description image repair is not idempotent.');
+$missingImageRepair = pdiTransformDescription(
+    '<p>Prije<img src="https://cdn.example.com/missing.jpg">Poslije</p>',
+    'Stol za masažu',
+    array('https://cdn.example.com/missing.jpg' => '')
+);
+seoTestAssert($missingImageRepair['html'] === '<p>PrijePoslije</p>', 'Permanently unavailable image tag was not removed.');
+$malformedImageRepair = pdiTransformDescription(
+    '<img src="https://cdn.example.com/product.jpg&quot;>',
+    'Stol za masažu',
+    array('https://cdn.example.com/product.jpg' => 'image/catalog/seo-description/image.jpg')
+);
+seoTestAssert(
+    strpos($malformedImageRepair['html'], 'src="image/catalog/seo-description/image.jpg"') !== false,
+    'HTML-entity terminated image source was not normalized.'
+);
+seoTestAssert(!cecHasUsableImage(dirname(__DIR__), '../outside.jpg'), 'Catalog image traversal was accepted.');
+seoTestAssert(!cecHasUsableImage(dirname(__DIR__), 'no_image.png'), 'Placeholder catalog image was accepted.');
 
 if (!class_exists('Model', false)) {
     class Model {

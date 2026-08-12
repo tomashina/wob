@@ -18,6 +18,8 @@ define('MULTILINGUAL_SEO_LIBRARY_ONLY', true);
 require_once $projectRoot . '/scripts/repair-multilingual-seo.php';
 define('PRODUCT_DESCRIPTION_IMAGE_LIBRARY_ONLY', true);
 require_once $projectRoot . '/scripts/repair-product-description-images.php';
+define('EMPTY_CATALOG_LIBRARY_ONLY', true);
+require_once $projectRoot . '/scripts/disable-empty-catalog.php';
 
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $database = new mysqli(DB_HOSTNAME, DB_USERNAME, DB_PASSWORD, DB_DATABASE, (int)DB_PORT);
@@ -37,6 +39,7 @@ try {
     $ocmodPlan = mseoPlanOcmodSync($database, $projectRoot);
     $duplicates = mseoDuplicateKeywordStats($database, $storeId);
     $descriptionImages = pdiPlan($database, $storeId);
+    $emptyCatalog = cecPlan($database, $storeId, DIR_IMAGE);
     $sitemaps = mseoAuditSitemaps($sitemapDirectory, $storeId);
 
     $titleRepairs = 0;
@@ -58,6 +61,8 @@ try {
     echo '    external image references: ' . $descriptionImages['stats']['external_images'] . PHP_EOL;
     echo '    images missing alt text: ' . $descriptionImages['stats']['missing_alt'] . PHP_EOL;
     echo '    images missing loading=lazy: ' . $descriptionImages['stats']['missing_lazy'] . PHP_EOL;
+    echo '  active products without usable images: ' . count($emptyCatalog['products']) . PHP_EOL;
+    echo '  active categories without products in their subtree: ' . count($emptyCatalog['categories']) . PHP_EOL;
 
     echo PHP_EOL . 'Generated sitemap integrity' . PHP_EOL;
     echo '  directory: ' . $sitemapDirectory . PHP_EOL;
@@ -76,6 +81,8 @@ try {
         + count($urlPlan['inserts'])
         + $duplicates['groups']
         + count($descriptionImages['rows'])
+        + count($emptyCatalog['products'])
+        + count($emptyCatalog['categories'])
         + $sitemaps['duplicate_entries']
         + $sitemaps['dynamic_urls']
         + $sitemaps['malformed_files'];

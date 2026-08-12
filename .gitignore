@@ -14,6 +14,7 @@ upload/env.php
 upload/image/
 
 # Runtime and generated data
+/error_log
 upload/error_log
 upload/admin/error_log
 upload/sitemaps/
@@ -27,6 +28,12 @@ storagedijana/storagedijana/logs/
 storagedijana/storagedijana/modification/
 storagedijana/storagedijana/session/
 storagedijana/storagedijana/upload/
+storagedijana/cache/
+storagedijana/backup/
+storagedijana/logs/
+storagedijana/modification/
+storagedijana/session/
+storagedijana/upload/
 
 # Local exports, backups and editor artefacts
 *.log

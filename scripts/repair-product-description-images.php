@@ -86,6 +86,9 @@ function pdiMain(array $argv): void
         }
 
         echo PHP_EOL . 'Mirrored external product-description images and added alt/lazy attributes.' . PHP_EOL;
+        if ($download['unavailable_urls']) {
+            echo 'Removed permanently unavailable image tags: ' . count($download['unavailable_urls']) . PHP_EOL;
+        }
     } finally {
         try {
             pdiReleaseLock($database, $lockName);
@@ -158,7 +161,11 @@ function pdiTransformDescription(string $html, string $productName, array $urlMa
     $altText = trim(preg_replace('/\s+/u', ' ', strip_tags(html_entity_decode($productName, ENT_QUOTES | ENT_HTML5, 'UTF-8'))));
 
     $updated = preg_replace_callback('/<img\b[^>]*>/i', function ($matches) use (&$stats, $altText, $urlMap) {
-        $tag = $matches[0];
+        $tag = preg_replace(
+            '/\bsrc\s*=\s*"([^"]*?)&quot;(?=\s*\/?>)/i',
+            'src="$1"',
+            $matches[0]
+        );
         $stats['image_tags']++;
         $source = pdiImageAttribute($tag, 'src');
 
@@ -168,6 +175,10 @@ function pdiTransformDescription(string $html, string $productName, array $urlMa
                 $stats['external_images']++;
                 $stats['external_urls'][$decodedSource] = $decodedSource;
                 if (isset($urlMap[$decodedSource])) {
+                    if ($urlMap[$decodedSource] === '') {
+                        $stats['changed'] = true;
+                        return '';
+                    }
                     $tag = pdiSetImageAttribute($tag, 'src', $urlMap[$decodedSource]);
                 }
             }
@@ -238,6 +249,7 @@ function pdiMirrorImages(array $urls, int $timeout, int $maxBytes): array
 
     $map = array();
     $created = array();
+    $unavailable = array();
     $total = count($urls);
     foreach (array_values($urls) as $index => $url) {
         pdiAssertPublicUrl($url);
@@ -245,27 +257,32 @@ function pdiMirrorImages(array $urls, int $timeout, int $maxBytes): array
         $existing = glob($directory . '/' . $hash . '.*');
         if ($existing) {
             $map[$url] = 'image/catalog/seo-description/' . basename($existing[0]);
-            continue;
-        }
-
-        $temporary = tempnam($directory, '.download-');
-        if ($temporary === false) {
-            throw new RuntimeException('Unable to allocate a temporary image file.');
-        }
-
-        try {
-            pdiDownloadImage($url, $temporary, $timeout, $maxBytes);
-            $extension = pdiImageExtension($temporary);
-            $destination = $directory . '/' . $hash . '.' . $extension;
-            if (!rename($temporary, $destination)) {
-                throw new RuntimeException('Unable to store mirrored image: ' . $destination);
+        } else {
+            $temporary = tempnam($directory, '.download-');
+            if ($temporary === false) {
+                throw new RuntimeException('Unable to allocate a temporary image file.');
             }
-            chmod($destination, 0644);
-            $created[] = $destination;
-            $map[$url] = 'image/catalog/seo-description/' . basename($destination);
-        } catch (Throwable $exception) {
-            @unlink($temporary);
-            throw new RuntimeException('Unable to mirror ' . $url . ': ' . $exception->getMessage(), 0, $exception);
+
+            try {
+                pdiDownloadImage($url, $temporary, $timeout, $maxBytes);
+                $extension = pdiImageExtension($temporary);
+                $destination = $directory . '/' . $hash . '.' . $extension;
+                if (!rename($temporary, $destination)) {
+                    throw new RuntimeException('Unable to store mirrored image: ' . $destination);
+                }
+                chmod($destination, 0644);
+                $created[] = $destination;
+                $map[$url] = 'image/catalog/seo-description/' . basename($destination);
+            } catch (Throwable $exception) {
+                @unlink($temporary);
+                if (preg_match('/HTTP status (404|410)\b/', $exception->getMessage())) {
+                    $map[$url] = '';
+                    $unavailable[] = $url;
+                    echo 'Removing unavailable image: ' . $url . PHP_EOL;
+                } else {
+                    throw new RuntimeException('Unable to mirror ' . $url . ': ' . $exception->getMessage(), 0, $exception);
+                }
+            }
         }
 
         if (($index + 1) % 100 === 0 || $index + 1 === $total) {
@@ -273,52 +290,98 @@ function pdiMirrorImages(array $urls, int $timeout, int $maxBytes): array
         }
     }
 
-    return array('map' => $map, 'created_files' => $created);
+    return array('map' => $map, 'created_files' => $created, 'unavailable_urls' => $unavailable);
 }
 
 function pdiDownloadImage(string $url, string $destination, int $timeout, int $maxBytes): void
 {
-    $handle = fopen($destination, 'wb');
-    if ($handle === false) {
-        throw new RuntimeException('Unable to open the temporary image file.');
-    }
-
-    $bytes = 0;
-    $curl = curl_init($url);
-    $options = array(
-        CURLOPT_FOLLOWLOCATION => false,
-        CURLOPT_CONNECTTIMEOUT => min(10, $timeout),
-        CURLOPT_TIMEOUT => $timeout,
-        CURLOPT_USERAGENT => 'WorldOfBeauty-SEO-Image-Migration/1.0',
-        CURLOPT_FAILONERROR => true,
-        CURLOPT_SSL_VERIFYPEER => true,
-        CURLOPT_SSL_VERIFYHOST => 2,
-        CURLOPT_WRITEFUNCTION => function ($curlHandle, string $chunk) use ($handle, &$bytes, $maxBytes) {
-            $bytes += strlen($chunk);
-            if ($bytes > $maxBytes) {
-                return 0;
-            }
-            return fwrite($handle, $chunk);
+    $currentUrl = $url;
+    for ($redirects = 0; $redirects <= 5; $redirects++) {
+        pdiAssertPublicUrl($currentUrl);
+        $handle = fopen($destination, 'wb');
+        if ($handle === false) {
+            throw new RuntimeException('Unable to open the temporary image file.');
         }
-    );
-    if (defined('CURLOPT_PROTOCOLS')) {
-        $options[CURLOPT_PROTOCOLS] = CURLPROTO_HTTP | CURLPROTO_HTTPS;
-    }
-    curl_setopt_array($curl, $options);
-    $success = curl_exec($curl);
-    $error = curl_error($curl);
-    $status = (int)curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
-    $effectiveUrl = (string)curl_getinfo($curl, CURLINFO_EFFECTIVE_URL);
-    curl_close($curl);
-    fclose($handle);
 
-    if ($success === false || $status < 200 || $status >= 300) {
-        throw new RuntimeException($error !== '' ? $error : 'HTTP status ' . $status);
+        $bytes = 0;
+        $location = '';
+        $curl = curl_init($currentUrl);
+        $options = array(
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_CONNECTTIMEOUT => min(10, $timeout),
+            CURLOPT_TIMEOUT => $timeout,
+            CURLOPT_USERAGENT => 'WorldOfBeauty-SEO-Image-Migration/1.0',
+            CURLOPT_FAILONERROR => true,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_HEADERFUNCTION => function ($curlHandle, string $header) use (&$location) {
+                if (stripos($header, 'Location:') === 0) {
+                    $location = trim(substr($header, 9));
+                }
+                return strlen($header);
+            },
+            CURLOPT_WRITEFUNCTION => function ($curlHandle, string $chunk) use ($handle, &$bytes, $maxBytes) {
+                $bytes += strlen($chunk);
+                if ($bytes > $maxBytes) {
+                    return 0;
+                }
+                return fwrite($handle, $chunk);
+            }
+        );
+        if (defined('CURLOPT_PROTOCOLS')) {
+            $options[CURLOPT_PROTOCOLS] = CURLPROTO_HTTP | CURLPROTO_HTTPS;
+        }
+        curl_setopt_array($curl, $options);
+        $success = curl_exec($curl);
+        $error = curl_error($curl);
+        $status = (int)curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+        curl_close($curl);
+        fclose($handle);
+
+        if ($status >= 300 && $status < 400 && $location !== '') {
+            $currentUrl = pdiAbsoluteUrl($currentUrl, $location);
+            continue;
+        }
+        if ($status < 200 || $status >= 300) {
+            throw new RuntimeException('HTTP status ' . $status);
+        }
+        if ($success === false) {
+            throw new RuntimeException($error !== '' ? $error : 'HTTP status ' . $status);
+        }
+        if ($bytes === 0 || $bytes > $maxBytes) {
+            throw new RuntimeException('Downloaded file is empty or exceeds the byte limit.');
+        }
+        return;
     }
-    if ($bytes === 0 || $bytes > $maxBytes) {
-        throw new RuntimeException('Downloaded file is empty or exceeds the byte limit.');
+
+    throw new RuntimeException('Too many redirects.');
+}
+
+function pdiAbsoluteUrl(string $baseUrl, string $location): string
+{
+    if (preg_match('#^https?://#i', $location)) {
+        return $location;
     }
-    pdiAssertPublicUrl($effectiveUrl);
+
+    $base = parse_url($baseUrl);
+    if (!is_array($base) || empty($base['scheme']) || empty($base['host'])) {
+        throw new RuntimeException('Cannot resolve redirect URL.');
+    }
+
+    if (strpos($location, '//') === 0) {
+        return $base['scheme'] . ':' . $location;
+    }
+
+    $authority = $base['scheme'] . '://' . $base['host'];
+    if (isset($base['port'])) {
+        $authority .= ':' . (int)$base['port'];
+    }
+    if (strpos($location, '/') === 0) {
+        return $authority . $location;
+    }
+
+    $path = isset($base['path']) ? $base['path'] : '/';
+    return $authority . rtrim(dirname($path), '/\\') . '/' . $location;
 }
 
 function pdiImageExtension(string $path): string
