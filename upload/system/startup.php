@@ -68,7 +68,47 @@ function modification($filename) {
 
 // Autoloader
 $bundled_vendor_dir = DIR_SYSTEM . 'storage/vendor/';
-$external_vendor_autoload = defined('DIR_STORAGE') ? DIR_STORAGE . 'vendor/autoload.php' : '';
+$external_vendor_dirs = array();
+
+if (defined('DIR_STORAGE')) {
+	$external_vendor_dirs[] = rtrim(DIR_STORAGE, '/\\') . '/vendor/';
+}
+
+// The repository keeps the application Composer packages in its tracked
+// storage directory. Production can use a different DIR_STORAGE location for
+// runtime files, so do not assume that its vendor directory contains them.
+$project_root = dirname(rtrim(DIR_SYSTEM, '/\\'), 2);
+$repository_vendor_dir = $project_root . '/storagedijana/storagedijana/vendor/';
+
+if (!in_array($repository_vendor_dir, $external_vendor_dirs, true)) {
+	$external_vendor_dirs[] = $repository_vendor_dir;
+}
+
+$external_vendor_dir = '';
+
+// Prefer the installation that actually contains the custom API package used
+// by order export. A stale runtime vendor directory may still have a valid
+// autoload.php while missing Agmedia\\Api entirely.
+foreach ($external_vendor_dirs as $candidate_vendor_dir) {
+	if (
+		is_file($candidate_vendor_dir . 'autoload.php') &&
+		is_file($candidate_vendor_dir . 'agmedia/api/src/Helper/Helper.php')
+	) {
+		$external_vendor_dir = $candidate_vendor_dir;
+		break;
+	}
+}
+
+if (!$external_vendor_dir) {
+	foreach ($external_vendor_dirs as $candidate_vendor_dir) {
+		if (is_file($candidate_vendor_dir . 'autoload.php')) {
+			$external_vendor_dir = $candidate_vendor_dir;
+			break;
+		}
+	}
+}
+
+$external_vendor_autoload = $external_vendor_dir ? $external_vendor_dir . 'autoload.php' : '';
 
 if ($external_vendor_autoload && is_file($external_vendor_autoload)) {
 	$vendor_loader = require_once($external_vendor_autoload);
