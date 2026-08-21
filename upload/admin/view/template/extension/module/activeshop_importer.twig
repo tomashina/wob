@@ -178,7 +178,12 @@
                       {% if product.has_special %}<br><span class="label label-danger" title="{{ text_special_warning }}"><i class="fa fa-tag"></i> Special</span>{% endif %}
                       {% if product.match_message %}<br><small class="text-danger">{{ product.match_message|escape }}</small>{% endif %}
                     </td>
-                    <td><small>{{ product.category_path|escape }}</small></td>
+                    <td>
+                      <small>{{ product.category_path|escape }}</small>
+                      {% if product.mapped_category_id %}
+                        <br><span class="label label-success" title="{{ text_mapped_category|escape }}"><i class="fa fa-folder-open"></i> {{ text_mapped_category|escape }}: {% if product.mapped_category_name %}{{ product.mapped_category_name|escape }}{% else %}ID {{ product.mapped_category_id }}{% endif %}</span>
+                      {% endif %}
+                    </td>
                     <td class="text-center"><span class="label label-{{ product.status_class|escape }}">{{ product.status_text|escape }}</span></td>
                     <td class="text-right">{{ product.quantity }}</td>
                     <td class="text-right text-nowrap">
@@ -203,7 +208,7 @@
     </form>
 
     {% if recent_runs %}
-      <div class="panel panel-default">
+      <div class="panel panel-default" style="margin-bottom:40px">
         <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-history"></i> {{ text_recent_runs|escape }}</h3></div>
         <div class="table-responsive">
           <table class="table table-bordered table-hover">

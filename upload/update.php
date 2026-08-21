@@ -8,6 +8,12 @@ const ACTIVESHOP_LEGACY_HEAVY_WEIGHT_KG = 2.0;
 const ACTIVESHOP_LEGACY_LIGHT_MULTIPLIER = 1.2;
 const ACTIVESHOP_LEGACY_HEAVY_MULTIPLIER = 1.4;
 
+// Allow focused tests to load the pure cron helpers without connecting to the
+// database or downloading the live supplier feed.
+if (defined('WOB_ACTIVESHOP_CRON_FUNCTIONS_ONLY') && WOB_ACTIVESHOP_CRON_FUNCTIONS_ONLY) {
+	return;
+}
+
 prepareActiveShopCronResponse();
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
@@ -38,6 +44,7 @@ $cacheFile = $lockDirectory . '/cron-feed.xml';
 $metadata = $feed->refreshCache($cacheFile);
 $managedPricingAvailable = activeShopTableExists($database, DB_PREFIX . 'wob_supplier')
 	&& activeShopTableExists($database, DB_PREFIX . 'wob_supplier_product');
+$configuredMarkup = activeShopConfiguredMarkup($database);
 
 $findProduct = $database->prepare('SELECT `product_id`, `status` FROM `' . DB_PREFIX . 'product` WHERE `sku` = ? ORDER BY `product_id`');
 $updateManaged = $database->prepare('UPDATE `' . DB_PREFIX . 'product` SET `quantity` = ?, `price` = ?, `date_modified` = NOW() WHERE `product_id` = ?');
@@ -45,12 +52,7 @@ $updateLegacy = $database->prepare('UPDATE `' . DB_PREFIX . 'product` SET `quant
 $findManagedMarkup = null;
 
 if ($managedPricingAvailable) {
-	$findManagedMarkup = $database->prepare(
-		'SELECT sp.`last_markup` FROM `' . DB_PREFIX . 'wob_supplier_product` sp '
-		. 'INNER JOIN `' . DB_PREFIX . 'wob_supplier` s ON (s.`supplier_id` = sp.`supplier_id`) '
-		. 'WHERE s.`code` = \'activeshop\' AND sp.`product_id` = ? AND sp.`external_id` = ? '
-		. 'AND sp.`last_imported` IS NOT NULL AND sp.`last_markup` IS NOT NULL LIMIT 1'
-	);
+	$findManagedMarkup = $database->prepare(activeShopManagedMarkupSql());
 }
 
 if (!$findProduct || !$updateManaged || !$updateLegacy || ($managedPricingAvailable && !$findManagedMarkup)) {
@@ -60,6 +62,7 @@ if (!$findProduct || !$updateManaged || !$updateLegacy || ($managedPricingAvaila
 $stats = array(
 	'feed' => (int)$metadata['count'],
 	'updated_managed' => 0,
+	'updated_configured' => 0,
 	'updated_legacy' => 0,
 	'not_found' => 0,
 	'conflicts' => 0,
@@ -96,23 +99,26 @@ foreach ($feed->iterate($cacheFile) as $item) {
 		$findProduct->free_result();
 
 		$managedMarkup = activeShopManagedMarkup($findManagedMarkup, (int)$productId, $sku);
+		$pricing = activeShopResolvePricing($managedMarkup, $configuredMarkup, $weight);
+		$price = $feed->calculatePrice($feedPrice, $pricing['markup']);
 
-		if ($managedMarkup !== null) {
-			$price = $feed->calculatePrice($feedPrice, $managedMarkup);
+		if ($pricing['source'] === 'managed') {
 			if (!$dryRun) {
 				$updateManaged->bind_param('idi', $quantity, $price, $productId);
 				$updateManaged->execute();
 			}
 			$stats['updated_managed']++;
 		} else {
-			$multiplier = $weight > ACTIVESHOP_LEGACY_HEAVY_WEIGHT_KG ? ACTIVESHOP_LEGACY_HEAVY_MULTIPLIER : ACTIVESHOP_LEGACY_LIGHT_MULTIPLIER;
-			$price = round($feedPrice * $multiplier, 4, PHP_ROUND_HALF_UP);
 			$status = $quantity > 0 ? 1 : 0;
 			if (!$dryRun) {
 				$updateLegacy->bind_param('idii', $quantity, $price, $status, $productId);
 				$updateLegacy->execute();
 			}
-			$stats['updated_legacy']++;
+			if ($pricing['source'] === 'configured') {
+				$stats['updated_configured']++;
+			} else {
+				$stats['updated_legacy']++;
+			}
 		}
 	} catch (Throwable $exception) {
 		$stats['errors']++;
@@ -124,6 +130,7 @@ activeShopCronOutput('Mode: ' . ($dryRun ? 'DRY RUN' : 'LIVE UPDATE'));
 activeShopCronOutput('ActiveShop update complete.');
 activeShopCronOutput('Feed items: ' . $stats['feed']);
 activeShopCronOutput('Managed products: ' . $stats['updated_managed']);
+activeShopCronOutput('Configured markup products: ' . $stats['updated_configured']);
 activeShopCronOutput('Legacy products: ' . $stats['updated_legacy']);
 activeShopCronOutput('Not found: ' . $stats['not_found']);
 activeShopCronOutput('SKU conflicts: ' . $stats['conflicts']);
@@ -161,7 +168,82 @@ function activeShopManagedMarkup(?mysqli_stmt $statement, int $productId, string
 	$statement->fetch();
 	$statement->free_result();
 
-	return $markup === null ? null : (float)$markup;
+	return activeShopNormalizeMarkup($markup);
+}
+
+function activeShopManagedMarkupSql(): string
+{
+	return 'SELECT sp.`last_markup` FROM `' . DB_PREFIX . 'wob_supplier_product` sp '
+		. 'INNER JOIN `' . DB_PREFIX . 'wob_supplier` s ON (s.`supplier_id` = sp.`supplier_id`) '
+		. 'WHERE s.`code` = \'activeshop\' AND sp.`product_id` = ? AND sp.`external_id` = ? '
+		. 'AND sp.`is_current` = \'1\' AND sp.`last_markup` IS NOT NULL LIMIT 1';
+}
+
+function activeShopConfiguredMarkup(mysqli $database): ?float
+{
+	return activeShopConfiguredMarkupResult($database->query(activeShopConfiguredMarkupSql()));
+}
+
+function activeShopConfiguredMarkupSql(): string
+{
+	return "SELECT `value` FROM `" . DB_PREFIX . "setting` "
+		. "WHERE `store_id` = '0' AND `code` = 'module_activeshop_importer' "
+		. "AND `key` = 'module_activeshop_importer_markup' LIMIT 1";
+}
+
+function activeShopConfiguredMarkupResult($query): ?float
+{
+	if (!$query) {
+		return null;
+	}
+
+	$value = null;
+	if ($query->num_rows === 1) {
+		$row = $query->fetch_assoc();
+		$value = isset($row['value']) ? $row['value'] : null;
+	}
+	$query->free();
+
+	return activeShopNormalizeMarkup($value);
+}
+
+function activeShopNormalizeMarkup($value): ?float
+{
+	if (!is_int($value) && !is_float($value) && !is_string($value)) {
+		return null;
+	}
+
+	$value = is_string($value) ? trim($value) : $value;
+	if ($value === '' || !is_numeric($value)) {
+		return null;
+	}
+
+	$markup = (float)$value;
+	if (!is_finite($markup) || $markup < 0 || $markup > 1000) {
+		return null;
+	}
+
+	return round($markup, 4, PHP_ROUND_HALF_UP);
+}
+
+function activeShopResolvePricing($managedMarkup, $configuredMarkup, float $weight): array
+{
+	$managedMarkup = activeShopNormalizeMarkup($managedMarkup);
+	if ($managedMarkup !== null) {
+		return array('source' => 'managed', 'markup' => $managedMarkup);
+	}
+
+	$configuredMarkup = activeShopNormalizeMarkup($configuredMarkup);
+	if ($configuredMarkup !== null) {
+		return array('source' => 'configured', 'markup' => $configuredMarkup);
+	}
+
+	$multiplier = $weight > ACTIVESHOP_LEGACY_HEAVY_WEIGHT_KG
+		? ACTIVESHOP_LEGACY_HEAVY_MULTIPLIER
+		: ACTIVESHOP_LEGACY_LIGHT_MULTIPLIER;
+	$legacyMarkup = ($multiplier - 1) * 100;
+
+	return array('source' => 'legacy', 'markup' => round($legacyMarkup, 4, PHP_ROUND_HALF_UP));
 }
 
 function activeShopTableExists(mysqli $database, string $table): bool

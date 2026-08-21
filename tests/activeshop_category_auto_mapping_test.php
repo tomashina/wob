@@ -102,6 +102,11 @@ try {
 	categoryMapAssert((int)$first['mapped_existing_products'] > 0, 'Reconciled existing products must provide safe category mappings on the staged feed.');
 	categoryMapAssert((int)$first['evidence_ambiguous'] > 0, 'Conflicting existing-product evidence must be counted and left for manual review.');
 	categoryMapAssert((int)$first['evidence_insufficient'] > 0, 'Uncorroborated single-product evidence must be counted as insufficient.');
+	$preview_rows = $model->getProducts(array('is_current' => 1, 'start' => 0, 'limit' => 5000));
+	$mapped_preview_rows = array_filter($preview_rows, function ($row) {
+		return !empty($row['mapped_category_id']) && !empty($row['mapped_category_name']);
+	});
+	categoryMapAssert(count($mapped_preview_rows) > 0, 'The product preview must expose the mapped local category name for mapped supplier paths.');
 	$single_mappings = $model->getCategoryMappings(array($uncorroborated_single_path, $corroborated_single_path));
 	categoryMapAssert(!isset($single_mappings[$uncorroborated_single_path]), 'One historical product without an independent name match must not map an entire supplier path.');
 	categoryMapAssert(!empty($single_mappings[$corroborated_single_path]['category_id']), 'One historical product may map a path only when an exact normalized name independently confirms the same category.');

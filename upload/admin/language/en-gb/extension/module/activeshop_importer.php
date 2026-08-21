@@ -62,6 +62,7 @@ $_['text_run_counts'] = 'Selected: %d · created: %d · updated: %d · skipped: 
 $_['text_run_error_items'] = 'Item errors:';
 $_['text_not_available'] = 'Not available';
 $_['text_default_category'] = 'Default category';
+$_['text_mapped_category'] = 'Mapped to';
 $_['column_image'] = 'Image';
 $_['column_sku'] = 'SKU';
 $_['column_name'] = 'Name';

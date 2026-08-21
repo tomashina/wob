@@ -65,6 +65,7 @@ $_['text_run_counts'] = 'Odabrano: %d · kreirano: %d · ažurirano: %d · presk
 $_['text_run_error_items'] = 'Greške stavki:';
 $_['text_not_available'] = 'Nije dostupno';
 $_['text_default_category'] = 'Zadana kategorija';
+$_['text_mapped_category'] = 'Mapirano u';
 
 // Columns
 $_['column_image'] = 'Slika';

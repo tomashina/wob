@@ -20,11 +20,15 @@
       <strong>Manuela Picard: {{ summary.excluded_manuela_picard|default(0) }}</strong>
     </div>
     <div class="alert alert-warning"><i class="fa fa-exclamation-triangle"></i> {{ text_supplier_sync_warning|escape }}</div>
+    {% if summary.source_conflict_count|default(0) > 0 %}
+      <div class="alert alert-danger"><i class="fa fa-chain-broken"></i> {{ text_source_conflicts_warning|format(summary.source_conflict_count)|escape }}</div>
+    {% endif %}
 
     <div class="row">
-      <div class="col-sm-3"><div class="well well-sm"><small>{{ text_total_products|escape }}</small><br><strong class="h3">{{ summary.total_products|default(0) }}</strong></div></div>
-      <div class="col-sm-3"><div class="well well-sm"><small>{{ text_eligible_products|escape }}</small><br><strong class="h3 text-success">{{ summary.eligible_count|default(0) }}</strong></div></div>
+      <div class="col-sm-2"><div class="well well-sm"><small>{{ text_total_products|escape }}</small><br><strong class="h3">{{ summary.total_products|default(0) }}</strong></div></div>
+      <div class="col-sm-2"><div class="well well-sm"><small>{{ text_eligible_products|escape }}</small><br><strong class="h3 text-success">{{ summary.eligible_count|default(0) }}</strong></div></div>
       <div class="col-sm-2"><div class="well well-sm"><small>{{ text_excluded_products|escape }}</small><br><strong class="h3 text-info">{{ summary.excluded_total|default(0) }}</strong></div></div>
+      <div class="col-sm-2"><div class="well well-sm"><small>{{ text_source_conflicts|escape }}</small><br><strong class="h3 text-danger">{{ summary.source_conflict_count|default(0) }}</strong></div></div>
       <div class="col-sm-2"><div class="well well-sm"><small>{{ text_zero_price|escape }}</small><br><strong class="h3">{{ summary.zero_price_count|default(0) }}</strong></div></div>
       <div class="col-sm-2"><div class="well well-sm"><small>{{ text_with_specials|escape }}</small><br><strong class="h3 text-warning">{{ summary.special_count|default(0) }}</strong></div></div>
     </div>
@@ -32,7 +36,7 @@
     <div class="panel panel-primary">
       <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-calculator"></i> {{ text_new_preview|escape }}</h3></div>
       <div class="panel-body">
-        <form action="{{ preview_url }}" method="post" class="form-inline" id="form-price-preview">
+        <form action="{{ preview_url }}" method="post" class="form-inline" id="price-preview-form">
           <input type="hidden" name="csrf_token" value="{{ csrf_token|escape }}" />
           <div class="form-group">
             <label for="input-percent">{{ entry_percent|escape }}</label>
@@ -41,7 +45,7 @@
               <span class="input-group-addon">%</span>
             </div>
           </div>
-          <button type="submit" class="btn btn-primary"{% if identity_error %} disabled{% endif %}><i class="fa fa-search"></i> {{ button_preview|escape }}</button>
+          <button type="button" id="button-price-preview" class="btn btn-primary"{% if identity_error %} disabled{% endif %}><i class="fa fa-search"></i> {{ button_preview|escape }}</button>
         </form>
         <p class="help-block">{{ text_formula_help|escape }} {{ text_preview_help|escape }}</p>
       </div>
@@ -52,28 +56,33 @@
       <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-list-alt"></i> {{ text_run|format(price_run.price_run_id)|escape }} &middot; {{ price_run.status_text|default(price_run.status)|escape }}</h3></div>
       <div class="panel-body">
         {% if price_run.error %}<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> {{ price_run.error|escape }}</div>{% endif %}
+        {% if price_run.is_legacy_basis|default(false) %}<div class="alert alert-warning"><i class="fa fa-exclamation-triangle"></i> {{ text_legacy_basis_warning|escape }}</div>{% endif %}
         <div class="row">
           <div class="col-sm-2"><strong>{{ entry_percent|escape }}</strong><br>+{{ price_run.percent|number_format(4, ',', '.') }}%</div>
           <div class="col-sm-2"><strong>{{ text_eligible_products|escape }}</strong><br>{{ price_run.eligible_count|default(0) }}</div>
-          <div class="col-sm-3"><strong>{{ text_old_total|escape }}</strong><br>{{ price_run.old_total|default(0)|number_format(2, ',', '.') }} €</div>
-          <div class="col-sm-3"><strong>{{ text_new_total|escape }}</strong><br>{{ price_run.new_total|default(0)|number_format(2, ',', '.') }} €</div>
+          <div class="col-sm-2"><strong>{{ text_old_total|escape }}</strong><br>{{ price_run.old_total|default(0)|number_format(2, ',', '.') }} €</div>
+          <div class="col-sm-2"><strong>{{ text_base_total|escape }}</strong><br>{{ price_run.base_total|default(price_run.old_total)|number_format(2, ',', '.') }} €</div>
+          <div class="col-sm-2"><strong>{{ text_new_total|escape }}</strong><br>{{ price_run.new_total|default(0)|number_format(2, ',', '.') }} €</div>
           <div class="col-sm-2"><strong>{{ text_difference|escape }}</strong><br>{{ price_run.difference_total|default(0)|number_format(2, ',', '.') }} €</div>
         </div>
+        {% if not (price_run.is_legacy_basis|default(false)) %}
+          <p class="help-block"><i class="fa fa-database"></i> {{ text_price_source_counts|format(price_run.feed_source_count|default(0), price_run.catalog_source_count|default(0), price_run.source_conflict_count|default(0))|escape }}</p>
+        {% endif %}
         <hr>
         {% if price_run.can_apply|default(false) %}
-          <form action="{{ apply_url }}" method="post" class="form-inline js-apply-prices">
+          <form action="{{ apply_url }}" method="post" class="form-inline" id="price-apply-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token|escape }}" />
             <input type="hidden" name="price_run_id" value="{{ price_run.price_run_id }}" />
             <label class="checkbox-inline"><input type="checkbox" name="confirm_apply" value="1" required> {{ text_confirm_apply|escape }}</label>
-            <button type="submit" class="btn btn-danger"><i class="fa fa-arrow-up"></i> {{ button_apply|escape }}</button>
+            <button type="button" id="button-price-apply" class="btn btn-danger"><i class="fa fa-arrow-up"></i> {{ button_apply|escape }}</button>
           </form>
         {% elseif price_run.can_rollback|default(false) %}
           <p><strong>{{ text_applied|escape }}:</strong> {{ price_run.applied_count|default(0) }} &middot; <strong>{{ text_conflicts|escape }}:</strong> {{ price_run.conflict_count|default(0) }} &middot; <strong>{{ text_failed|escape }}:</strong> {{ price_run.failed_count|default(0) }}{% if price_run.rollback_started %} &middot; <strong>{{ text_rollback_conflicts|escape }}:</strong> {{ price_run.rollback_conflict_count|default(0) }}{% endif %}</p>
-          <form action="{{ rollback_url }}" method="post" class="form-inline js-rollback-prices">
+          <form action="{{ rollback_url }}" method="post" class="form-inline" id="price-rollback-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token|escape }}" />
             <input type="hidden" name="price_run_id" value="{{ price_run.price_run_id }}" />
             <label class="checkbox-inline"><input type="checkbox" name="confirm_rollback" value="1" required> {{ text_confirm_rollback|escape }}</label>
-            <button type="submit" class="btn btn-default"><i class="fa fa-undo"></i> {{ button_rollback|escape }}</button>
+            <button type="button" id="button-price-rollback" class="btn btn-default"><i class="fa fa-undo"></i> {{ button_rollback|escape }}</button>
           </form>
         {% else %}
           <p><strong>{{ text_applied|escape }}:</strong> {{ price_run.applied_count|default(0) }} &middot; <strong>{{ text_conflicts|escape }}:</strong> {{ price_run.conflict_count|default(0) }} &middot; <strong>{{ text_failed|escape }}:</strong> {{ price_run.failed_count|default(0) }} &middot; <strong>{{ text_rolled_back|escape }}:</strong> {{ price_run.rolled_back_count|default(0) }} &middot; <strong>{{ text_rollback_conflicts|escape }}:</strong> {{ price_run.rollback_conflict_count|default(0) }}</p>
@@ -83,7 +92,7 @@
       {% if run_items %}
       <div class="table-responsive">
         <table class="table table-bordered table-hover">
-          <thead><tr><td>ID</td><td>{{ column_model|escape }}</td><td>{{ column_name|escape }}</td><td class="text-right">{{ column_old_price|escape }}</td><td class="text-right">{{ column_new_price|escape }}</td><td>{{ column_status|escape }}</td></tr></thead>
+          <thead><tr><td>ID</td><td>{{ column_model|escape }}</td><td>{{ column_name|escape }}</td><td class="text-right">{{ column_current_price|escape }}</td><td class="text-right">{{ column_base_price|escape }}</td><td class="text-right">{{ column_new_price|escape }}</td><td>{{ column_status|escape }}</td></tr></thead>
           <tbody>
             {% for item in run_items %}
             <tr>
@@ -91,6 +100,10 @@
               <td>{{ item.model|escape }}</td>
               <td>{{ item.name|escape }}</td>
               <td class="text-right">{{ item.old_price|number_format(2, ',', '.') }} €</td>
+              <td class="text-right">
+                <strong>{{ item.base_price|default(item.old_price)|number_format(2, ',', '.') }} €</strong><br>
+                <span class="label {{ item.source_badge_class|default('label-warning')|escape }}">{{ item.source_text|default(text_source_legacy)|escape }}</span>
+              </td>
               <td class="text-right"><strong>{{ item.new_price|number_format(2, ',', '.') }} €</strong></td>
               <td>{{ item.status_text|default(item.status)|escape }}{% if item.message_text|default(item.message) %}<br><small class="text-danger">{{ item.message_text|default(item.message)|escape }}</small>{% endif %}</td>
             </tr>
@@ -135,11 +148,32 @@
 </div>
 <script type="text/javascript"><!--
 (function() {
-  $('.js-apply-prices').on('submit', function() {
-    return window.confirm({{ text_apply_confirm|json_encode|raw }});
+  function submitPriceForm(formId, confirmation) {
+    var form = document.getElementById(formId);
+    if (!form) {
+      return false;
+    }
+    if (typeof form.checkValidity === 'function' && !form.checkValidity()) {
+      if (typeof form.reportValidity === 'function') {
+        form.reportValidity();
+      }
+      return false;
+    }
+    if (confirmation && !window.confirm(confirmation)) {
+      return false;
+    }
+    form.submit();
+    return true;
+  }
+
+  $('#button-price-preview').on('click', function() {
+    submitPriceForm('price-preview-form');
   });
-  $('.js-rollback-prices').on('submit', function() {
-    return window.confirm({{ text_rollback_confirm|json_encode|raw }});
+  $('#button-price-apply').on('click', function() {
+    submitPriceForm('price-apply-form', {{ text_apply_confirm|json_encode|raw }});
+  });
+  $('#button-price-rollback').on('click', function() {
+    submitPriceForm('price-rollback-form', {{ text_rollback_confirm|json_encode|raw }});
   });
 })();
 //--></script>

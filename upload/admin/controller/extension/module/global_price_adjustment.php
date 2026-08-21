@@ -3,6 +3,10 @@ class ControllerExtensionModuleGlobalPriceAdjustment extends Controller {
 	const ROUTE = 'extension/module/global_price_adjustment';
 	const MIN_PERCENT = 0.01;
 	const MAX_PERCENT = 1000.00;
+	const BASIS_VERSION_FEED_AWARE = 1;
+	const SOURCE_ACTIVESHOP_FEED = 'activeshop_feed';
+	const SOURCE_CATALOG_REGULAR = 'catalog_regular';
+	const SOURCE_LEGACY = 'legacy';
 
 	private $error = array();
 
@@ -20,7 +24,11 @@ class ControllerExtensionModuleGlobalPriceAdjustment extends Controller {
 			'excluded_emovex' => 0,
 			'excluded_manuela_picard' => 0,
 			'zero_price_count' => 0,
-			'special_count' => 0
+			'special_count' => 0,
+			'source_conflict_count' => 0,
+			'feed_base_count' => 0,
+			'catalog_base_count' => 0,
+			'base_total' => '0.0000'
 		);
 		$module_installed = $this->isInstalled();
 
@@ -44,10 +52,23 @@ class ControllerExtensionModuleGlobalPriceAdjustment extends Controller {
 			$data['price_run'] = $this->model_extension_module_global_price_adjustment->getRun($run_id, $this->user->getId());
 			if ($data['price_run']) {
 				$data['price_run']['status_text'] = $this->runStatusText($data['price_run']['status']);
+				$data['price_run']['is_legacy_basis'] = empty($data['price_run']['basis_version'])
+					|| (int)$data['price_run']['basis_version'] < self::BASIS_VERSION_FEED_AWARE;
+				$data['price_run']['source_conflict_count'] = isset($data['price_run']['source_conflict_count'])
+					? (int)$data['price_run']['source_conflict_count']
+					: 0;
 				$data['run_items'] = $this->model_extension_module_global_price_adjustment->getRunSample($run_id, 50);
 				foreach ($data['run_items'] as &$run_item) {
 					$run_item['status_text'] = $this->itemStatusText($run_item['status']);
 					$run_item['message_text'] = $this->itemMessageText($run_item['message']);
+					$source = isset($run_item['price_source']) ? (string)$run_item['price_source'] : self::SOURCE_LEGACY;
+					if ($data['price_run']['is_legacy_basis']) {
+						$source = self::SOURCE_LEGACY;
+						$run_item['base_price'] = isset($run_item['before_price']) ? $run_item['before_price'] : $run_item['old_price'];
+					}
+					$run_item['price_source'] = $source;
+					$run_item['source_text'] = $this->priceSourceText($source);
+					$run_item['source_badge_class'] = $this->priceSourceBadgeClass($source);
 				}
 				unset($run_item);
 			}
@@ -319,6 +340,10 @@ class ControllerExtensionModuleGlobalPriceAdjustment extends Controller {
 			'Product no longer exists.' => 'text_item_message_product_missing',
 			'Product became excluded after preview.' => 'text_item_message_became_excluded',
 			'Supplier changed after preview.' => 'text_item_message_supplier_changed',
+			'Price source changed after preview.' => 'text_item_message_price_source_changed',
+			'ActiveShop feed source changed after preview.' => 'text_item_message_price_source_changed',
+			'Managed supplier pricing changed after preview.' => 'text_item_message_managed_pricing_changed',
+			'Managed supplier pricing differs from this run.' => 'text_item_message_managed_pricing_differs',
 			'Already at the target price; recovered idempotently.' => 'text_item_message_target_recovered',
 			'Target price was reached outside this run before its update attempt.' => 'text_item_message_target_external',
 			'Price changed after preview.' => 'text_item_message_price_changed',
@@ -334,8 +359,12 @@ class ControllerExtensionModuleGlobalPriceAdjustment extends Controller {
 			'Rollback completed before an error response; recovered idempotently.' => 'text_item_message_rollback_recovered',
 			'Product disappeared while the interrupted update was being reconciled.' => 'text_item_message_reconcile_missing',
 			'Interrupted update completed; reconciled from the catalog price.' => 'text_item_message_reconcile_updated',
+			'Interrupted update completed; reconciled from catalog and supplier pricing.' => 'text_item_message_reconcile_managed_updated',
+			'Interrupted partial update was compensated safely.' => 'text_item_message_reconcile_compensated',
+			'Interrupted partial update remains rollbackable.' => 'text_item_message_reconcile_rollbackable',
 			'Interrupted before the catalog price changed.' => 'text_item_message_reconcile_before',
-			'Catalog price changed during the interrupted update.' => 'text_item_message_reconcile_changed'
+			'Catalog price changed during the interrupted update.' => 'text_item_message_reconcile_changed',
+			'Catalog or managed supplier pricing changed during the interrupted update.' => 'text_item_message_reconcile_managed_changed'
 		);
 
 		if (isset($keys[(string)$message])) {
@@ -343,6 +372,26 @@ class ControllerExtensionModuleGlobalPriceAdjustment extends Controller {
 		}
 
 		return (string)$message;
+	}
+
+	private function priceSourceText($source) {
+		$keys = array(
+			self::SOURCE_ACTIVESHOP_FEED => 'text_source_activeshop_feed',
+			self::SOURCE_CATALOG_REGULAR => 'text_source_catalog_regular',
+			self::SOURCE_LEGACY => 'text_source_legacy'
+		);
+		$key = isset($keys[(string)$source]) ? $keys[(string)$source] : $keys[self::SOURCE_LEGACY];
+		return $this->language->get($key);
+	}
+
+	private function priceSourceBadgeClass($source) {
+		if ((string)$source === self::SOURCE_ACTIVESHOP_FEED) {
+			return 'label-info';
+		}
+		if ((string)$source === self::SOURCE_CATALOG_REGULAR) {
+			return 'label-default';
+		}
+		return 'label-warning';
 	}
 
 	private function validateMutation() {
@@ -372,24 +421,41 @@ class ControllerExtensionModuleGlobalPriceAdjustment extends Controller {
 	}
 
 	private function acquireOperationLock() {
-		$directory = rtrim(DIR_CACHE, '/\\') . '/wob-price-adjustment';
-		if (!is_dir($directory) && !@mkdir($directory, 0755, true) && !is_dir($directory)) {
-			return false;
-		}
-		$handle = @fopen($directory . '/operation.lock', 'c');
-		if (!$handle || !flock($handle, LOCK_EX | LOCK_NB)) {
-			if ($handle) {
-				fclose($handle);
+		$directories = array(
+			rtrim(DIR_CACHE, '/\\') . '/wob-price-adjustment',
+			rtrim(DIR_CACHE, '/\\') . '/activeshop-importer'
+		);
+		$handles = array();
+		foreach ($directories as $directory) {
+			if (!is_dir($directory) && !@mkdir($directory, 0755, true) && !is_dir($directory)) {
+				$this->releaseOperationLock($handles);
+				return false;
 			}
-			return false;
+			$handle = @fopen($directory . '/operation.lock', 'c');
+			if (!$handle || !flock($handle, LOCK_EX | LOCK_NB)) {
+				if ($handle) {
+					fclose($handle);
+				}
+				$this->releaseOperationLock($handles);
+				return false;
+			}
+			$handles[] = $handle;
 		}
-		return $handle;
+		return $handles;
 	}
 
-	private function releaseOperationLock($handle) {
-		if (is_resource($handle)) {
-			flock($handle, LOCK_UN);
-			fclose($handle);
+	private function releaseOperationLock($handles) {
+		if (is_resource($handles)) {
+			$handles = array($handles);
+		}
+		if (!is_array($handles)) {
+			return;
+		}
+		foreach (array_reverse($handles) as $handle) {
+			if (is_resource($handle)) {
+				flock($handle, LOCK_UN);
+				fclose($handle);
+			}
 		}
 	}
 

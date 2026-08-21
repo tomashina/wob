@@ -602,7 +602,15 @@ class ModelExtensionModuleActiveshopImporter extends Model {
 	}
 
 	private function getProductSelectSql() {
-		return "SELECT sp.*, p.price AS local_price, p.quantity AS local_quantity, p.status AS local_status, p.image AS local_image, pd.name AS local_name, EXISTS(SELECT 1 FROM `" . DB_PREFIX . "product_special` ps WHERE ps.product_id = p.product_id LIMIT 1) AS has_special FROM `" . DB_PREFIX . "wob_supplier_product` sp LEFT JOIN `" . DB_PREFIX . "product` p ON (p.product_id = sp.product_id) LEFT JOIN `" . DB_PREFIX . "product_description` pd ON (pd.product_id = p.product_id AND pd.language_id = '" . (int)$this->config->get('config_language_id') . "') WHERE sp.supplier_id = '" . $this->requireSupplierId() . "'";
+		return "SELECT sp.*, p.price AS local_price, p.quantity AS local_quantity, p.status AS local_status, p.image AS local_image, pd.name AS local_name,
+			COALESCE(scm.category_id, 0) AS mapped_category_id, COALESCE(mapped_cd.name, '') AS mapped_category_name,
+			EXISTS(SELECT 1 FROM `" . DB_PREFIX . "product_special` ps WHERE ps.product_id = p.product_id LIMIT 1) AS has_special
+			FROM `" . DB_PREFIX . "wob_supplier_product` sp
+			LEFT JOIN `" . DB_PREFIX . "product` p ON (p.product_id = sp.product_id)
+			LEFT JOIN `" . DB_PREFIX . "product_description` pd ON (pd.product_id = p.product_id AND pd.language_id = '" . (int)$this->config->get('config_language_id') . "')
+			LEFT JOIN `" . DB_PREFIX . "wob_supplier_category_map` scm ON (scm.supplier_id = sp.supplier_id AND scm.path_hash = SHA2(sp.category_path, 256))
+			LEFT JOIN `" . DB_PREFIX . "category_description` mapped_cd ON (mapped_cd.category_id = scm.category_id AND mapped_cd.language_id = '" . (int)$this->config->get('config_language_id') . "')
+			WHERE sp.supplier_id = '" . $this->requireSupplierId() . "'";
 	}
 
 	private function buildProductWhere($filters) {
