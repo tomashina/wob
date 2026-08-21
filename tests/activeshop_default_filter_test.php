@@ -41,4 +41,11 @@ $request->get = array('filter_status' => 'invalid');
 $filters = $get_filters->invoke($controller);
 defaultFilterAssert($filters['filter_status'] === 'new', 'An invalid status must fail safely to the default new-products filter.');
 
+$template = file_get_contents(DIR_TEMPLATE . 'extension/module/activeshop_importer.twig');
+defaultFilterAssert(strpos($template, 'id="form-activeshop-') === false, 'Importer form IDs must not match the OpenCart common.js form-* global submit selector.');
+defaultFilterAssert(strpos($template, '<button type="submit"') === false, 'Importer buttons must explicitly submit only their own form.');
+foreach (array('refresh', 'filter', 'import') as $action) {
+	defaultFilterAssert(strpos($template, "document.getElementById('activeshop-" . $action . "-form').submit()") !== false, ucfirst($action) . ' must submit its own form explicitly.');
+}
+
 echo "ActiveShop default filter tests passed.\n";
