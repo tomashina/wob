@@ -14,7 +14,7 @@ $_['entry_status']     = 'Status';
 $_['entry_sort_order'] = 'Sort Order';
 
 // Help
-$_['help_total']       = 'Sub-Total amount needed before the free shipping module becomes available.';
+$_['help_total']       = 'Product total including tax required before free shipping becomes available. Coupons, reward points and shipping costs do not affect this threshold.';
 
 // Error
 $_['error_permission'] = 'Warning: You do not have permission to modify free shipping!';

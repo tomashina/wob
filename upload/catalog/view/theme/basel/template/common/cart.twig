@@ -1,6 +1,12 @@
   <ul id="cart-content">
     {% if products or vouchers %}
     <li>
+      {% if free_shipping_notice %}
+      <div class="alert {{ free_shipping_notice.reached ? 'alert-success' : 'alert-info' }} free-shipping-progress" role="status">
+        <i class="fa {{ free_shipping_notice.reached ? 'fa-check-circle' : 'fa-truck' }}" aria-hidden="true"></i>
+        {{ free_shipping_notice.text|escape }}
+      </div>
+      {% endif %}
       <table class="table products">
         {% for product in products %}
         <tr>

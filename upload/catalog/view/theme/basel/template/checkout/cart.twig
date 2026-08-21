@@ -37,6 +37,12 @@
     <div id="content" class="{{ class }} cart-page">
     {{ content_top }}
       <h1 id="page-title">{{ heading_title }}{% if weight %} ({{ weight }}){% endif %}</h1>
+      {% if free_shipping_notice %}
+      <div class="alert {{ free_shipping_notice.reached ? 'alert-success' : 'alert-info' }} free-shipping-progress" role="status">
+        <i class="fa {{ free_shipping_notice.reached ? 'fa-check-circle' : 'fa-truck' }}" aria-hidden="true"></i>
+        {{ free_shipping_notice.text|escape }}
+      </div>
+      {% endif %}
       <form action="{{ action }}" method="post" enctype="multipart/form-data">
         
           <div class="cart-table-wrap">

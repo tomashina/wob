@@ -24,6 +24,10 @@ class ModelExtensionShippingXshippingpro extends Model {
         $this->ext_path = 'extension/shipping/xshippingpro';
     }
     function getQuote($address) {
+        if ($this->hasCoreFreeShippingQuote($address)) {
+            return array();
+        }
+
         $_start = microtime(true);
         $this->load->language($this->ext_path);
         $language_id = $this->config->get('config_language_id');
@@ -546,6 +550,16 @@ class ModelExtensionShippingXshippingpro extends Model {
             $this->response->addHeader('_xs_: ' .implode(',', $free_options)); // send free option list as header
         }
         return $quote_data ? $method_data : array();
+    }
+    private function hasCoreFreeShippingQuote($address) {
+        if (!$this->config->get('shipping_free_status') || (float)$this->config->get('shipping_free_total') <= 0) {
+            return false;
+        }
+
+        $this->load->model('extension/shipping/free');
+        $free_shipping = $this->registry->get('model_extension_shipping_free');
+
+        return $free_shipping && (bool)$free_shipping->getQuote(is_array($address) ? $address : array());
     }
     private function getFormattedError($error, $cart_products, $address, $applicable_products, $rules) {
         $placeholders = array('{postalCode}', '{city}', '{products}', '{zoneName}', '{countryName}');

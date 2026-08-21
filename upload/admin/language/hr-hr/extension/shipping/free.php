@@ -15,7 +15,7 @@ $_['entry_status']     = 'Status';
 $_['entry_sort_order'] = 'Redoslijed sortiranja';
 
 // Help
-$_['help_total']       = 'Među-suma (iznos bez poreza) koja je potrebna before prije nego će ovaj način isporuke postati dostupan.';
+$_['help_total']       = 'Iznos artikala s PDV-om potreban da besplatna dostava postane dostupna. Kuponi, nagradni bodovi i trošak dostave ne utječu na ovaj prag.';
 
 // Error
 $_['error_permission'] = 'Upozorenje: Nemate ovlasti da mijenjate modul Besplatna dostava!';

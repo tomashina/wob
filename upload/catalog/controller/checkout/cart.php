@@ -2,6 +2,7 @@
 class ControllerCheckoutCart extends Controller {
 	public function index() {
 		$this->load->language('checkout/cart');
+		$this->load->language('extension/shipping/free');
 
 		$this->document->setTitle($this->language->get('heading_title'));
 
@@ -18,6 +19,27 @@ class ControllerCheckoutCart extends Controller {
 		);
 
 		if ($this->cart->hasProducts() || !empty($this->session->data['vouchers'])) {
+			$data['free_shipping_notice'] = false;
+
+			if ($this->config->get('shipping_free_status') && $this->cart->hasProducts()) {
+				$this->load->model('extension/shipping/free');
+
+				$free_shipping_address = isset($this->session->data['shipping_address']) ? $this->session->data['shipping_address'] : null;
+				$free_shipping_progress = $this->model_extension_shipping_free->getThresholdProgress($free_shipping_address);
+
+				if (!empty($free_shipping_progress['enabled'])) {
+					$data['free_shipping_notice'] = array(
+						'reached' => !empty($free_shipping_progress['reached']),
+						'text'    => !empty($free_shipping_progress['reached'])
+							? $this->language->get('text_free_shipping_reached')
+							: sprintf(
+								$this->language->get('text_free_shipping_remaining'),
+								$this->currency->format($free_shipping_progress['remaining'], $this->session->data['currency'])
+							)
+					);
+				}
+			}
+
 			if (!$this->cart->hasStock() && (!$this->config->get('config_stock_checkout') || $this->config->get('config_stock_warning'))) {
 				$data['error_warning'] = $this->language->get('error_stock');
 			} elseif (isset($this->session->data['error'])) {
