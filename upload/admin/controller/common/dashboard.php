@@ -86,6 +86,25 @@ class ControllerCommonDashboard extends Controller {
 			$data['security'] = '';
 		}
 
+		$installed_modules = $this->model_setting_extension->getInstalled('module');
+
+		$data['text_admin_shortcuts'] = $this->language->get('text_admin_shortcuts');
+		$data['admin_shortcuts'] = array();
+		if (in_array('activeshop_importer', $installed_modules) && $this->user->hasPermission('access', 'extension/module/activeshop_importer')) {
+			$data['admin_shortcuts'][] = array(
+				'href' => $this->url->link('extension/module/activeshop_importer', 'user_token=' . $this->session->data['user_token'], true),
+				'icon' => 'fa-download',
+				'text' => $this->language->get('button_activeshop_import')
+			);
+		}
+		if (in_array('global_price_adjustment', $installed_modules) && $this->user->hasPermission('access', 'extension/module/global_price_adjustment')) {
+			$data['admin_shortcuts'][] = array(
+				'href' => $this->url->link('extension/module/global_price_adjustment', 'user_token=' . $this->session->data['user_token'], true),
+				'icon' => 'fa-percent',
+				'text' => $this->language->get('button_global_price_adjustment')
+			);
+		}
+
 		$data['header'] = $this->load->controller('common/header');
 		$data['column_left'] = $this->load->controller('common/column_left');
 		$data['footer'] = $this->load->controller('common/footer');

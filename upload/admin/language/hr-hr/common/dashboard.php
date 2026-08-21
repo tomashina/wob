@@ -4,6 +4,11 @@
 $_['heading_title']                = 'Nadzorna ploča';
 
 // Text
+$_['text_activeshop_import']       = 'ActiveShop uvoz artikala';
+$_['text_activeshop_import_help']  = 'Pregledajte ActiveShop feed i uvezite samo odabrane artikle.';
+$_['button_activeshop_import']     = 'Otvori ActiveShop uvoz';
+$_['text_admin_shortcuts']          = 'Brze akcije';
+$_['button_global_price_adjustment'] = 'Globalno povećanje cijena';
 // $_['text_order_total']             = 'Ukupno narudžbi'; // postojalo u verziji OC 2.2.0.0
 // $_['text_customer_total']          = 'Ukupno kupaca'; // postojalo u verziji OC 2.2.0.0
 // $_['text_sale_total']              = 'Ukupna prodaja'; // postojalo u verziji OC 2.2.0.0

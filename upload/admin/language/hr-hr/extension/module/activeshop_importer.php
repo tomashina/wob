@@ -1,0 +1,129 @@
+<?php
+// Heading
+$_['heading_title'] = 'ActiveShop importer';
+$_['heading_categories'] = 'ActiveShop – mapiranje kategorija';
+$_['heading_settings'] = 'ActiveShop – postavke';
+
+// Text
+$_['text_extension'] = 'Proširenja';
+$_['text_home'] = 'Početna';
+$_['text_suppliers_menu'] = 'Dobavljači';
+$_['text_products_tab'] = 'Artikli';
+$_['text_categories_tab'] = 'Kategorije';
+$_['text_settings_tab'] = 'Postavke';
+$_['text_feed'] = 'ActiveShop feed';
+$_['text_feed_not_loaded'] = 'Feed još nije učitan. Kliknite „Osvježi feed” kako biste dobili siguran pregled bez promjene artikala u trgovini.';
+$_['text_feed_cached'] = 'Zadnje učitavanje: %s';
+$_['text_feed_items'] = '%s artikala u stagingu';
+$_['text_refresh'] = 'Osvježi feed';
+$_['text_refresh_help'] = 'Preuzima i priprema feed za pregled. Ne kreira i ne mijenja artikle u trgovini.';
+$_['text_refresh_confirm'] = 'Preuzeti aktualni ActiveShop feed? Artikli u trgovini neće se mijenjati.';
+$_['text_refresh_success'] = 'Feed je osvježen: %d artikala, %d jednoznačno povezanih i %d konflikata.';
+$_['text_import'] = 'Import odabranih';
+$_['text_import_help'] = 'Cijena se uvijek ponovno računa na serveru iz feed cijene i upisanog povećanja. Novi artikli odmah se prevode na hrvatski; odjednom ih možete uvesti najviše 10.';
+$_['text_import_confirm'] = 'Importati %s odabranih artikala s povećanjem od %s%%?';
+$_['text_import_success'] = 'Import završen: %d kreirano, %d ažurirano, %d preskočeno i %d neuspjelo.';
+$_['text_import_has_errors'] = 'Neke stavke nisu importane. Detalji su zapisani u evidenciji importa.';
+$_['text_existing_skipped'] = 'Postojeći artikl je povezan s dobavljačem, bez promjene podataka.';
+$_['text_category_map_success'] = 'Mapiranje kategorija je spremljeno.';
+$_['text_settings_success'] = 'Postavke ActiveShop importera su spremljene.';
+$_['text_no_results'] = 'Nema rezultata.';
+$_['text_all'] = 'Sve';
+$_['text_none'] = '— Nije odabrano —';
+$_['text_enabled'] = 'Omogućeno';
+$_['text_disabled'] = 'Onemogućeno';
+$_['text_yes'] = 'Da';
+$_['text_no'] = 'Ne';
+$_['text_filter'] = 'Filtriraj';
+$_['text_clear'] = 'Očisti';
+$_['text_selected'] = 'Odabrano';
+$_['text_current_price'] = 'Trenutačna cijena';
+$_['text_feed_price'] = 'Feed cijena';
+$_['text_new_price'] = 'Nova cijena';
+$_['text_net'] = 'bez PDV-a';
+$_['text_special_warning'] = 'Artikl ima akcijsku cijenu; ona ostaje netaknuta i može imati prednost na storefrontu.';
+$_['text_new_products_disabled'] = 'Preporuka: nove artikle importati onemogućene radi provjere prije objave.';
+$_['text_language_copy_help'] = 'ActiveShop feed je na engleskom. Pri importu se naziv i opis odmah prevode na hrvatski besplatnim Google prevoditeljem, dok EN jezik zadržava original.';
+$_['text_tax_help'] = 'Porez od 23% iz dobavljačkog feeda se ignorira. Koristi se odabrana OpenCart porezna klasa.';
+$_['text_special_help'] = 'Importer ne briše niti mijenja postojeće akcijske cijene, opcije, slike, opise ili kategorije postojećih artikala.';
+$_['text_category_fallback_help'] = 'Ako putanja dobavljačke kategorije nije mapirana, koristi se zadana kategorija.';
+$_['text_formula_help'] = 'Formula: feed cijena × (1 + povećanje ÷ 100). Primjer: 304,68 € + 63,3% = 497,54 €.';
+$_['text_cron_help'] = 'Zaštićeni URL za ActiveShop ažuriranje cijena i zalihe. Web poziv mijenja katalog samo s ovim ključem i parametrom mode=live.';
+$_['text_cron_unconfigured'] = 'Cron ključ još nije postavljen. Spremite postavke ili ponovno instalirajte modul kako bi se sigurno generirao.';
+$_['text_existing_skip'] = 'Preskoči (samo poveži dobavljača)';
+$_['text_existing_price_quantity'] = 'Ažuriraj samo cijenu i količinu';
+$_['text_status_new'] = 'Novi';
+$_['text_status_existing'] = 'Postoji u shopu';
+$_['text_status_imported'] = 'Importan/povezan';
+$_['text_status_conflict'] = 'Konflikt';
+$_['text_status_missing'] = 'Nema u feedu';
+$_['text_run_refresh'] = 'Osvježavanje feeda';
+$_['text_run_import'] = 'Import';
+$_['text_recent_runs'] = 'Nedavna izvršavanja';
+$_['text_run_counts'] = 'Odabrano: %d · kreirano: %d · ažurirano: %d · preskočeno: %d · neuspjelo: %d';
+$_['text_run_error_items'] = 'Greške stavki:';
+$_['text_not_available'] = 'Nije dostupno';
+$_['text_default_category'] = 'Zadana kategorija';
+
+// Columns
+$_['column_image'] = 'Slika';
+$_['column_sku'] = 'SKU';
+$_['column_name'] = 'Naziv';
+$_['column_brand'] = 'Brand';
+$_['column_supplier_category'] = 'ActiveShop kategorija';
+$_['column_local_category'] = 'Kategorija u shopu';
+$_['column_products'] = 'Artikala';
+$_['column_quantity'] = 'Kol.';
+$_['column_status'] = 'Status';
+$_['column_price'] = 'Cijene';
+$_['column_action'] = 'Akcija';
+$_['column_date'] = 'Datum';
+$_['column_result'] = 'Rezultat';
+
+// Entries
+$_['entry_search'] = 'Naziv, SKU ili EAN';
+$_['entry_status'] = 'Status';
+$_['entry_supplier_category'] = 'Dobavljačka kategorija';
+$_['entry_brand'] = 'Brand';
+$_['entry_markup'] = 'Povećanje (%)';
+$_['entry_existing_action'] = 'Postojeći artikli';
+$_['entry_default_category'] = 'Zadana kategorija';
+$_['entry_tax_class'] = 'Porezna klasa';
+$_['entry_stock_status'] = 'Status zalihe';
+$_['entry_weight_class'] = 'Jedinica mase';
+$_['entry_new_product_status'] = 'Status novih artikala';
+$_['entry_import_images'] = 'Preuzmi slike novih artikala';
+$_['entry_feed_url'] = 'Feed URL';
+$_['entry_cron_url'] = 'Zaštićeni cron URL';
+
+// Buttons
+$_['button_refresh'] = 'Osvježi feed';
+$_['button_import'] = 'Importaj odabrano';
+$_['button_save'] = 'Spremi';
+$_['button_cancel'] = 'Odustani';
+$_['button_filter'] = 'Filtriraj';
+$_['button_clear'] = 'Očisti';
+$_['button_only_new'] = 'Samo novi';
+$_['button_all_statuses'] = 'Svi statusi';
+$_['button_edit'] = 'Uredi artikl';
+
+// Errors
+$_['error_permission'] = 'Nemate ovlasti za izmjenu ActiveShop importera.';
+$_['error_method'] = 'Ova akcija dopuštena je samo putem POST zahtjeva.';
+$_['error_csrf'] = 'Sigurnosni token je istekao. Osvježite stranicu i pokušajte ponovno.';
+$_['error_busy'] = 'Drugo ActiveShop osvježavanje, uvoz ili ažuriranje već je u tijeku. Pokušajte ponovno uskoro.';
+$_['error_refresh'] = 'ActiveShop feed nije moguće osvježiti: %s';
+$_['error_selected'] = 'Odaberite barem jedan artikl.';
+$_['error_import_limit'] = 'Odjednom je moguće importati najviše %d artikala.';
+$_['error_staged_missing'] = 'Odabrana staging stavka više ne postoji.';
+$_['error_markup'] = 'Povećanje mora biti broj.';
+$_['error_markup_range'] = 'Povećanje mora biti između 0% i 1000%.';
+$_['error_product_conflict'] = 'Identifikatori dobavljača vode na konfliktne artikle u shopu. Konflikt prvo treba ručno razriješiti.';
+$_['error_product_missing_feed'] = 'Artikl više nije prisutan u aktualnom feedu.';
+$_['error_payload'] = 'Spremljeni podaci feeda nisu ispravni.';
+$_['error_required_feed_fields'] = 'Feed stavka nema valjani SKU, naziv ili cijenu.';
+$_['error_category_required'] = 'Mapirajte dobavljačku kategoriju ili odaberite zadanu kategoriju.';
+$_['error_product_create'] = 'OpenCart nije vratio ID novog artikla.';
+$_['error_translation'] = 'Prijevod na hrvatski nije uspio: %s Artikl nije uvezen.';
+$_['error_translation_empty'] = 'Google je vratio prazan prijevod.';
+$_['error_translation_batch_limit'] = 'Zbog besplatnog Google prijevoda odjednom možete uvesti najviše %d novih artikala. Odaberite manju grupu.';

@@ -1,0 +1,146 @@
+{{ header }}{{ column_left }}
+<div id="content">
+  <div class="page-header">
+    <div class="container-fluid">
+      <div class="pull-right"><a href="{{ cancel }}" class="btn btn-default" title="{{ button_cancel|escape }}"><i class="fa fa-reply"></i></a></div>
+      <h1>{{ heading_title|escape }}</h1>
+      <ul class="breadcrumb">{% for breadcrumb in breadcrumbs %}<li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text|escape }}</a></li>{% endfor %}</ul>
+    </div>
+  </div>
+
+  <div class="container-fluid">
+    {% if error_warning %}<div class="alert alert-danger alert-dismissible"><i class="fa fa-exclamation-circle"></i> {{ error_warning|escape }}<button type="button" class="close" data-dismiss="alert">&times;</button></div>{% endif %}
+    {% if success %}<div class="alert alert-success alert-dismissible"><i class="fa fa-check-circle"></i> {{ success|escape }}<button type="button" class="close" data-dismiss="alert">&times;</button></div>{% endif %}
+    {% if identity_error %}<div class="alert alert-danger"><i class="fa fa-lock"></i> {{ identity_error|escape }}</div>{% endif %}
+
+    <div class="alert alert-info">
+      <i class="fa fa-shield"></i>
+      {{ text_permanent_exclusions|escape }}
+      <strong>Emovex: {{ summary.excluded_emovex|default(0) }}</strong> &middot;
+      <strong>Manuela Picard: {{ summary.excluded_manuela_picard|default(0) }}</strong>
+    </div>
+    <div class="alert alert-warning"><i class="fa fa-exclamation-triangle"></i> {{ text_supplier_sync_warning|escape }}</div>
+
+    <div class="row">
+      <div class="col-sm-3"><div class="well well-sm"><small>{{ text_total_products|escape }}</small><br><strong class="h3">{{ summary.total_products|default(0) }}</strong></div></div>
+      <div class="col-sm-3"><div class="well well-sm"><small>{{ text_eligible_products|escape }}</small><br><strong class="h3 text-success">{{ summary.eligible_count|default(0) }}</strong></div></div>
+      <div class="col-sm-2"><div class="well well-sm"><small>{{ text_excluded_products|escape }}</small><br><strong class="h3 text-info">{{ summary.excluded_total|default(0) }}</strong></div></div>
+      <div class="col-sm-2"><div class="well well-sm"><small>{{ text_zero_price|escape }}</small><br><strong class="h3">{{ summary.zero_price_count|default(0) }}</strong></div></div>
+      <div class="col-sm-2"><div class="well well-sm"><small>{{ text_with_specials|escape }}</small><br><strong class="h3 text-warning">{{ summary.special_count|default(0) }}</strong></div></div>
+    </div>
+
+    <div class="panel panel-primary">
+      <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-calculator"></i> {{ text_new_preview|escape }}</h3></div>
+      <div class="panel-body">
+        <form action="{{ preview_url }}" method="post" class="form-inline" id="form-price-preview">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token|escape }}" />
+          <div class="form-group">
+            <label for="input-percent">{{ entry_percent|escape }}</label>
+            <div class="input-group">
+              <input type="text" name="percent" id="input-percent" class="form-control" inputmode="decimal" placeholder="10" required{% if identity_error %} disabled{% endif %} />
+              <span class="input-group-addon">%</span>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary"{% if identity_error %} disabled{% endif %}><i class="fa fa-search"></i> {{ button_preview|escape }}</button>
+        </form>
+        <p class="help-block">{{ text_formula_help|escape }} {{ text_preview_help|escape }}</p>
+      </div>
+    </div>
+
+    {% if price_run %}
+    <div class="panel {% if price_run.status == 'preview' %}panel-warning{% elseif price_run.status == 'rolled_back' %}panel-default{% elseif price_run.status == 'running' %}panel-info{% elseif price_run.status in ['failed', 'rollback_partial', 'completed_with_conflicts'] %}panel-warning{% else %}panel-success{% endif %}">
+      <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-list-alt"></i> {{ text_run|format(price_run.price_run_id)|escape }} &middot; {{ price_run.status_text|default(price_run.status)|escape }}</h3></div>
+      <div class="panel-body">
+        {% if price_run.error %}<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> {{ price_run.error|escape }}</div>{% endif %}
+        <div class="row">
+          <div class="col-sm-2"><strong>{{ entry_percent|escape }}</strong><br>+{{ price_run.percent|number_format(4, ',', '.') }}%</div>
+          <div class="col-sm-2"><strong>{{ text_eligible_products|escape }}</strong><br>{{ price_run.eligible_count|default(0) }}</div>
+          <div class="col-sm-3"><strong>{{ text_old_total|escape }}</strong><br>{{ price_run.old_total|default(0)|number_format(2, ',', '.') }} €</div>
+          <div class="col-sm-3"><strong>{{ text_new_total|escape }}</strong><br>{{ price_run.new_total|default(0)|number_format(2, ',', '.') }} €</div>
+          <div class="col-sm-2"><strong>{{ text_difference|escape }}</strong><br>{{ price_run.difference_total|default(0)|number_format(2, ',', '.') }} €</div>
+        </div>
+        <hr>
+        {% if price_run.can_apply|default(false) %}
+          <form action="{{ apply_url }}" method="post" class="form-inline js-apply-prices">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token|escape }}" />
+            <input type="hidden" name="price_run_id" value="{{ price_run.price_run_id }}" />
+            <label class="checkbox-inline"><input type="checkbox" name="confirm_apply" value="1" required> {{ text_confirm_apply|escape }}</label>
+            <button type="submit" class="btn btn-danger"><i class="fa fa-arrow-up"></i> {{ button_apply|escape }}</button>
+          </form>
+        {% elseif price_run.can_rollback|default(false) %}
+          <p><strong>{{ text_applied|escape }}:</strong> {{ price_run.applied_count|default(0) }} &middot; <strong>{{ text_conflicts|escape }}:</strong> {{ price_run.conflict_count|default(0) }} &middot; <strong>{{ text_failed|escape }}:</strong> {{ price_run.failed_count|default(0) }}{% if price_run.rollback_started %} &middot; <strong>{{ text_rollback_conflicts|escape }}:</strong> {{ price_run.rollback_conflict_count|default(0) }}{% endif %}</p>
+          <form action="{{ rollback_url }}" method="post" class="form-inline js-rollback-prices">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token|escape }}" />
+            <input type="hidden" name="price_run_id" value="{{ price_run.price_run_id }}" />
+            <label class="checkbox-inline"><input type="checkbox" name="confirm_rollback" value="1" required> {{ text_confirm_rollback|escape }}</label>
+            <button type="submit" class="btn btn-default"><i class="fa fa-undo"></i> {{ button_rollback|escape }}</button>
+          </form>
+        {% else %}
+          <p><strong>{{ text_applied|escape }}:</strong> {{ price_run.applied_count|default(0) }} &middot; <strong>{{ text_conflicts|escape }}:</strong> {{ price_run.conflict_count|default(0) }} &middot; <strong>{{ text_failed|escape }}:</strong> {{ price_run.failed_count|default(0) }} &middot; <strong>{{ text_rolled_back|escape }}:</strong> {{ price_run.rolled_back_count|default(0) }} &middot; <strong>{{ text_rollback_conflicts|escape }}:</strong> {{ price_run.rollback_conflict_count|default(0) }}</p>
+        {% endif %}
+      </div>
+
+      {% if run_items %}
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+          <thead><tr><td>ID</td><td>{{ column_model|escape }}</td><td>{{ column_name|escape }}</td><td class="text-right">{{ column_old_price|escape }}</td><td class="text-right">{{ column_new_price|escape }}</td><td>{{ column_status|escape }}</td></tr></thead>
+          <tbody>
+            {% for item in run_items %}
+            <tr>
+              <td>{{ item.product_id }}</td>
+              <td>{{ item.model|escape }}</td>
+              <td>{{ item.name|escape }}</td>
+              <td class="text-right">{{ item.old_price|number_format(2, ',', '.') }} €</td>
+              <td class="text-right"><strong>{{ item.new_price|number_format(2, ',', '.') }} €</strong></td>
+              <td>{{ item.status_text|default(item.status)|escape }}{% if item.message_text|default(item.message) %}<br><small class="text-danger">{{ item.message_text|default(item.message)|escape }}</small>{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="panel-footer">{{ text_sample_limit|escape }}</div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if exclusions %}
+    <div class="panel panel-default">
+      <div class="panel-heading clearfix">
+        <h3 class="panel-title pull-left"><i class="fa fa-lock"></i> {{ text_exclusion_list|escape }}</h3>
+        <button type="button" class="btn btn-default btn-xs pull-right" data-toggle="collapse" data-target="#price-exclusion-list">{{ button_show|escape }}</button>
+      </div>
+      <div id="price-exclusion-list" class="panel-collapse collapse">
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover">
+            <thead><tr><td>ID</td><td>{{ column_model|escape }}</td><td>{{ column_name|escape }}</td><td>{{ column_exclusion|escape }}</td></tr></thead>
+            <tbody>{% for item in exclusions %}<tr><td>{{ item.product_id }}</td><td>{{ item.model|escape }}</td><td>{{ item.name|escape }}</td><td>{{ item.reason_text|default(item.reason)|escape }}</td></tr>{% endfor %}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if recent_runs %}
+    <div class="panel panel-default">
+      <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-history"></i> {{ text_history|escape }}</h3></div>
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+          <thead><tr><td>{{ column_date|escape }}</td><td>{{ entry_percent|escape }}</td><td>{{ column_status|escape }}</td><td>{{ text_applied|escape }}</td><td></td></tr></thead>
+          <tbody>{% for run in recent_runs %}<tr><td>{{ run.date_created|escape }}</td><td>+{{ run.percent|number_format(4, ',', '.') }}%</td><td>{{ run.status_text|default(run.status)|escape }}</td><td>{{ run.applied_count|default(0) }}</td><td class="text-right"><a href="{{ run.view_url }}" class="btn btn-default btn-xs"><i class="fa fa-eye"></i></a></td></tr>{% endfor %}</tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+<script type="text/javascript"><!--
+(function() {
+  $('.js-apply-prices').on('submit', function() {
+    return window.confirm({{ text_apply_confirm|json_encode|raw }});
+  });
+  $('.js-rollback-prices').on('submit', function() {
+    return window.confirm({{ text_rollback_confirm|json_encode|raw }});
+  });
+})();
+//--></script>
+{{ footer }}

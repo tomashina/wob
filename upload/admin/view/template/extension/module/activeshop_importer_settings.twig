@@ -1,0 +1,122 @@
+{{ header }}{{ column_left }}
+<div id="content">
+  <div class="page-header">
+    <div class="container-fluid">
+      <div class="pull-right">
+        <button type="submit" form="form-activeshop-settings" data-toggle="tooltip" title="{{ button_save }}" class="btn btn-primary"><i class="fa fa-save"></i></button>
+        <a href="{{ cancel }}" data-toggle="tooltip" title="{{ button_cancel|escape }}" class="btn btn-default"><i class="fa fa-reply"></i></a>
+      </div>
+      <h1>{{ heading_settings|escape }}</h1>
+      <ul class="breadcrumb">{% for breadcrumb in breadcrumbs %}<li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text|escape }}</a></li>{% endfor %}</ul>
+    </div>
+  </div>
+  <div class="container-fluid">
+    {% if error_warning %}<div class="alert alert-danger alert-dismissible"><i class="fa fa-exclamation-circle"></i> {{ error_warning|escape }}<button type="button" class="close" data-dismiss="alert">&times;</button></div>{% endif %}
+    {% if success %}<div class="alert alert-success alert-dismissible"><i class="fa fa-check-circle"></i> {{ success|escape }}<button type="button" class="close" data-dismiss="alert">&times;</button></div>{% endif %}
+
+    <ul class="nav nav-tabs">
+      <li><a href="{{ products_url }}"><i class="fa fa-cubes"></i> {{ text_products_tab }}</a></li>
+      <li><a href="{{ categories_url }}"><i class="fa fa-folder-open"></i> {{ text_categories_tab }}</a></li>
+      <li class="active"><a href="{{ settings_url }}"><i class="fa fa-cog"></i> {{ text_settings_tab }}</a></li>
+    </ul>
+
+    <form action="{{ save_url }}" method="post" id="form-activeshop-settings" class="form-horizontal">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token|escape }}" />
+      <div class="panel panel-default">
+        <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-cog"></i> {{ heading_settings }}</h3></div>
+        <div class="panel-body">
+          <div class="form-group">
+            <label class="col-sm-3 control-label">{{ entry_feed_url }}</label>
+            <div class="col-sm-9"><p class="form-control-static"><a href="{{ feed_url|escape }}" target="_blank" rel="noopener noreferrer">{{ feed_url|escape }}</a></p></div>
+          </div>
+          {% if can_manage_cron %}<div class="form-group">
+            <label class="col-sm-3 control-label" for="input-cron-url">{{ entry_cron_url }}</label>
+            <div class="col-sm-9">
+              {% if cron_url %}
+                <input type="text" value="{{ cron_url|escape }}" id="input-cron-url" class="form-control" readonly="readonly" autocomplete="off" />
+                <p class="help-block">{{ text_cron_help }}</p>
+              {% else %}
+                <p class="form-control-static text-warning"><i class="fa fa-exclamation-triangle"></i> {{ text_cron_unconfigured }}</p>
+              {% endif %}
+            </div>
+          </div>{% endif %}
+          <div class="form-group required">
+            <label class="col-sm-3 control-label" for="input-markup">{{ entry_markup }}</label>
+            <div class="col-sm-9">
+              <div class="input-group"><input type="text" name="markup" value="{{ settings.markup|escape }}" id="input-markup" class="form-control" inputmode="decimal" /><span class="input-group-addon">%</span></div>
+              <p class="help-block">{{ text_formula_help }}</p>
+            </div>
+          </div>
+          <div class="form-group required">
+            <label class="col-sm-3 control-label" for="input-default-category">{{ entry_default_category }}</label>
+            <div class="col-sm-9">
+              <input type="text" value="{{ default_category_name|escape }}" id="input-default-category" class="form-control" autocomplete="off" />
+              <input type="hidden" name="default_category_id" value="{{ settings.default_category_id|escape }}" id="input-default-category-id" />
+              <p class="help-block">{{ text_category_fallback_help }}</p>
+            </div>
+          </div>
+          <div class="form-group required">
+            <label class="col-sm-3 control-label" for="input-tax-class">{{ entry_tax_class }}</label>
+            <div class="col-sm-9">
+              <select name="tax_class_id" id="input-tax-class" class="form-control">
+                <option value="0">{{ text_none }}</option>
+                {% for tax_class in tax_classes %}<option value="{{ tax_class.tax_class_id|escape }}"{% if tax_class.tax_class_id == settings.tax_class_id %} selected{% endif %}>{{ tax_class.title|escape }}</option>{% endfor %}
+              </select>
+              <p class="help-block">{{ text_tax_help }}</p>
+            </div>
+          </div>
+          <div class="form-group required">
+            <label class="col-sm-3 control-label" for="input-stock-status">{{ entry_stock_status }}</label>
+            <div class="col-sm-9"><select name="stock_status_id" id="input-stock-status" class="form-control">{% for stock_status in stock_statuses %}<option value="{{ stock_status.stock_status_id|escape }}"{% if stock_status.stock_status_id == settings.stock_status_id %} selected{% endif %}>{{ stock_status.name|escape }}</option>{% endfor %}</select></div>
+          </div>
+          <div class="form-group required">
+            <label class="col-sm-3 control-label" for="input-weight-class">{{ entry_weight_class }}</label>
+            <div class="col-sm-9"><select name="weight_class_id" id="input-weight-class" class="form-control">{% for weight_class in weight_classes %}<option value="{{ weight_class.weight_class_id|escape }}"{% if weight_class.weight_class_id == settings.weight_class_id %} selected{% endif %}>{{ weight_class.title|escape }}</option>{% endfor %}</select></div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-3 control-label" for="input-new-status">{{ entry_new_product_status }}</label>
+            <div class="col-sm-9">
+              <select name="new_product_status" id="input-new-status" class="form-control">
+                <option value="0"{% if not settings.new_product_status %} selected{% endif %}>{{ text_disabled }}</option>
+                <option value="1"{% if settings.new_product_status %} selected{% endif %}>{{ text_enabled }}</option>
+              </select>
+              <p class="help-block">{{ text_new_products_disabled }}</p>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-3 control-label" for="input-images">{{ entry_import_images }}</label>
+            <div class="col-sm-9"><select name="import_images" id="input-images" class="form-control"><option value="1"{% if settings.import_images %} selected{% endif %}>{{ text_yes }}</option><option value="0"{% if not settings.import_images %} selected{% endif %}>{{ text_no }}</option></select></div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-3 control-label" for="input-existing-action">{{ entry_existing_action }}</label>
+            <div class="col-sm-9">
+              <select name="existing_action" id="input-existing-action" class="form-control">
+                <option value="skip"{% if settings.existing_action == 'skip' %} selected{% endif %}>{{ text_existing_skip }}</option>
+                <option value="price_quantity"{% if settings.existing_action == 'price_quantity' %} selected{% endif %}>{{ text_existing_price_quantity }}</option>
+              </select>
+              <p class="help-block">{{ text_special_help }}</p>
+            </div>
+          </div>
+          <div class="alert alert-info"><i class="fa fa-language"></i> {{ text_language_copy_help }}</div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+<script type="text/javascript"><!--
+$('#input-default-category').autocomplete({
+  source: function(request, response) {
+    $.ajax({
+      url: {{ category_autocomplete_url|json_encode|raw }} + encodeURIComponent(request),
+      dataType: 'json',
+      success: function(json) { response($.map(json, function(item) { return {label: item.name, value: item.category_id}; })); }
+    });
+  },
+  select: function(item) {
+    $('#input-default-category').val(item.label);
+    $('#input-default-category-id').val(item.value);
+  }
+});
+$('#input-default-category').on('input', function() { $('#input-default-category-id').val('0'); });
+//--></script>
+{{ footer }}

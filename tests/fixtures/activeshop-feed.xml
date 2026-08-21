@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<offers version="1">
+  <title>ACTIVESHOP-B2B-ENGLISH</title>
+  <item>
+    <sku>148507</sku>
+    <name><![CDATA[Hydrogen H2+ 6-in-1 new generation hydrogen purification device]]></name>
+    <description><![CDATA[<p>A <strong>safe</strong> description.</p>]]></description>
+    <price>304.68</price>
+    <category_subcategory>Cosmetic devices&gt;Professional devices&gt;Equipment for the office</category_subcategory>
+    <qty>850</qty>
+    <weight>6.9000</weight>
+    <brand><![CDATA[ACTIVESHOP]]></brand>
+    <tax>23%</tax>
+    <EAN>5906717459146</EAN>
+    <images>
+      <image>https://b2b.activeshop.com.pl/media/catalog/product/1/4/148507_01_2604.jpg</image>
+      <image>https://activeshop.com.pl/media/wysiwyg/product/148507/EN_148507_1.jpg</image>
+      <image>https://example.invalid/not-allowed.jpg</image>
+    </images>
+    <dimensions>
+      <length>460.00</length>
+      <width>300.00</width>
+      <height>435.00</height>
+    </dimensions>
+    <gpsr>
+      <gpsr_manufacturer><![CDATA[Activeshop Sp. z o.o]]></gpsr_manufacturer>
+      <gpsr_brand><![CDATA[Activeshop]]></gpsr_brand>
+      <gpsr_contact><![CDATA[Graniczna 8b, Wrocław, Polska]]></gpsr_contact>
+      <gpsr_ean>5906717459146</gpsr_ean>
+    </gpsr>
+    <volume>0.060000</volume>
+    <pack_type>Package</pack_type>
+  </item>
+  <item>
+    <sku>132972</sku>
+    <name><![CDATA[Tattoo assistant pro ink 1031 black]]></name>
+    <description><![CDATA[]]></description>
+    <price>138.21</price>
+    <qty>0</qty>
+    <weight>10.5000</weight>
+    <brand><![CDATA[PRO INK]]></brand>
+    <tax>23%</tax>
+    <EAN>5906717434259</EAN>
+    <images/>
+    <dimensions>
+      <length>0.00</length>
+      <width>0.00</width>
+      <height>0.00</height>
+    </dimensions>
+    <gpsr>
+      <gpsr_manufacturer/>
+      <gpsr_brand/>
+      <gpsr_contact/>
+      <gpsr_ean>5906717434259</gpsr_ean>
+    </gpsr>
+    <volume>0.000000</volume>
+    <pack_type>Pallet</pack_type>
+  </item>
+</offers>

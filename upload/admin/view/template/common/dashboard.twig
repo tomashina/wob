@@ -18,6 +18,12 @@
       <button type="button" class="close pull-right" data-dismiss="alert">&times;</button>
       <i class="fa fa-exclamation-circle"></i> {{ error_install }}</div>
     {% endif %}
+    {% if admin_shortcuts %}
+    <div class="well well-sm" style="margin-bottom:15px;padding:8px 10px;">
+      <strong style="margin-right:8px;"><i class="fa fa-bolt"></i> {{ text_admin_shortcuts }}</strong>
+      {% for shortcut in admin_shortcuts %}<a href="{{ shortcut.href }}" class="btn btn-primary btn-sm" style="margin-right:5px;"><i class="fa {{ shortcut.icon }}"></i> {{ shortcut.text }}</a>{% endfor %}
+    </div>
+    {% endif %}
     {% for row in rows %}
     <div class="row">{% for dashboard_1 in row %}
       {% set class = 'col-lg-%s %s'|format(dashboard_1.width, 'col-md-3 col-sm-6') %}
