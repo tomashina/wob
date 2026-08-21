@@ -122,40 +122,65 @@ class ModelExtensionModuleActiveshopImporter extends Model {
 	}
 
 	public function stageFeedItem(array $item, $feed_token) {
-		$supplier_id = $this->requireSupplierId();
-		$sku = trim(isset($item['sku']) ? (string)$item['sku'] : '');
-		if ($sku === '') {
-			throw new InvalidArgumentException('ActiveShop staging item requires a SKU.');
+		$this->stageFeedItems(array($item), $feed_token);
+	}
+
+	public function stageFeedItems(array $items, $feed_token) {
+		if (!$items) {
+			return 0;
 		}
 
-		$category_path = $this->categoryPathToString(isset($item['category_path']) ? $item['category_path'] : '');
-		$payload = $this->encodeJson($item);
-		$images = $this->encodeJson(isset($item['images']) && is_array($item['images']) ? $item['images'] : array());
-		$dimensions = $this->encodeJson(isset($item['dimensions']) && is_array($item['dimensions']) ? $item['dimensions'] : array());
+		$supplier_id = $this->requireSupplierId();
+		$feed_token = $this->db->escape($this->truncate($feed_token, 64));
+		$values = array();
 
-		$this->db->query("INSERT INTO `" . DB_PREFIX . "wob_supplier_product` SET
-			`supplier_id` = '" . $supplier_id . "',
-			`external_id` = '" . $this->db->escape($this->truncate($sku, 128)) . "',
-			`sku` = '" . $this->db->escape($this->truncate($sku, 64)) . "',
-			`ean` = '" . $this->db->escape($this->truncate(isset($item['ean']) ? $item['ean'] : '', 32)) . "',
-			`name` = '" . $this->db->escape($this->truncate(isset($item['name']) ? $item['name'] : '', 255)) . "',
-			`brand` = '" . $this->db->escape($this->truncate(isset($item['brand']) ? $item['brand'] : '', 128)) . "',
-			`category_path` = '" . $this->db->escape($this->truncate($category_path, 512)) . "',
-			`feed_price` = '" . $this->decimal(isset($item['feed_price']) ? $item['feed_price'] : 0, 4) . "',
-			`quantity` = '" . max(0, isset($item['quantity']) ? (int)$item['quantity'] : 0) . "',
-			`weight` = '" . $this->decimal(max(0, isset($item['weight']) ? (float)$item['weight'] : 0), 4) . "',
-			`dimensions` = '" . $this->db->escape($dimensions) . "',
-			`images` = '" . $this->db->escape($images) . "',
-			`payload` = '" . $this->db->escape($payload) . "',
-			`source_hash` = '" . $this->db->escape($this->truncate(isset($item['source_hash']) ? $item['source_hash'] : '', 64)) . "',
-			`feed_token` = '" . $this->db->escape($this->truncate($feed_token, 64)) . "',
-			`is_current` = '1', `last_seen` = NOW(), `date_added` = NOW(), `date_modified` = NOW()
+		foreach ($items as $item) {
+			if (!is_array($item)) {
+				throw new InvalidArgumentException('ActiveShop staging batch requires item arrays.');
+			}
+
+			$sku = trim(isset($item['sku']) ? (string)$item['sku'] : '');
+			if ($sku === '') {
+				throw new InvalidArgumentException('ActiveShop staging item requires a SKU.');
+			}
+
+			$category_path = $this->categoryPathToString(isset($item['category_path']) ? $item['category_path'] : '');
+			$payload = $this->encodeJson($item);
+			$images = $this->encodeJson(isset($item['images']) && is_array($item['images']) ? $item['images'] : array());
+			$dimensions = $this->encodeJson(isset($item['dimensions']) && is_array($item['dimensions']) ? $item['dimensions'] : array());
+
+			$values[] = "('" . $supplier_id . "',
+				'" . $this->db->escape($this->truncate($sku, 128)) . "',
+				'" . $this->db->escape($this->truncate($sku, 64)) . "',
+				'" . $this->db->escape($this->truncate(isset($item['ean']) ? $item['ean'] : '', 32)) . "',
+				'" . $this->db->escape($this->truncate(isset($item['name']) ? $item['name'] : '', 255)) . "',
+				'" . $this->db->escape($this->truncate(isset($item['brand']) ? $item['brand'] : '', 128)) . "',
+				'" . $this->db->escape($this->truncate($category_path, 512)) . "',
+				'" . $this->decimal(isset($item['feed_price']) ? $item['feed_price'] : 0, 4) . "',
+				'" . max(0, isset($item['quantity']) ? (int)$item['quantity'] : 0) . "',
+				'" . $this->decimal(max(0, isset($item['weight']) ? (float)$item['weight'] : 0), 4) . "',
+				'" . $this->db->escape($dimensions) . "',
+				'" . $this->db->escape($images) . "',
+				'" . $this->db->escape($payload) . "',
+				'" . $this->db->escape($this->truncate(isset($item['source_hash']) ? $item['source_hash'] : '', 64)) . "',
+				'" . $feed_token . "',
+				'1', NOW(), NOW(), NOW())";
+		}
+
+		$this->db->query("INSERT INTO `" . DB_PREFIX . "wob_supplier_product` (
+			`supplier_id`, `external_id`, `sku`, `ean`, `name`, `brand`, `category_path`, `feed_price`,
+			`quantity`, `weight`, `dimensions`, `images`, `payload`, `source_hash`, `feed_token`,
+			`is_current`, `last_seen`, `date_added`, `date_modified`
+		) VALUES
+			" . implode(",\n\t\t\t", $values) . "
 			ON DUPLICATE KEY UPDATE
 			`sku` = VALUES(`sku`), `ean` = VALUES(`ean`), `name` = VALUES(`name`), `brand` = VALUES(`brand`),
 			`category_path` = VALUES(`category_path`), `feed_price` = VALUES(`feed_price`), `quantity` = VALUES(`quantity`),
 			`weight` = VALUES(`weight`), `dimensions` = VALUES(`dimensions`), `images` = VALUES(`images`),
 			`payload` = VALUES(`payload`), `source_hash` = VALUES(`source_hash`), `feed_token` = VALUES(`feed_token`),
 			`is_current` = '1', `last_seen` = NOW(), `date_modified` = NOW()");
+
+		return count($values);
 	}
 
 	public function finishFeedRefresh($feed_token) {
@@ -506,6 +531,14 @@ class ModelExtensionModuleActiveshopImporter extends Model {
 		$supplier_id = $this->requireSupplierId();
 		$this->db->query("INSERT INTO `" . DB_PREFIX . "wob_import_run` SET `supplier_id` = '" . $supplier_id . "', `user_id` = '" . max(0, isset($data['user_id']) ? (int)$data['user_id'] : 0) . "', `type` = '" . $this->db->escape($this->truncate(isset($data['type']) ? $data['type'] : 'import', 32)) . "', `status` = 'running', `markup` = '" . $this->decimal(isset($data['markup']) ? $data['markup'] : 0, 4) . "', `settings_snapshot` = '" . $this->db->escape($this->encodeJson(isset($data['settings']) ? $data['settings'] : array())) . "', `counts` = '{}', `error` = '', `date_started` = NOW()");
 		return (int)$this->db->getLastId();
+	}
+
+	public function recoverRunningRefreshRuns() {
+		$this->db->query("UPDATE `" . DB_PREFIX . "wob_import_run` SET
+			`status` = 'failed',
+			`error` = 'Previous refresh was interrupted before it completed.',
+			`date_finished` = NOW()
+			WHERE `supplier_id` = '" . $this->requireSupplierId() . "' AND `type` = 'refresh' AND `status` = 'running'");
 	}
 
 	public function logRunItem($run_id, array $data) {

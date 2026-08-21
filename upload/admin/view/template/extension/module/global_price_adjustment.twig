@@ -68,13 +68,22 @@
         {% if not (price_run.is_legacy_basis|default(false)) %}
           <p class="help-block"><i class="fa fa-database"></i> {{ text_price_source_counts|format(price_run.feed_source_count|default(0), price_run.catalog_source_count|default(0), price_run.source_conflict_count|default(0))|escape }}</p>
         {% endif %}
+        <div id="price-batch-progress" class="well well-sm"{% if price_run.status != 'running' %} style="display:none"{% endif %}>
+          <p id="price-batch-message"><i class="fa fa-refresh fa-spin"></i> {{ text_batch_running|escape }}</p>
+          <div class="progress" style="margin-bottom:0">
+            <div id="price-batch-progress-bar" class="progress-bar progress-bar-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ price_run.operation_percent|default(0) }}" style="width:{{ price_run.operation_percent|default(0) }}%">
+              <span id="price-batch-progress-label">{{ price_run.operation_processed|default(0) }} / {{ price_run.operation_total|default(0) }}</span>
+            </div>
+          </div>
+        </div>
         <hr>
         {% if price_run.can_apply|default(false) %}
           <form action="{{ apply_url }}" method="post" class="form-inline" id="price-apply-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token|escape }}" />
             <input type="hidden" name="price_run_id" value="{{ price_run.price_run_id }}" />
             <label class="checkbox-inline"><input type="checkbox" name="confirm_apply" value="1" required> {{ text_confirm_apply|escape }}</label>
-            <button type="button" id="button-price-apply" class="btn btn-danger"><i class="fa fa-arrow-up"></i> {{ button_apply|escape }}</button>
+            <button type="button" id="button-price-apply" class="btn btn-danger"><i class="fa fa-arrow-up"></i> {% if price_run.status == 'running' %}{{ button_continue_apply|escape }}{% else %}{{ button_apply|escape }}{% endif %}</button>
+            <noscript><input type="submit" class="btn btn-danger" value="{{ button_continue_apply|escape }}" /></noscript>
           </form>
         {% elseif price_run.can_rollback|default(false) %}
           <p><strong>{{ text_applied|escape }}:</strong> {{ price_run.applied_count|default(0) }} &middot; <strong>{{ text_conflicts|escape }}:</strong> {{ price_run.conflict_count|default(0) }} &middot; <strong>{{ text_failed|escape }}:</strong> {{ price_run.failed_count|default(0) }}{% if price_run.rollback_started %} &middot; <strong>{{ text_rollback_conflicts|escape }}:</strong> {{ price_run.rollback_conflict_count|default(0) }}{% endif %}</p>
@@ -82,7 +91,8 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token|escape }}" />
             <input type="hidden" name="price_run_id" value="{{ price_run.price_run_id }}" />
             <label class="checkbox-inline"><input type="checkbox" name="confirm_rollback" value="1" required> {{ text_confirm_rollback|escape }}</label>
-            <button type="button" id="button-price-rollback" class="btn btn-default"><i class="fa fa-undo"></i> {{ button_rollback|escape }}</button>
+            <button type="button" id="button-price-rollback" class="btn btn-default"><i class="fa fa-undo"></i> {% if price_run.status == 'running' %}{{ button_continue_rollback|escape }}{% else %}{{ button_rollback|escape }}{% endif %}</button>
+            <noscript><input type="submit" class="btn btn-default" value="{{ button_continue_rollback|escape }}" /></noscript>
           </form>
         {% else %}
           <p><strong>{{ text_applied|escape }}:</strong> {{ price_run.applied_count|default(0) }} &middot; <strong>{{ text_conflicts|escape }}:</strong> {{ price_run.conflict_count|default(0) }} &middot; <strong>{{ text_failed|escape }}:</strong> {{ price_run.failed_count|default(0) }} &middot; <strong>{{ text_rolled_back|escape }}:</strong> {{ price_run.rolled_back_count|default(0) }} &middot; <strong>{{ text_rollback_conflicts|escape }}:</strong> {{ price_run.rollback_conflict_count|default(0) }}</p>
@@ -166,14 +176,100 @@
     return true;
   }
 
+  function runPriceBatches(formId, confirmation) {
+    var form = document.getElementById(formId);
+    if (!form || form.getAttribute('data-batch-running') === '1') {
+      return false;
+    }
+    if (typeof form.checkValidity === 'function' && !form.checkValidity()) {
+      if (typeof form.reportValidity === 'function') {
+        form.reportValidity();
+      }
+      return false;
+    }
+    if (confirmation && !window.confirm(confirmation)) {
+      return false;
+    }
+
+    var $form = $(form);
+    var $button = $form.find('button[type="button"]');
+    var $progress = $('#price-batch-progress');
+    var $message = $('#price-batch-message');
+    var $bar = $('#price-batch-progress-bar');
+    var $label = $('#price-batch-progress-label');
+    var retries = 0;
+    var maxRetries = 20;
+    form.setAttribute('data-batch-running', '1');
+    $button.prop('disabled', true);
+    $progress.show();
+
+    function updateProgress(response) {
+      var percent = Math.max(0, Math.min(100, parseInt(response.percent, 10) || 0));
+      $bar.css('width', percent + '%').attr('aria-valuenow', percent);
+      $label.text((parseInt(response.processed, 10) || 0) + ' / ' + (parseInt(response.total, 10) || 0));
+      $message.text(response.message || {{ text_batch_running|json_encode|raw }});
+    }
+
+    function stopBatch(message) {
+      form.setAttribute('data-batch-running', '0');
+      $button.prop('disabled', false);
+      $bar.removeClass('active');
+      $message.text(message || {{ text_batch_resumable|json_encode|raw }});
+    }
+
+    function retryBatch() {
+      retries++;
+      if (retries > maxRetries) {
+        stopBatch({{ text_batch_resumable|json_encode|raw }});
+        return;
+      }
+      $message.text({{ text_batch_retrying|json_encode|raw }});
+      window.setTimeout(requestBatch, 1000);
+    }
+
+    function requestBatch() {
+      var data = $form.serializeArray();
+      data.push({name: 'ajax', value: '1'});
+      $.ajax({
+        url: form.action,
+        type: 'post',
+        data: data,
+        dataType: 'json',
+        timeout: 60000
+      }).done(function(response) {
+        if (!response || !response.success) {
+          if (response && response.retryable) {
+            retryBatch();
+          } else {
+            stopBatch(response && response.error ? response.error : {{ text_batch_resumable|json_encode|raw }});
+          }
+          return;
+        }
+        retries = 0;
+        updateProgress(response);
+        if (response.done) {
+          $bar.removeClass('active');
+          window.location.assign(response.redirect);
+        } else {
+          window.setTimeout(requestBatch, 50);
+        }
+      }).fail(function() {
+        retryBatch();
+      });
+    }
+
+    requestBatch();
+    return true;
+  }
+
   $('#button-price-preview').on('click', function() {
     submitPriceForm('price-preview-form');
   });
   $('#button-price-apply').on('click', function() {
-    submitPriceForm('price-apply-form', {{ text_apply_confirm|json_encode|raw }});
+    runPriceBatches('price-apply-form', {{ text_apply_confirm|json_encode|raw }});
   });
   $('#button-price-rollback').on('click', function() {
-    submitPriceForm('price-rollback-form', {{ text_rollback_confirm|json_encode|raw }});
+    runPriceBatches('price-rollback-form', {{ text_rollback_confirm|json_encode|raw }});
   });
 })();
 //--></script>

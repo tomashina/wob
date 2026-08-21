@@ -159,40 +159,49 @@ class ControllerExtensionModuleGlobalPriceAdjustment extends Controller {
 
 	public function apply() {
 		$this->load->language(self::ROUTE);
+		$json_request = $this->wantsJsonResponse();
 
 		if (!$this->validateMutation()) {
-			$this->redirectWithError();
+			if ($json_request) {
+				$this->sendJson(array('success' => false, 'retryable' => false, 'error' => isset($this->error['warning']) ? $this->error['warning'] : $this->language->get('error_permission')));
+			} else {
+				$this->redirectWithError();
+			}
 			return;
 		}
 
 		$run_id = isset($this->request->post['price_run_id']) ? max(0, (int)$this->request->post['price_run_id']) : 0;
 		if (!$run_id || empty($this->request->post['confirm_apply'])) {
-			$this->session->data['warning'] = $this->language->get('error_confirmation');
-			$this->redirectToModule($run_id);
+			if ($json_request) {
+				$this->sendJson(array('success' => false, 'retryable' => false, 'error' => $this->language->get('error_confirmation')));
+			} else {
+				$this->session->data['warning'] = $this->language->get('error_confirmation');
+				$this->redirectToModule($run_id);
+			}
 			return;
 		}
 
 		$lock = $this->acquireOperationLock();
 		if (!$lock) {
-			$this->session->data['warning'] = $this->language->get('error_busy');
-			$this->redirectToModule($run_id);
+			if ($json_request) {
+				$this->sendJson(array('success' => false, 'retryable' => true, 'error' => $this->language->get('error_busy')));
+			} else {
+				$this->session->data['warning'] = $this->language->get('error_busy');
+				$this->redirectToModule($run_id);
+			}
 			return;
 		}
 
 		$model_loaded = false;
+		$result = array();
+		$operation_error = null;
 		try {
 			$this->prepareLongRequest();
 			$this->load->model(self::ROUTE);
 			$model_loaded = true;
 			$result = $this->model_extension_module_global_price_adjustment->applyRun($run_id, $this->user->getId());
-			$this->cache->delete('product');
-			$this->session->data['success'] = sprintf(
-				$this->language->get('text_apply_success'),
-				isset($result['applied_count']) ? (int)$result['applied_count'] : 0,
-				isset($result['conflict_count']) ? (int)$result['conflict_count'] : 0,
-				isset($result['failed_count']) ? (int)$result['failed_count'] : 0
-			);
 		} catch (Throwable $exception) {
+			$operation_error = $exception;
 			if ($model_loaded) {
 				try {
 					$this->model_extension_module_global_price_adjustment->failRun($run_id, $this->user->getId(), $exception->getMessage());
@@ -200,48 +209,78 @@ class ControllerExtensionModuleGlobalPriceAdjustment extends Controller {
 					$this->log->write('Global price audit failure: ' . $audit_exception->getMessage());
 				}
 			}
-			$this->session->data['warning'] = sprintf($this->language->get('error_apply'), $exception->getMessage());
+		} finally {
+			$this->releaseOperationLock($lock);
 		}
 
-		$this->releaseOperationLock($lock);
+		if ($operation_error) {
+			$message = sprintf($this->language->get('error_apply'), $operation_error->getMessage());
+			if ($json_request) {
+				$this->sendJson(array('success' => false, 'retryable' => false, 'error' => $message));
+				return;
+			}
+			$this->session->data['warning'] = $message;
+			$this->redirectToModule($run_id);
+			return;
+		}
+
+		$done = !empty($result['batch_done']);
+		$message = $done
+			? sprintf($this->language->get('text_apply_success'), isset($result['applied_count']) ? (int)$result['applied_count'] : 0, isset($result['conflict_count']) ? (int)$result['conflict_count'] : 0, isset($result['failed_count']) ? (int)$result['failed_count'] : 0)
+			: sprintf($this->language->get('text_apply_batch_progress'), isset($result['operation_processed']) ? (int)$result['operation_processed'] : 0, isset($result['operation_total']) ? (int)$result['operation_total'] : 0);
+		if ($json_request) {
+			$this->sendJson($this->batchJson($result, $message, $run_id));
+			return;
+		}
+		$this->session->data['success'] = $message . (!$done ? ' ' . $this->language->get('text_batch_resumable') : '');
 		$this->redirectToModule($run_id);
 	}
 
 	public function rollback() {
 		$this->load->language(self::ROUTE);
+		$json_request = $this->wantsJsonResponse();
 
 		if (!$this->validateMutation()) {
-			$this->redirectWithError();
+			if ($json_request) {
+				$this->sendJson(array('success' => false, 'retryable' => false, 'error' => isset($this->error['warning']) ? $this->error['warning'] : $this->language->get('error_permission')));
+			} else {
+				$this->redirectWithError();
+			}
 			return;
 		}
 
 		$run_id = isset($this->request->post['price_run_id']) ? max(0, (int)$this->request->post['price_run_id']) : 0;
 		if (!$run_id || empty($this->request->post['confirm_rollback'])) {
-			$this->session->data['warning'] = $this->language->get('error_confirmation');
-			$this->redirectToModule($run_id);
+			if ($json_request) {
+				$this->sendJson(array('success' => false, 'retryable' => false, 'error' => $this->language->get('error_confirmation')));
+			} else {
+				$this->session->data['warning'] = $this->language->get('error_confirmation');
+				$this->redirectToModule($run_id);
+			}
 			return;
 		}
 
 		$lock = $this->acquireOperationLock();
 		if (!$lock) {
-			$this->session->data['warning'] = $this->language->get('error_busy');
-			$this->redirectToModule($run_id);
+			if ($json_request) {
+				$this->sendJson(array('success' => false, 'retryable' => true, 'error' => $this->language->get('error_busy')));
+			} else {
+				$this->session->data['warning'] = $this->language->get('error_busy');
+				$this->redirectToModule($run_id);
+			}
 			return;
 		}
 
 		$model_loaded = false;
+		$result = array();
+		$operation_error = null;
 		try {
 			$this->prepareLongRequest();
 			$this->load->model(self::ROUTE);
 			$model_loaded = true;
 			$result = $this->model_extension_module_global_price_adjustment->rollbackRun($run_id, $this->user->getId());
-			$this->cache->delete('product');
-			$this->session->data['success'] = sprintf(
-				$this->language->get('text_rollback_success'),
-				isset($result['rolled_back_count']) ? (int)$result['rolled_back_count'] : 0,
-				isset($result['rollback_conflict_count']) ? (int)$result['rollback_conflict_count'] : 0
-			);
 		} catch (Throwable $exception) {
+			$operation_error = $exception;
 			if ($model_loaded) {
 				try {
 					$this->model_extension_module_global_price_adjustment->failRun($run_id, $this->user->getId(), $exception->getMessage());
@@ -249,10 +288,30 @@ class ControllerExtensionModuleGlobalPriceAdjustment extends Controller {
 					$this->log->write('Global price rollback audit failure: ' . $audit_exception->getMessage());
 				}
 			}
-			$this->session->data['warning'] = sprintf($this->language->get('error_rollback'), $exception->getMessage());
+		} finally {
+			$this->releaseOperationLock($lock);
 		}
 
-		$this->releaseOperationLock($lock);
+		if ($operation_error) {
+			$message = sprintf($this->language->get('error_rollback'), $operation_error->getMessage());
+			if ($json_request) {
+				$this->sendJson(array('success' => false, 'retryable' => false, 'error' => $message));
+				return;
+			}
+			$this->session->data['warning'] = $message;
+			$this->redirectToModule($run_id);
+			return;
+		}
+
+		$done = !empty($result['batch_done']);
+		$message = $done
+			? sprintf($this->language->get('text_rollback_success'), isset($result['rolled_back_count']) ? (int)$result['rolled_back_count'] : 0, isset($result['rollback_conflict_count']) ? (int)$result['rollback_conflict_count'] : 0)
+			: sprintf($this->language->get('text_rollback_batch_progress'), isset($result['operation_processed']) ? (int)$result['operation_processed'] : 0, isset($result['operation_total']) ? (int)$result['operation_total'] : 0);
+		if ($json_request) {
+			$this->sendJson($this->batchJson($result, $message, $run_id));
+			return;
+		}
+		$this->session->data['success'] = $message . (!$done ? ' ' . $this->language->get('text_batch_resumable') : '');
 		$this->redirectToModule($run_id);
 	}
 
@@ -464,6 +523,29 @@ class ControllerExtensionModuleGlobalPriceAdjustment extends Controller {
 			@set_time_limit(300);
 		}
 		@ini_set('memory_limit', '256M');
+	}
+
+	private function wantsJsonResponse() {
+		return isset($this->request->post['ajax']) && (string)$this->request->post['ajax'] === '1';
+	}
+
+	private function batchJson(array $result, $message, $run_id) {
+		return array(
+			'success' => true,
+			'done' => !empty($result['batch_done']),
+			'batch_processed' => isset($result['batch_processed']) ? (int)$result['batch_processed'] : 0,
+			'processed' => isset($result['operation_processed']) ? (int)$result['operation_processed'] : 0,
+			'total' => isset($result['operation_total']) ? (int)$result['operation_total'] : 0,
+			'remaining' => isset($result['operation_remaining']) ? (int)$result['operation_remaining'] : 0,
+			'percent' => isset($result['operation_percent']) ? (int)$result['operation_percent'] : 0,
+			'message' => (string)$message,
+			'redirect' => html_entity_decode($this->url->link(self::ROUTE, 'user_token=' . $this->session->data['user_token'] . '&price_run_id=' . (int)$run_id, true), ENT_QUOTES, 'UTF-8')
+		);
+	}
+
+	private function sendJson(array $data) {
+		$this->response->addHeader('Content-Type: application/json; charset=utf-8');
+		$this->response->setOutput(json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 	}
 
 	private function addFlashMessages(&$data) {

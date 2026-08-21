@@ -18,6 +18,11 @@ $_['text_supplier_sync_warning'] = 'Za sigurno povezane ActiveShop artikle primj
 $_['text_preview_created'] = 'Pregled povećanja od %s%% je izrađen. Cijene još nisu promijenjene.';
 $_['text_apply_success'] = 'Povećanje je primijenjeno na %d artikala. Preskočeno: %d. Greške: %d.';
 $_['text_rollback_success'] = 'Vraćene su cijene za %d artikala. Za %d artikala povrat nije bio siguran zbog naknadne promjene ili trajnog izuzeća.';
+$_['text_apply_batch_progress'] = 'Primjena cijena: obrađeno %d od %d artikala.';
+$_['text_rollback_batch_progress'] = 'Vraćanje cijena: obrađeno %d od %d artikala.';
+$_['text_batch_resumable'] = 'Operacija je sigurno spremljena; kliknite nastavak kako biste obradili sljedeću skupinu.';
+$_['text_batch_running'] = 'Obrada je u tijeku. Ne zatvarajte ovu stranicu; prekid se može sigurno nastaviti.';
+$_['text_batch_retrying'] = 'Veza je prekinuta ili je modul zauzet. Sigurno pokušavam nastaviti…';
 $_['text_run'] = 'Obračun #%s';
 $_['text_old_total'] = 'Trenutačni zbroj u trgovini';
 $_['text_base_total'] = 'Zbroj osnovica';
@@ -100,7 +105,9 @@ $_['column_date'] = 'Datum';
 
 $_['button_preview'] = 'Izračunaj pregled';
 $_['button_apply'] = 'Primijeni povećanje';
+$_['button_continue_apply'] = 'Nastavi primjenu';
 $_['button_rollback'] = 'Vrati cijene';
+$_['button_continue_rollback'] = 'Nastavi vraćanje';
 $_['button_show'] = 'Prikaži';
 $_['button_cancel'] = 'Povratak';
 

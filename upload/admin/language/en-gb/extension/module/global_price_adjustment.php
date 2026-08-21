@@ -18,6 +18,11 @@ $_['text_supplier_sync_warning'] = 'For safely linked ActiveShop products, apply
 $_['text_preview_created'] = 'The %.4f%% increase preview was created. No prices have changed yet.';
 $_['text_apply_success'] = 'The increase was applied to %d products. Skipped: %d. Errors: %d.';
 $_['text_rollback_success'] = 'Prices were restored for %d products. %d products could not be restored safely because of a later change or permanent exclusion.';
+$_['text_apply_batch_progress'] = 'Applying prices: processed %d of %d products.';
+$_['text_rollback_batch_progress'] = 'Restoring prices: processed %d of %d products.';
+$_['text_batch_resumable'] = 'Progress was saved safely; click continue to process the next batch.';
+$_['text_batch_running'] = 'Processing is in progress. Keep this page open; an interruption can be resumed safely.';
+$_['text_batch_retrying'] = 'The connection was interrupted or the module is busy. Retrying safely…';
 $_['text_run'] = 'Calculation #%s';
 $_['text_old_total'] = 'Current shop total';
 $_['text_base_total'] = 'Basis total';
@@ -100,7 +105,9 @@ $_['column_date'] = 'Date';
 
 $_['button_preview'] = 'Calculate preview';
 $_['button_apply'] = 'Apply increase';
+$_['button_continue_apply'] = 'Continue applying';
 $_['button_rollback'] = 'Restore prices';
+$_['button_continue_rollback'] = 'Continue restoring';
 $_['button_show'] = 'Show';
 $_['button_cancel'] = 'Back';
 

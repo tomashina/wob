@@ -242,7 +242,7 @@ try {
 	$audit_model = new ModelExtensionModuleActiveshopImporter($audit_registry);
 	$audit_model->stageFeedItem($payload, str_repeat('a', 64));
 	$stage_sql = $audit_db->lastQueryContaining('INSERT INTO `' . DB_PREFIX . 'wob_supplier_product`');
-	activeShopPricingAssert(strpos($stage_sql, "`feed_price` = '315.2400'") !== false, 'Staging must persist the supplier price in the dedicated feed_price column.');
+	activeShopPricingAssert(strpos($stage_sql, '`feed_price`') !== false && strpos($stage_sql, "'315.2400'") !== false, 'Staging must persist the supplier price in the dedicated feed_price column.');
 
 	$audit_source = $importer_model->links[1]['source'];
 	$audit_model->linkProduct(42, 125408, $audit_source);

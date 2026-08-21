@@ -4,6 +4,8 @@ class ControllerExtensionModuleActiveshopImporter extends Controller {
 	const SUPPLIER_CODE = 'activeshop';
 	const MAX_IMPORT_ITEMS = 50;
 	const MAX_TRANSLATED_IMPORT_ITEMS = 10;
+	const STAGE_BATCH_SIZE = 50;
+	const STAGE_BATCH_MAX_BYTES = 1048576;
 
 	private $error = array();
 	private $translator;
@@ -99,36 +101,30 @@ class ControllerExtensionModuleActiveshopImporter extends Controller {
 			return;
 		}
 
-		$this->load->model(self::ROUTE);
-		$settings = $this->getSettings();
-		$run_id = $this->model_extension_module_activeshop_importer->beginRun(array(
-			'type' => 'refresh',
-			'user_id' => $this->user->getId(),
-			'markup' => $settings['markup'],
-			'settings' => $settings
-		));
-
+		$run_id = 0;
 		$in_transaction = false;
 		try {
+			$this->load->model(self::ROUTE);
+			$this->model_extension_module_activeshop_importer->recoverRunningRefreshRuns();
+			$settings = $this->getSettings();
+			$run_id = $this->model_extension_module_activeshop_importer->beginRun(array(
+				'type' => 'refresh',
+				'user_id' => $this->user->getId(),
+				'markup' => $settings['markup'],
+				'settings' => $settings
+			));
 			$this->prepareLongRequest();
 			$feed = $this->getFeedService();
 			$cache_file = $this->getFeedCacheFile();
 			$metadata = $feed->refreshCache($cache_file);
 			$feed_token = hash('sha256', $metadata['hash'] . '|' . microtime(true));
-			$staged = 0;
 			$this->db->query('START TRANSACTION');
 			$in_transaction = true;
-
-			foreach ($feed->iterate($cache_file) as $item) {
-				$this->model_extension_module_activeshop_importer->stageFeedItem($item, $feed_token);
-				$staged++;
-			}
+			$staged = $this->stageFeedItemsInBatches($feed->iterate($cache_file), $feed_token);
 
 			$this->model_extension_module_activeshop_importer->finishFeedRefresh($feed_token);
 			$matched = $this->model_extension_module_activeshop_importer->reconcileExistingProducts();
 			$category_mapping = $this->model_extension_module_activeshop_importer->autoMapSupplierCategories();
-			$this->db->query('COMMIT');
-			$in_transaction = false;
 			$counts = array(
 				'selected' => $staged,
 				'created' => 0,
@@ -138,18 +134,77 @@ class ControllerExtensionModuleActiveshopImporter extends Controller {
 				'categories_mapped' => isset($category_mapping['mapped']) ? (int)$category_mapping['mapped'] : 0
 			);
 			$this->model_extension_module_activeshop_importer->finishRun($run_id, $counts, 'completed');
+			$this->db->query('COMMIT');
+			$in_transaction = false;
 			$matched_total = (isset($matched['matched']) ? (int)$matched['matched'] : 0) + (isset($matched['linked']) ? (int)$matched['linked'] : 0);
 			$this->session->data['success'] = sprintf($this->language->get('text_refresh_success'), $staged, $matched_total, isset($matched['conflicts']) ? (int)$matched['conflicts'] : 0);
 		} catch (Throwable $e) {
 			if ($in_transaction) {
-				$this->db->query('ROLLBACK');
+				try {
+					$this->db->query('ROLLBACK');
+				} catch (Throwable $rollback_error) {
+					// Preserve the original refresh error; the next locked run will
+					// recover an audit row left in the running state if necessary.
+				}
+				$in_transaction = false;
 			}
-			$this->model_extension_module_activeshop_importer->finishRun($run_id, array('failed' => 1), 'failed', $e->getMessage());
+			if ($run_id) {
+				try {
+					$this->model_extension_module_activeshop_importer->finishRun($run_id, array('failed' => 1), 'failed', $e->getMessage());
+				} catch (Throwable $audit_error) {
+					// The operation lock is still released in finally. A later locked
+					// refresh will terminalize this orphaned running audit row.
+				}
+			}
 			$this->session->data['warning'] = sprintf($this->language->get('error_refresh'), $e->getMessage());
+		} finally {
+			$this->releaseOperationLock($operation_lock);
 		}
 
-		$this->releaseOperationLock($operation_lock);
 		$this->response->redirect($this->url->link(self::ROUTE, 'user_token=' . $this->session->data['user_token'], true));
+	}
+
+	private function stageFeedItemsInBatches($items, $feed_token) {
+		$batch = array();
+		$batch_bytes = 0;
+		$staged = 0;
+
+		foreach ($items as $item) {
+			$item_bytes = $this->estimateStageItemBytes($item);
+
+			if ($batch && (count($batch) >= self::STAGE_BATCH_SIZE || $batch_bytes + $item_bytes > self::STAGE_BATCH_MAX_BYTES)) {
+				$this->model_extension_module_activeshop_importer->stageFeedItems($batch, $feed_token);
+				$staged += count($batch);
+				$batch = array();
+				$batch_bytes = 0;
+			}
+
+			$batch[] = $item;
+			$batch_bytes += $item_bytes;
+		}
+
+		if ($batch) {
+			$this->model_extension_module_activeshop_importer->stageFeedItems($batch, $feed_token);
+			$staged += count($batch);
+		}
+
+		return $staged;
+	}
+
+	private function estimateStageItemBytes($item) {
+		$options = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+		$payload = json_encode($item, $options);
+		$images = json_encode(isset($item['images']) && is_array($item['images']) ? $item['images'] : array(), $options);
+		$dimensions = json_encode(isset($item['dimensions']) && is_array($item['dimensions']) ? $item['dimensions'] : array(), $options);
+
+		if ($payload === false || $images === false || $dimensions === false) {
+			return self::STAGE_BATCH_MAX_BYTES;
+		}
+
+		// Payload, images and dimensions are escaped into separate SQL values.
+		// Doubling their byte size safely covers worst-case addslashes growth;
+		// the fixed allowance covers scalar columns and statement syntax.
+		return 4096 + (2 * (strlen($payload) + strlen($images) + strlen($dimensions)));
 	}
 
 	public function import() {
@@ -905,7 +960,34 @@ class ControllerExtensionModuleActiveshopImporter extends Controller {
 		if (function_exists('set_time_limit')) {
 			@set_time_limit(300);
 		}
-		@ini_set('memory_limit', '256M');
+
+		$current_memory_limit = ini_get('memory_limit');
+		if ($current_memory_limit !== false && trim((string)$current_memory_limit) !== '-1' && $this->iniSizeToBytes($current_memory_limit) < 268435456) {
+			@ini_set('memory_limit', '256M');
+		}
+	}
+
+	private function iniSizeToBytes($value) {
+		$value = trim((string)$value);
+		if ($value === '') {
+			return 0;
+		}
+
+		$unit = strtolower(substr($value, -1));
+		$bytes = (float)$value;
+		if ($unit === 'g') {
+			$bytes *= 1024;
+			$unit = 'm';
+		}
+		if ($unit === 'm') {
+			$bytes *= 1024;
+			$unit = 'k';
+		}
+		if ($unit === 'k') {
+			$bytes *= 1024;
+		}
+
+		return (int)$bytes;
 	}
 
 	private function acquireOperationLock() {

@@ -10,7 +10,9 @@
  * before means it may be attempted, and every other value is a conflict.
  */
 class ModelExtensionModuleGlobalPriceAdjustment extends Model {
-	const BATCH_SIZE = 250;
+	// One HTTP request must stay comfortably below common proxy/FPM timeouts.
+	// Repeated calls are safe because every item is CAS-protected and resumable.
+	const BATCH_SIZE = 25;
 	const MIN_PERCENT = 0.01;
 	const MAX_PERCENT = 1000.0;
 	const BASIS_VERSION = 1;
@@ -370,11 +372,13 @@ class ModelExtensionModuleGlobalPriceAdjustment extends Model {
 		$lock = $this->acquireLock();
 
 		try {
-			$this->syncExclusionsUnsafe();
 			$run = $this->getRunForMutation($run_id, $user_id);
 
 			if (in_array($run['status'], array(self::STATUS_COMPLETED, self::STATUS_COMPLETED_WITH_CONFLICTS, self::STATUS_ROLLED_BACK, self::STATUS_ROLLBACK_PARTIAL), true)) {
-				return $this->decorateRun($run);
+				$result = $this->decorateRun($run);
+				$result['batch_processed'] = 0;
+				$result['batch_done'] = true;
+				return $result;
 			}
 			if (!isset($run['basis_version']) || (int)$run['basis_version'] !== self::BASIS_VERSION) {
 				throw new RuntimeException('This legacy preview predates audited feed-price bases and cannot be applied. Create a new preview.');
@@ -385,27 +389,37 @@ class ModelExtensionModuleGlobalPriceAdjustment extends Model {
 			if (!in_array($run['status'], array(self::STATUS_PREVIEW, self::STATUS_RUNNING), true) || !empty($run['rollback_started'])) {
 				throw new RuntimeException('The price run is not available for applying.');
 			}
+			// Match the original one-request semantics: refresh permanent exclusions
+			// once when execution starts, not again for every HTTP batch.
+			if ($run['status'] === self::STATUS_PREVIEW) {
+				$this->syncExclusionsUnsafe();
+			}
 
 			$this->db->query("UPDATE `" . DB_PREFIX . "wob_price_adjustment_run` SET `status` = '" . self::STATUS_RUNNING . "', `date_started` = COALESCE(`date_started`, NOW()), `error` = '' WHERE `run_id` = '" . $run_id . "' AND `user_id` = '" . $user_id . "' LIMIT 1");
 
-			do {
-				$items = $this->db->query("SELECT * FROM `" . DB_PREFIX . "wob_price_adjustment_item` WHERE `run_id` = '" . $run_id . "' AND `status` IN ('" . self::ITEM_PREVIEW . "','" . self::ITEM_APPLYING . "') ORDER BY `item_id` ASC LIMIT " . self::BATCH_SIZE)->rows;
-				foreach ($items as $item) {
-					$this->applyItem($item);
-				}
-			} while ($items);
+			$items = $this->db->query("SELECT * FROM `" . DB_PREFIX . "wob_price_adjustment_item` WHERE `run_id` = '" . $run_id . "' AND `status` IN ('" . self::ITEM_PREVIEW . "','" . self::ITEM_APPLYING . "') ORDER BY `item_id` ASC LIMIT " . self::BATCH_SIZE)->rows;
+			foreach ($items as $item) {
+				$this->applyItem($item);
+			}
 
 			$counts = $this->getItemStatusCounts($run_id);
-			$status = ($counts['conflict'] || $counts['failed']) ? self::STATUS_COMPLETED_WITH_CONFLICTS : self::STATUS_COMPLETED;
+			$remaining = $counts['preview'] + $counts['applying'];
+			$status = $remaining
+				? self::STATUS_RUNNING
+				: (($counts['conflict'] || $counts['failed']) ? self::STATUS_COMPLETED_WITH_CONFLICTS : self::STATUS_COMPLETED);
+			$date_finished_sql = $remaining ? '`date_finished` = NULL' : '`date_finished` = NOW()';
 			$this->db->query("UPDATE `" . DB_PREFIX . "wob_price_adjustment_run` SET
-				`status` = '" . $status . "', `updated_count` = '" . $counts['updated'] . "', `conflict_count` = '" . $counts['conflict'] . "', `failed_count` = '" . $counts['failed'] . "', `date_finished` = NOW()
+				`status` = '" . $status . "', `updated_count` = '" . $counts['updated'] . "', `conflict_count` = '" . $counts['conflict'] . "', `failed_count` = '" . $counts['failed'] . "', " . $date_finished_sql . "
 				WHERE `run_id` = '" . $run_id . "' AND `user_id` = '" . $user_id . "' LIMIT 1");
 
-			if ($counts['updated']) {
+			if ($counts['updated'] > (int)$run['updated_count']) {
 				$this->cache->delete('product');
 			}
 
-			return $this->getRun($run_id, $user_id);
+			$result = $this->getRun($run_id, $user_id);
+			$result['batch_processed'] = count($items);
+			$result['batch_done'] = !$remaining;
+			return $result;
 		} finally {
 			$this->releaseLock($lock);
 		}
@@ -422,37 +436,47 @@ class ModelExtensionModuleGlobalPriceAdjustment extends Model {
 		$lock = $this->acquireLock();
 
 		try {
-			$this->syncExclusionsUnsafe();
 			$run = $this->getRunForMutation($run_id, $user_id);
 			if ($run['status'] === self::STATUS_ROLLED_BACK) {
-				return $this->decorateRun($run);
+				$result = $this->decorateRun($run);
+				$result['batch_processed'] = 0;
+				$result['batch_done'] = true;
+				return $result;
 			}
 			$retrying = ($run['status'] === self::STATUS_RUNNING && !empty($run['rollback_started']))
 				|| ($run['status'] === self::STATUS_ROLLBACK_PARTIAL && empty($run['rollback_finished']));
 			if (!$retrying && !in_array($run['status'], array(self::STATUS_COMPLETED, self::STATUS_COMPLETED_WITH_CONFLICTS, self::STATUS_FAILED), true)) {
 				throw new RuntimeException('Only a completed price run can be rolled back.');
 			}
+			if (empty($run['rollback_started'])) {
+				$this->syncExclusionsUnsafe();
+			}
 
 			$this->db->query("UPDATE `" . DB_PREFIX . "wob_price_adjustment_run` SET `status` = '" . self::STATUS_RUNNING . "', `rollback_user_id` = '" . $user_id . "', `rollback_started` = COALESCE(`rollback_started`, NOW()), `error` = '' WHERE `run_id` = '" . $run_id . "' LIMIT 1");
 
-			do {
-				$items = $this->db->query("SELECT * FROM `" . DB_PREFIX . "wob_price_adjustment_item` WHERE `run_id` = '" . $run_id . "' AND `status` IN ('" . self::ITEM_APPLYING . "','" . self::ITEM_UPDATED . "','" . self::ITEM_ROLLING_BACK . "') ORDER BY `item_id` ASC LIMIT " . self::BATCH_SIZE)->rows;
-				foreach ($items as $item) {
-					$this->rollbackItem($item);
-				}
-			} while ($items);
+			$items = $this->db->query("SELECT * FROM `" . DB_PREFIX . "wob_price_adjustment_item` WHERE `run_id` = '" . $run_id . "' AND `status` IN ('" . self::ITEM_APPLYING . "','" . self::ITEM_UPDATED . "','" . self::ITEM_ROLLING_BACK . "') ORDER BY `item_id` ASC LIMIT " . self::BATCH_SIZE)->rows;
+			foreach ($items as $item) {
+				$this->rollbackItem($item);
+			}
 
 			$counts = $this->getItemStatusCounts($run_id);
-			$status = $counts['rollback_conflict'] ? self::STATUS_ROLLBACK_PARTIAL : self::STATUS_ROLLED_BACK;
+			$remaining = $counts['applying'] + $counts['updated'] + $counts['rolling_back'];
+			$status = $remaining
+				? self::STATUS_RUNNING
+				: ($counts['rollback_conflict'] ? self::STATUS_ROLLBACK_PARTIAL : self::STATUS_ROLLED_BACK);
+			$rollback_finished_sql = $remaining ? '`rollback_finished` = NULL' : '`rollback_finished` = NOW()';
 			$this->db->query("UPDATE `" . DB_PREFIX . "wob_price_adjustment_run` SET
-				`status` = '" . $status . "', `rolled_back_count` = '" . $counts['rolled_back'] . "', `rollback_conflict_count` = '" . $counts['rollback_conflict'] . "', `rollback_finished` = NOW()
+				`status` = '" . $status . "', `rolled_back_count` = '" . $counts['rolled_back'] . "', `rollback_conflict_count` = '" . $counts['rollback_conflict'] . "', " . $rollback_finished_sql . "
 				WHERE `run_id` = '" . $run_id . "' LIMIT 1");
 
-			if ($counts['rolled_back']) {
+			if ($counts['rolled_back'] > (int)$run['rolled_back_count']) {
 				$this->cache->delete('product');
 			}
 
-			return $this->getRun($run_id, $user_id);
+			$result = $this->getRun($run_id, $user_id);
+			$result['batch_processed'] = count($items);
+			$result['batch_done'] = !$remaining;
+			return $result;
 		} finally {
 			$this->releaseLock($lock);
 		}
@@ -1149,6 +1173,20 @@ class ModelExtensionModuleGlobalPriceAdjustment extends Model {
 		$run['new_total'] = isset($run['after_total']) ? $run['after_total'] : '0.0000';
 		$run['difference_total'] = isset($run['delta_total']) ? $run['delta_total'] : '0.0000';
 		$run['applied_count'] = isset($run['updated_count']) ? (int)$run['updated_count'] : 0;
+		$rollback_operation = !empty($run['rollback_started']);
+		if ($rollback_operation) {
+			$run['operation_type'] = 'rollback';
+			$run['operation_total'] = max(0, (int)$run['updated_count']);
+			$run['operation_processed'] = min($run['operation_total'], max(0, (int)$run['rolled_back_count'] + (int)$run['rollback_conflict_count']));
+		} else {
+			$run['operation_type'] = 'apply';
+			$run['operation_total'] = max(0, (int)$run['eligible_count']);
+			$run['operation_processed'] = min($run['operation_total'], max(0, (int)$run['updated_count'] + (int)$run['conflict_count'] + (int)$run['failed_count']));
+		}
+		$run['operation_remaining'] = max(0, $run['operation_total'] - $run['operation_processed']);
+		$run['operation_percent'] = $run['operation_total'] > 0
+			? min(100, (int)floor(($run['operation_processed'] * 100) / $run['operation_total']))
+			: 100;
 		$run['legacy_preview'] = (int)$run['basis_version'] !== self::BASIS_VERSION && in_array($run['status'], array(self::STATUS_PREVIEW, self::STATUS_RUNNING), true) && empty($run['rollback_started']);
 		$run['can_apply'] = !$run['legacy_preview'] && in_array($run['status'], array(self::STATUS_PREVIEW, self::STATUS_RUNNING), true) && empty($run['rollback_started']);
 		$run['can_rollback'] = (in_array($run['status'], array(self::STATUS_COMPLETED, self::STATUS_COMPLETED_WITH_CONFLICTS, self::STATUS_FAILED), true) && $run['applied_count'] > 0)
