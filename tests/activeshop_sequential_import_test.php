@@ -15,6 +15,7 @@ $english = file_get_contents(DIR_LANGUAGE . 'en-gb/extension/module/activeshop_i
 
 sequentialImportAssert(strpos($controller, '$wants_json = $this->wantsJsonResponse();') !== false, 'Import endpoint must explicitly support JSON batch requests.');
 sequentialImportAssert(strpos($controller, "\$data['import_url'] = html_entity_decode(") !== false, 'The JavaScript import URL must contain a real user_token separator, not a literal &amp;.');
+sequentialImportAssert(strpos($controller, "\$data['max_translated_import_items'] = self::MAX_TRANSLATED_IMPORT_ITEMS") !== false, 'Controller must keep stale generated Twig copies syntactically valid until the modification cache is rebuilt.');
 sequentialImportAssert(strpos($controller, '$wants_json && count($selected) !== 1') !== false, 'Each AJAX request must accept exactly one selected product.');
 sequentialImportAssert(strpos($controller, "'retryable' => true") !== false && strpos($controller, "'error_code' => 'busy'") !== false, 'A busy operation lock must return a bounded-retry signal.');
 sequentialImportAssert(strpos($controller, 'finally {') !== false && strpos($controller, '$this->releaseOperationLock($operation_lock);') !== false, 'Every item request must release the operation lock in finally.');

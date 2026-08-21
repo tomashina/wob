@@ -57,6 +57,10 @@ class ControllerExtensionModuleActiveshopImporter extends Controller {
 		$data['feed_url'] = $feed_service->getFeedUrl();
 		$data['feed_metadata'] = $this->getFeedMetadata();
 		$data['recent_runs'] = $this->model_extension_module_activeshop_importer->getRecentRuns(8);
+		// Keep the old template variable available until every deployment has
+		// rebuilt its OpenCart modification cache. A stale generated Twig copy
+		// otherwise renders invalid JavaScript and disables all module buttons.
+		$data['max_translated_import_items'] = self::MAX_TRANSLATED_IMPORT_ITEMS;
 
 		$data['breadcrumbs'] = $this->getBreadcrumbs($this->language->get('heading_title'), self::ROUTE);
 		$data['products_url'] = $this->url->link(self::ROUTE, 'user_token=' . $this->session->data['user_token'], true);
