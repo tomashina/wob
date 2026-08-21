@@ -15,6 +15,7 @@ $_['text_feed_items'] = '%s staged products';
 $_['text_refresh'] = 'Refresh feed';
 $_['text_refresh_help'] = 'Downloads and stages the feed for preview. It does not create or change shop products.';
 $_['text_refresh_confirm'] = 'Download the current ActiveShop feed? Shop products will not be changed.';
+$_['text_refresh_working'] = 'Feed refresh has started. Please wait for it to finish and keep this page open.';
 $_['text_refresh_success'] = 'Feed refreshed: %d products, %d uniquely matched and %d conflicts.';
 $_['text_import'] = 'Import selected';
 $_['text_import_help'] = 'The server always recalculates prices from the feed price and entered markup. New products are translated to Croatian immediately; at most 10 can be imported at once.';

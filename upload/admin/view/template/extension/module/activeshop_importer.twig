@@ -43,10 +43,13 @@
             <p class="help-block">{{ text_refresh_help }}</p>
           </div>
           <div class="panel-footer">
-            <form action="{{ refresh_url }}" method="post" class="form-inline js-refresh-form">
+            <form action="{{ refresh_url }}" method="post" id="form-activeshop-refresh" class="form-inline js-refresh-form">
               <input type="hidden" name="csrf_token" value="{{ csrf_token|escape }}" />
-              <button type="submit" class="btn btn-info"><i class="fa fa-refresh"></i> {{ button_refresh }}</button>
+              <button type="submit" form="form-activeshop-refresh" id="button-activeshop-refresh" class="btn btn-info"><i class="fa fa-refresh"></i> {{ button_refresh }}</button>
             </form>
+            <div id="activeshop-refresh-progress" class="alert alert-info" role="status" aria-live="polite" style="display:none;margin:10px 0 0">
+              <i class="fa fa-circle-o-notch fa-spin"></i> {{ text_refresh_working|escape }}
+            </div>
           </div>
         </div>
       </div>
@@ -268,8 +271,14 @@
 	      }
 	    });
 	  });
-  $('.js-refresh-form').on('submit', function() {
-    return window.confirm({{ text_refresh_confirm|json_encode|raw }});
+  $('#form-activeshop-refresh').on('submit', function() {
+    if (!window.confirm({{ text_refresh_confirm|json_encode|raw }})) {
+      return false;
+    }
+
+    $('#button-activeshop-refresh').prop('disabled', true);
+    $('#activeshop-refresh-progress').show();
+    return true;
   });
 	  $('#form-activeshop-import').on('submit', function() {
 	    var count = $('.js-product-checkbox:checked').length;

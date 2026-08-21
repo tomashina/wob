@@ -1,6 +1,9 @@
 <?php
 class ModelExtensionModuleActiveshopImporter extends Model {
 	const SUPPLIER_CODE = 'activeshop';
+	const RECONCILE_BATCH_SIZE = 500;
+
+	private $supplier_id_cache = null;
 
 	public function install() {
 		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "wob_supplier` (
@@ -99,6 +102,7 @@ class ModelExtensionModuleActiveshopImporter extends Model {
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
 		$this->db->query("INSERT INTO `" . DB_PREFIX . "wob_supplier` SET `code` = '" . self::SUPPLIER_CODE . "', `name` = 'ActiveShop', `status` = '1', `date_added` = NOW(), `date_modified` = NOW() ON DUPLICATE KEY UPDATE `name` = VALUES(`name`), `status` = '1', `date_modified` = NOW()");
+		$this->supplier_id_cache = null;
 
 		// Existing installations can retain staged feed rows while the module is
 		// reinstalled. Fill only category paths which have never been mapped; a
@@ -107,8 +111,14 @@ class ModelExtensionModuleActiveshopImporter extends Model {
 	}
 
 	public function getSupplierId() {
+		if ($this->supplier_id_cache !== null) {
+			return $this->supplier_id_cache;
+		}
+
 		$query = $this->db->query("SELECT `supplier_id` FROM `" . DB_PREFIX . "wob_supplier` WHERE `code` = '" . self::SUPPLIER_CODE . "' LIMIT 1");
-		return $query->num_rows ? (int)$query->row['supplier_id'] : 0;
+		$this->supplier_id_cache = $query->num_rows ? (int)$query->row['supplier_id'] : 0;
+
+		return $this->supplier_id_cache;
 	}
 
 	public function stageFeedItem(array $item, $feed_token) {
@@ -185,6 +195,7 @@ class ModelExtensionModuleActiveshopImporter extends Model {
 		}
 		$staged = $this->db->query($sql);
 		$counts = array('matched' => 0, 'conflicts' => 0, 'new' => 0, 'linked' => 0);
+		$updates = array();
 
 		foreach ($staged->rows as $row) {
 			$supplier_product_id = (int)$row['supplier_product_id'];
@@ -252,7 +263,21 @@ class ModelExtensionModuleActiveshopImporter extends Model {
 				}
 			}
 
-			$this->db->query("UPDATE `" . DB_PREFIX . "wob_supplier_product` SET `product_id` = '" . $product_id . "', `match_status` = '" . $this->db->escape($status) . "', `match_message` = '" . $this->db->escape($this->truncate($message, 255)) . "', `date_modified` = NOW() WHERE `supplier_product_id` = '" . $supplier_product_id . "' AND `supplier_id` = '" . $supplier_id . "'");
+			$updates[] = array(
+				'supplier_product_id' => $supplier_product_id,
+				'product_id' => $product_id,
+				'match_status' => $status,
+				'match_message' => $this->truncate($message, 255)
+			);
+
+			if (count($updates) >= self::RECONCILE_BATCH_SIZE) {
+				$this->applyReconciliationUpdates($supplier_id, $updates);
+				$updates = array();
+			}
+		}
+
+		if ($updates) {
+			$this->applyReconciliationUpdates($supplier_id, $updates);
 		}
 
 		return $counts;
@@ -611,6 +636,32 @@ class ModelExtensionModuleActiveshopImporter extends Model {
 
 	private function statusSql() {
 		return "(CASE WHEN sp.is_current = '0' THEN 'missing' WHEN sp.match_status LIKE 'conflict%' THEN 'conflict' WHEN sp.product_id > 0 AND sp.last_imported IS NOT NULL THEN 'imported' WHEN sp.product_id > 0 THEN 'existing' ELSE 'new' END)";
+	}
+
+	private function applyReconciliationUpdates($supplier_id, array $updates) {
+		if (!$updates) {
+			return;
+		}
+
+		$ids = array();
+		$product_id_cases = array();
+		$status_cases = array();
+		$message_cases = array();
+
+		foreach ($updates as $update) {
+			$supplier_product_id = (int)$update['supplier_product_id'];
+			$ids[] = $supplier_product_id;
+			$product_id_cases[] = "WHEN '" . $supplier_product_id . "' THEN '" . max(0, (int)$update['product_id']) . "'";
+			$status_cases[] = "WHEN '" . $supplier_product_id . "' THEN '" . $this->db->escape($this->truncate($update['match_status'], 32)) . "'";
+			$message_cases[] = "WHEN '" . $supplier_product_id . "' THEN '" . $this->db->escape($this->truncate($update['match_message'], 255)) . "'";
+		}
+
+		$this->db->query("UPDATE `" . DB_PREFIX . "wob_supplier_product` SET
+			`product_id` = CASE `supplier_product_id` " . implode(' ', $product_id_cases) . " ELSE `product_id` END,
+			`match_status` = CASE `supplier_product_id` " . implode(' ', $status_cases) . " ELSE `match_status` END,
+			`match_message` = CASE `supplier_product_id` " . implode(' ', $message_cases) . " ELSE `match_message` END,
+			`date_modified` = NOW()
+			WHERE `supplier_id` = '" . max(0, (int)$supplier_id) . "' AND `supplier_product_id` IN (" . implode(',', $ids) . ")");
 	}
 
 	private function requireSupplierId() {

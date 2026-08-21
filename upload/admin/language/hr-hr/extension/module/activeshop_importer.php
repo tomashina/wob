@@ -18,6 +18,7 @@ $_['text_feed_items'] = '%s artikala u stagingu';
 $_['text_refresh'] = 'Osvježi feed';
 $_['text_refresh_help'] = 'Preuzima i priprema feed za pregled. Ne kreira i ne mijenja artikle u trgovini.';
 $_['text_refresh_confirm'] = 'Preuzeti aktualni ActiveShop feed? Artikli u trgovini neće se mijenjati.';
+$_['text_refresh_working'] = 'Osvježavanje feeda je pokrenuto. Pričekajte završetak i nemojte zatvarati ovu stranicu.';
 $_['text_refresh_success'] = 'Feed je osvježen: %d artikala, %d jednoznačno povezanih i %d konflikata.';
 $_['text_import'] = 'Import odabranih';
 $_['text_import_help'] = 'Cijena se uvijek ponovno računa na serveru iz feed cijene i upisanog povećanja. Novi artikli odmah se prevode na hrvatski; odjednom ih možete uvesti najviše 10.';
