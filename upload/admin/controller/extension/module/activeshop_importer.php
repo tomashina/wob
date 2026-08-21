@@ -63,7 +63,10 @@ class ControllerExtensionModuleActiveshopImporter extends Controller {
 		$data['categories_url'] = $this->url->link(self::ROUTE . '/categories', 'user_token=' . $this->session->data['user_token'], true);
 		$data['settings_url'] = $this->url->link(self::ROUTE . '/settings', 'user_token=' . $this->session->data['user_token'], true);
 		$data['refresh_url'] = $this->url->link(self::ROUTE . '/refresh', 'user_token=' . $this->session->data['user_token'], true);
-		$data['import_url'] = $this->url->link(self::ROUTE . '/import', 'user_token=' . $this->session->data['user_token'] . $this->buildFilterUrl(array('page')), true);
+		// This URL is also embedded in a JavaScript string. Url::link() returns
+		// HTML entities for ampersands, which browsers decode in href/action
+		// attributes but not inside JSON/JavaScript strings.
+		$data['import_url'] = html_entity_decode($this->url->link(self::ROUTE . '/import', 'user_token=' . $this->session->data['user_token'] . $this->buildFilterUrl(array('page')), true), ENT_QUOTES, 'UTF-8');
 		$data['filter_url'] = $this->url->link(self::ROUTE, 'user_token=' . $this->session->data['user_token'], true);
 		$data['new_products_url'] = $this->url->link(self::ROUTE, 'user_token=' . $this->session->data['user_token'] . $this->buildFilterUrl(array('filter_status', 'page')) . '&filter_status=new', true);
 		$data['all_statuses_url'] = $this->url->link(self::ROUTE, 'user_token=' . $this->session->data['user_token'] . $this->buildFilterUrl(array('filter_status', 'page')) . '&filter_status=all', true);
