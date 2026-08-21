@@ -214,7 +214,7 @@ class ModelExtensionModuleActiveshopImporter extends Model {
 			}
 		}
 
-		$sql = "SELECT `supplier_product_id`, `product_id`, `sku`, `ean`, `last_imported` FROM `" . DB_PREFIX . "wob_supplier_product` WHERE `supplier_id` = '" . $supplier_id . "' AND `is_current` = '1'";
+		$sql = "SELECT sp.`supplier_product_id`, sp.`product_id`, sp.`sku`, sp.`ean`, sp.`last_imported` FROM `" . DB_PREFIX . "wob_supplier_product` sp WHERE sp.`supplier_id` = '" . $supplier_id . "' AND sp.`is_current` = '1' AND " . $this->validStagedItemSql('sp');
 		if ($supplier_product_ids) {
 			$sql .= " AND `supplier_product_id` IN (" . implode(',', $supplier_product_ids) . ")";
 		}
@@ -309,7 +309,7 @@ class ModelExtensionModuleActiveshopImporter extends Model {
 	}
 
 	public function getProducts($filters = array()) {
-		$sql = $this->getProductSelectSql() . $this->buildProductWhere($filters);
+		$sql = $this->getProductSelectSql() . " AND " . $this->validStagedItemSql('sp') . $this->buildProductWhere($filters);
 		$sort_map = array(
 			'name' => 'sp.name', 'sku' => 'sp.sku', 'brand' => 'sp.brand', 'category_path' => 'sp.category_path',
 			'feed_price' => 'sp.feed_price', 'quantity' => 'sp.quantity', 'date_modified' => 'sp.date_modified'
@@ -328,22 +328,35 @@ class ModelExtensionModuleActiveshopImporter extends Model {
 	}
 
 	public function getTotalProducts($filters = array()) {
-		$sql = "SELECT COUNT(*) AS `total` FROM `" . DB_PREFIX . "wob_supplier_product` sp LEFT JOIN `" . DB_PREFIX . "product` p ON (p.product_id = sp.product_id) WHERE sp.supplier_id = '" . $this->requireSupplierId() . "'" . $this->buildProductWhereConditions($filters);
+		$sql = "SELECT COUNT(*) AS `total` FROM `" . DB_PREFIX . "wob_supplier_product` sp LEFT JOIN `" . DB_PREFIX . "product` p ON (p.product_id = sp.product_id) WHERE sp.supplier_id = '" . $this->requireSupplierId() . "' AND " . $this->validStagedItemSql('sp') . $this->buildProductWhereConditions($filters);
 		$query = $this->db->query($sql);
 		return (int)$query->row['total'];
 	}
 
 	public function getStatusCounts() {
 		$counts = array('new' => 0, 'existing' => 0, 'imported' => 0, 'conflict' => 0, 'missing' => 0);
-		$sql = "SELECT " . $this->statusSql() . " AS `ui_status`, COUNT(*) AS `total` FROM `" . DB_PREFIX . "wob_supplier_product` sp WHERE sp.supplier_id = '" . $this->requireSupplierId() . "' GROUP BY `ui_status`";
+		$sql = "SELECT " . $this->statusSql() . " AS `ui_status`, COUNT(*) AS `total` FROM `" . DB_PREFIX . "wob_supplier_product` sp WHERE sp.supplier_id = '" . $this->requireSupplierId() . "' AND " . $this->validStagedItemSql('sp') . " GROUP BY `ui_status`";
 		foreach ($this->db->query($sql)->rows as $row) {
 			$counts[$row['ui_status']] = (int)$row['total'];
 		}
 		return $counts;
 	}
 
+	public function getCurrentFeedEligibilityCounts() {
+		$valid_sql = $this->validStagedItemSql('sp');
+		$query = $this->db->query("SELECT COUNT(*) AS `staged`, SUM(" . $valid_sql . ") AS `importable` FROM `" . DB_PREFIX . "wob_supplier_product` sp WHERE sp.supplier_id = '" . $this->requireSupplierId() . "' AND sp.is_current = '1'");
+		$staged = isset($query->row['staged']) ? (int)$query->row['staged'] : 0;
+		$importable = isset($query->row['importable']) ? (int)$query->row['importable'] : 0;
+
+		return array(
+			'staged' => $staged,
+			'importable' => $importable,
+			'excluded_invalid' => max(0, $staged - $importable)
+		);
+	}
+
 	public function getSupplierCategories($filters = array()) {
-		$sql = "SELECT sp.category_path, COUNT(*) AS product_count FROM `" . DB_PREFIX . "wob_supplier_product` sp WHERE sp.supplier_id = '" . $this->requireSupplierId() . "' AND sp.category_path <> ''";
+		$sql = "SELECT sp.category_path, COUNT(*) AS product_count FROM `" . DB_PREFIX . "wob_supplier_product` sp WHERE sp.supplier_id = '" . $this->requireSupplierId() . "' AND sp.category_path <> '' AND " . $this->validStagedItemSql('sp');
 		if (isset($filters['is_current'])) {
 			$sql .= " AND sp.is_current = '" . (!empty($filters['is_current']) ? 1 : 0) . "'";
 		}
@@ -361,7 +374,7 @@ class ModelExtensionModuleActiveshopImporter extends Model {
 	}
 
 	public function getTotalSupplierCategories($filters = array()) {
-		$sql = "SELECT COUNT(DISTINCT sp.category_path) AS total FROM `" . DB_PREFIX . "wob_supplier_product` sp WHERE sp.supplier_id = '" . $this->requireSupplierId() . "' AND sp.category_path <> ''";
+		$sql = "SELECT COUNT(DISTINCT sp.category_path) AS total FROM `" . DB_PREFIX . "wob_supplier_product` sp WHERE sp.supplier_id = '" . $this->requireSupplierId() . "' AND sp.category_path <> '' AND " . $this->validStagedItemSql('sp');
 		if (isset($filters['is_current'])) {
 			$sql .= " AND sp.is_current = '" . (!empty($filters['is_current']) ? 1 : 0) . "'";
 		}
@@ -436,7 +449,7 @@ class ModelExtensionModuleActiveshopImporter extends Model {
 			'unmatched' => 0
 		);
 
-		$path_query = $this->db->query("SELECT DISTINCT `category_path` FROM `" . DB_PREFIX . "wob_supplier_product` WHERE `supplier_id` = '" . $supplier_id . "' AND `is_current` = '1' AND `category_path` <> '' ORDER BY `category_path` ASC");
+		$path_query = $this->db->query("SELECT DISTINCT sp.`category_path` FROM `" . DB_PREFIX . "wob_supplier_product` sp WHERE sp.`supplier_id` = '" . $supplier_id . "' AND sp.`is_current` = '1' AND sp.`category_path` <> '' AND " . $this->validStagedItemSql('sp') . " ORDER BY sp.`category_path` ASC");
 		if (!$path_query->num_rows) {
 			return $counts;
 		}
@@ -523,7 +536,7 @@ class ModelExtensionModuleActiveshopImporter extends Model {
 		if (!$ids) {
 			return array();
 		}
-		$sql = $this->getProductSelectSql() . " AND sp.supplier_product_id IN (" . implode(',', $ids) . ") AND sp.is_current = '1' ORDER BY FIELD(sp.supplier_product_id," . implode(',', $ids) . ")";
+		$sql = $this->getProductSelectSql() . " AND sp.supplier_product_id IN (" . implode(',', $ids) . ") AND sp.is_current = '1' AND " . $this->validStagedItemSql('sp') . " ORDER BY FIELD(sp.supplier_product_id," . implode(',', $ids) . ")";
 		return $this->db->query($sql)->rows;
 	}
 
@@ -679,6 +692,11 @@ class ModelExtensionModuleActiveshopImporter extends Model {
 		return "(CASE WHEN sp.is_current = '0' THEN 'missing' WHEN sp.match_status LIKE 'conflict%' THEN 'conflict' WHEN sp.product_id > 0 AND sp.last_imported IS NOT NULL THEN 'imported' WHEN sp.product_id > 0 THEN 'existing' ELSE 'new' END)";
 	}
 
+	private function validStagedItemSql($alias) {
+		$alias = preg_replace('/[^A-Za-z0-9_]/', '', (string)$alias);
+		return "TRIM(" . $alias . ".sku) <> '' AND TRIM(" . $alias . ".name) <> '' AND " . $alias . ".feed_price > '0.0000'";
+	}
+
 	private function applyReconciliationUpdates($supplier_id, array $updates) {
 		if (!$updates) {
 			return;
@@ -760,6 +778,7 @@ class ModelExtensionModuleActiveshopImporter extends Model {
 			INNER JOIN `" . DB_PREFIX . "product` p ON (p.`product_id` = sp.`product_id`)
 			INNER JOIN `" . DB_PREFIX . "product_to_category` p2c ON (p2c.`product_id` = sp.`product_id`)
 			WHERE sp.`supplier_id` = '" . $supplier_id . "' AND sp.`is_current` = '1' AND sp.`product_id` > 0
+			AND " . $this->validStagedItemSql('sp') . "
 			AND sp.`category_path` <> '' AND sp.`match_status` NOT LIKE 'conflict%'
 			ORDER BY sp.`category_path`, sp.`supplier_product_id`, p2c.`category_id`";
 		foreach ($this->db->query($sql)->rows as $row) {

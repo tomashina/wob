@@ -146,6 +146,12 @@
             </div>
           </div>
           <p class="help-block">{{ text_formula_help }} {{ text_import_help }}</p>
+          <div id="activeshop-import-progress" class="alert alert-info" role="status" aria-live="polite" style="display:none;margin-bottom:0">
+            <div class="progress" style="margin-bottom:8px">
+              <div class="progress-bar progress-bar-striped active js-import-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="width:0%">0%</div>
+            </div>
+            <span class="js-import-progress-text"></span>
+          </div>
         </div>
 
         <div class="table-responsive">
@@ -223,6 +229,7 @@
                   <td>
                     <strong>{{ run.status|escape }}</strong><br>
                     <small>{{ text_run_counts|format(counts.selected|default(0), counts.created|default(0), counts.updated|default(0), counts.skipped|default(0), counts.failed|default(0))|escape }}</small>
+                    {% if run.type == 'refresh' %}<br><small>{{ text_run_refresh_counts|format(counts.staged|default(counts.selected|default(0)), counts.importable|default(0), counts.excluded_invalid|default(counts.skipped_invalid|default(0)))|escape }}</small>{% endif %}
                     {% if run.error %}<br><small class="text-danger">{{ run.error|escape }}</small>{% endif %}
                     {% if run.error_items %}
                       <br><small class="text-danger">{{ text_run_error_items|escape }}</small>
@@ -243,7 +250,20 @@
 
 <script type="text/javascript"><!--
 (function() {
-	  var maxTranslatedImportItems = {{ max_translated_import_items }};
+  var importRunning = false;
+  var importUrl = {{ import_url|json_encode|raw }};
+  var csrfToken = {{ csrf_token|json_encode|raw }};
+  var textImportProcessing = {{ text_import_processing|json_encode|raw }};
+  var textImportBusyRetry = {{ text_import_busy_retry|json_encode|raw }};
+  var textImportNetworkError = {{ text_import_network_error|json_encode|raw }};
+  var textImportSuccess = {{ text_import_success|json_encode|raw }};
+
+  function formatNumbers(template, values) {
+    $.each(values, function(index, value) {
+      template = template.replace('%d', String(value));
+    });
+    return template;
+  }
 
   function parseMarkup(value) {
     value = String(value || '').replace(',', '.');
@@ -264,18 +284,9 @@
   $('#button-activeshop-filter').on('click', function() {
     document.getElementById('activeshop-filter-form').submit();
   });
-	  $('.js-select-all').on('change', function() {
-	    var shouldCheck = this.checked;
-	    var newCount = 0;
-	    $('.js-product-checkbox:not(:disabled)').each(function() {
-	      var isNew = $(this).data('status') === 'new';
-	      var mayCheck = shouldCheck && (!isNew || newCount < maxTranslatedImportItems);
-	      $(this).prop('checked', mayCheck);
-	      if (mayCheck && isNew) {
-	        newCount++;
-	      }
-	    });
-	  });
+  $('.js-select-all').on('change', function() {
+    $('.js-product-checkbox:not(:disabled)').prop('checked', this.checked);
+  });
   $('#button-activeshop-refresh').on('click', function() {
     if (!window.confirm({{ text_refresh_confirm|json_encode|raw }})) {
       return false;
@@ -285,26 +296,149 @@
     $('#activeshop-refresh-progress').show();
     document.getElementById('activeshop-refresh-form').submit();
   });
-	  $('#button-activeshop-import').on('click', function() {
-	    var count = $('.js-product-checkbox:checked').length;
-	    if (!count) {
-	      alert({{ error_selected|json_encode|raw }});
-	      return false;
-	    }
-	    var newCount = $('.js-product-checkbox:checked').filter(function() {
-	      return $(this).data('status') === 'new';
-	    }).length;
-	    if (newCount > maxTranslatedImportItems) {
-	      alert({{ error_translation_batch_limit|json_encode|raw }}.replace('%d', String(maxTranslatedImportItems)));
-	      return false;
-	    }
-	    var message = {{ text_import_confirm|json_encode|raw }}.replace('%s', count).replace('%s', $('#input-markup').val());
+
+  function lockImportUi(locked) {
+    $('#button-activeshop-import, #button-activeshop-refresh, #button-activeshop-filter, #input-markup, #input-existing-action, .js-select-all, .js-product-checkbox').prop('disabled', locked);
+  }
+
+  function updateImportProgress(processed, total, message) {
+    var percent = total ? Math.round((processed / total) * 100) : 0;
+    var $bar = $('#activeshop-import-progress .js-import-progress-bar');
+    $bar.css('width', percent + '%').attr('aria-valuenow', percent).text(percent + '%');
+    $('#activeshop-import-progress .js-import-progress-text').text(message);
+  }
+
+  function finishSequentialImport(totals, total, lastError) {
+    importRunning = false;
+    $(window).off('beforeunload.activeshopImport');
+
+    var summary = formatNumbers(textImportSuccess, [totals.created, totals.updated, totals.skipped, totals.failed]);
+    var $progress = $('#activeshop-import-progress');
+    var $bar = $progress.find('.js-import-progress-bar');
+    updateImportProgress(total, total, summary);
+    $bar.removeClass('active progress-bar-info progress-bar-success progress-bar-danger')
+      .addClass(totals.failed ? 'progress-bar-danger' : 'progress-bar-success');
+    $progress.removeClass('alert-info alert-success alert-warning')
+      .addClass(totals.failed ? 'alert-warning' : 'alert-success');
+
+    if (lastError) {
+      $progress.find('.js-import-progress-text').text(summary + ' ' + lastError);
+    }
+
+    window.alert(summary + (lastError ? '\n' + lastError : ''));
+    window.location.reload();
+  }
+
+  function stopSequentialImport(processed, total, message) {
+    importRunning = false;
+    $(window).off('beforeunload.activeshopImport');
+
+    var $progress = $('#activeshop-import-progress');
+    var $bar = $progress.find('.js-import-progress-bar');
+    updateImportProgress(processed, total, message);
+    $bar.removeClass('active progress-bar-info progress-bar-success').addClass('progress-bar-danger');
+    $progress.removeClass('alert-info alert-success').addClass('alert-warning');
+
+    window.alert(message);
+    window.location.reload();
+  }
+
+  function runSequentialImport(ids, index, totals, settings, busyAttempt, lastError) {
+    if (index >= ids.length) {
+      finishSequentialImport(totals, ids.length, lastError);
+      return;
+    }
+
+    updateImportProgress(index, ids.length, formatNumbers(textImportProcessing, [index + 1, ids.length]));
+
+    $.ajax({
+      url: importUrl,
+      type: 'post',
+      dataType: 'json',
+      timeout: 0,
+      data: {
+        ajax: '1',
+        csrf_token: csrfToken,
+        markup: settings.markup,
+        existing_action: settings.existingAction,
+        'selected[]': ids[index]
+      }
+    }).done(function(response) {
+      if (response && response.retryable && response.error_code === 'busy') {
+        if (busyAttempt >= 100) {
+          stopSequentialImport(index, ids.length, response.error || textImportNetworkError);
+          return;
+        }
+
+        updateImportProgress(index, ids.length, formatNumbers(textImportBusyRetry, [index + 1, ids.length]));
+        window.setTimeout(function() {
+          runSequentialImport(ids, index, totals, settings, busyAttempt + 1, lastError);
+        }, 3000);
+        return;
+      }
+
+      if (!response || !response.counts) {
+        stopSequentialImport(index, ids.length, response && response.error ? String(response.error) : textImportNetworkError);
+        return;
+      }
+
+      totals.created += Number(response.counts.created) || 0;
+      totals.updated += Number(response.counts.updated) || 0;
+      totals.skipped += Number(response.counts.skipped) || 0;
+      totals.failed += Number(response.counts.failed) || 0;
+
+      if (!response || response.success !== true || response.item_success === false) {
+        lastError = response && response.error ? String(response.error) : textImportNetworkError;
+      }
+
+      updateImportProgress(index + 1, ids.length, formatNumbers(textImportProcessing, [index + 1, ids.length]));
+      window.setTimeout(function() {
+        runSequentialImport(ids, index + 1, totals, settings, 0, lastError);
+      }, 150);
+    }).fail(function() {
+      // The server may have completed the item after the connection was lost.
+      // Do not retry an ambiguous request because that could duplicate work.
+      stopSequentialImport(index, ids.length, textImportNetworkError);
+    });
+  }
+
+  $('#activeshop-import-form').on('submit', function(event) {
+    event.preventDefault();
+    $('#button-activeshop-import').trigger('click');
+  });
+
+  $('#button-activeshop-import').on('click', function() {
+    if (importRunning) {
+      return false;
+    }
+
+    var ids = $('.js-product-checkbox:checked').map(function() {
+      return this.value;
+    }).get();
+    var count = ids.length;
+    if (!count) {
+      alert({{ error_selected|json_encode|raw }});
+      return false;
+    }
+
+    var message = {{ text_import_confirm|json_encode|raw }}.replace('%s', count).replace('%s', $('#input-markup').val());
     if (!window.confirm(message)) {
       return false;
     }
 
-    $('#button-activeshop-import').prop('disabled', true);
-    document.getElementById('activeshop-import-form').submit();
+    importRunning = true;
+    var settings = {
+      markup: $('#input-markup').val(),
+      existingAction: $('#input-existing-action').val()
+    };
+    lockImportUi(true);
+    $('#activeshop-import-progress').show();
+    updateImportProgress(0, count, formatNumbers(textImportProcessing, [1, count]));
+    $(window).on('beforeunload.activeshopImport', function() {
+      return textImportProcessing;
+    });
+    runSequentialImport(ids, 0, {created: 0, updated: 0, skipped: 0, failed: 0}, settings, 0, '');
+    return false;
   });
 })();
 //--></script>

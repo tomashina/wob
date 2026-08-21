@@ -57,7 +57,6 @@ class ControllerExtensionModuleActiveshopImporter extends Controller {
 		$data['feed_url'] = $feed_service->getFeedUrl();
 		$data['feed_metadata'] = $this->getFeedMetadata();
 		$data['recent_runs'] = $this->model_extension_module_activeshop_importer->getRecentRuns(8);
-		$data['max_translated_import_items'] = self::MAX_TRANSLATED_IMPORT_ITEMS;
 
 		$data['breadcrumbs'] = $this->getBreadcrumbs($this->language->get('heading_title'), self::ROUTE);
 		$data['products_url'] = $this->url->link(self::ROUTE, 'user_token=' . $this->session->data['user_token'], true);
@@ -123,21 +122,29 @@ class ControllerExtensionModuleActiveshopImporter extends Controller {
 			$staged = $this->stageFeedItemsInBatches($feed->iterate($cache_file), $feed_token);
 
 			$this->model_extension_module_activeshop_importer->finishFeedRefresh($feed_token);
+			$eligibility = $this->model_extension_module_activeshop_importer->getCurrentFeedEligibilityCounts();
+			$importable = isset($eligibility['importable']) ? (int)$eligibility['importable'] : 0;
+			$excluded_invalid = isset($eligibility['excluded_invalid']) ? (int)$eligibility['excluded_invalid'] : 0;
 			$matched = $this->model_extension_module_activeshop_importer->reconcileExistingProducts();
 			$category_mapping = $this->model_extension_module_activeshop_importer->autoMapSupplierCategories();
 			$counts = array(
 				'selected' => $staged,
 				'created' => 0,
 				'updated' => 0,
-				'skipped' => 0,
+				'skipped' => $excluded_invalid,
 				'failed' => 0,
+				'staged' => $staged,
+				'importable' => $importable,
+				'excluded_invalid' => $excluded_invalid,
+				'skipped_invalid' => $excluded_invalid,
+				'feed_items' => $staged,
 				'categories_mapped' => isset($category_mapping['mapped']) ? (int)$category_mapping['mapped'] : 0
 			);
 			$this->model_extension_module_activeshop_importer->finishRun($run_id, $counts, 'completed');
 			$this->db->query('COMMIT');
 			$in_transaction = false;
 			$matched_total = (isset($matched['matched']) ? (int)$matched['matched'] : 0) + (isset($matched['linked']) ? (int)$matched['linked'] : 0);
-			$this->session->data['success'] = sprintf($this->language->get('text_refresh_success'), $staged, $matched_total, isset($matched['conflicts']) ? (int)$matched['conflicts'] : 0);
+			$this->session->data['success'] = sprintf($this->language->get('text_refresh_success'), $staged, $importable, $excluded_invalid, $matched_total, isset($matched['conflicts']) ? (int)$matched['conflicts'] : 0);
 		} catch (Throwable $e) {
 			if ($in_transaction) {
 				try {
@@ -209,31 +216,34 @@ class ControllerExtensionModuleActiveshopImporter extends Controller {
 
 	public function import() {
 		$this->load->language(self::ROUTE);
+		$wants_json = $this->wantsJsonResponse();
 
 		if (!$this->validateMutation()) {
-			$this->redirectWithErrors(self::ROUTE);
+			$this->respondToImportError(isset($this->error['warning']) ? $this->error['warning'] : $this->language->get('error_permission'), $wants_json);
 			return;
 		}
 
 		$selected = isset($this->request->post['selected']) ? array_values(array_unique(array_filter(array_map('intval', (array)$this->request->post['selected'])))) : array();
 
 		if (!$selected) {
-			$this->session->data['warning'] = $this->language->get('error_selected');
-			$this->redirectToProducts();
+			$this->respondToImportError($this->language->get('error_selected'), $wants_json);
 			return;
 		}
 
-		if (count($selected) > self::MAX_IMPORT_ITEMS) {
-			$this->session->data['warning'] = sprintf($this->language->get('error_import_limit'), self::MAX_IMPORT_ITEMS);
-			$this->redirectToProducts();
+		if ($wants_json && count($selected) !== 1) {
+			$this->respondToImportError($this->language->get('error_ajax_single_item'), true);
+			return;
+		}
+
+		if (!$wants_json && count($selected) > self::MAX_IMPORT_ITEMS) {
+			$this->respondToImportError(sprintf($this->language->get('error_import_limit'), self::MAX_IMPORT_ITEMS), false);
 			return;
 		}
 
 		try {
 			$markup = $this->normalizeMarkup(isset($this->request->post['markup']) ? $this->request->post['markup'] : 0);
 		} catch (InvalidArgumentException $e) {
-			$this->session->data['warning'] = $e->getMessage();
-			$this->redirectToProducts();
+			$this->respondToImportError($e->getMessage(), $wants_json);
 			return;
 		}
 
@@ -244,94 +254,135 @@ class ControllerExtensionModuleActiveshopImporter extends Controller {
 
 		$operation_lock = $this->acquireOperationLock();
 		if (!$operation_lock) {
-			$this->session->data['warning'] = $this->language->get('error_busy');
-			$this->redirectToProducts();
-			return;
-		}
-
-		$this->load->model(self::ROUTE);
-		$this->load->model('catalog/product');
-		$settings = $this->getSettings();
-		$default_category_id = (int)$settings['default_category_id'];
-		$this->model_extension_module_activeshop_importer->reconcileExistingProducts($selected);
-		$staged_products = $this->model_extension_module_activeshop_importer->getStagedProductsByIds($selected);
-		$products_by_id = array();
-		foreach ($staged_products as $staged_product) {
-			$products_by_id[(int)$staged_product['supplier_product_id']] = $staged_product;
-		}
-
-		$new_product_count = 0;
-		foreach ($products_by_id as $staged_product) {
-			if ($this->resolveProductStatus($staged_product) === 'new') {
-				$new_product_count++;
+			if ($wants_json) {
+				$this->sendJson(array(
+					'success' => false,
+					'retryable' => true,
+					'error_code' => 'busy',
+					'error' => $this->language->get('error_busy')
+				));
+			} else {
+				$this->session->data['warning'] = $this->language->get('error_busy');
+				$this->redirectToProducts();
 			}
-		}
-
-		if ($new_product_count > self::MAX_TRANSLATED_IMPORT_ITEMS) {
-			$this->releaseOperationLock($operation_lock);
-			$this->session->data['warning'] = sprintf($this->language->get('error_translation_batch_limit'), self::MAX_TRANSLATED_IMPORT_ITEMS);
-			$this->redirectToProducts();
 			return;
 		}
 
-		$run_id = $this->model_extension_module_activeshop_importer->beginRun(array(
-			'type' => 'import',
-			'user_id' => $this->user->getId(),
-			'markup' => $markup,
-			'settings' => array_merge($settings, array('existing_action' => $existing_action, 'default_category_id' => $default_category_id))
-		));
 		$counts = array('selected' => count($selected), 'created' => 0, 'updated' => 0, 'skipped' => 0, 'failed' => 0);
-		$feed = $this->getFeedService();
-		$this->prepareLongRequest();
+		$run_id = 0;
+		$item_error = '';
 
-		foreach ($selected as $supplier_product_id) {
-			if (empty($products_by_id[$supplier_product_id])) {
-				$counts['failed']++;
-				$this->model_extension_module_activeshop_importer->logRunItem($run_id, array(
-					'supplier_product_id' => $supplier_product_id,
-					'action' => 'import',
-					'status' => 'failed',
-					'message' => $this->language->get('error_staged_missing')
-				));
-				continue;
+		try {
+			$this->load->model(self::ROUTE);
+			$this->load->model('catalog/product');
+			$settings = $this->getSettings();
+			$default_category_id = (int)$settings['default_category_id'];
+			$this->model_extension_module_activeshop_importer->reconcileExistingProducts($selected);
+			$staged_products = $this->model_extension_module_activeshop_importer->getStagedProductsByIds($selected);
+			$products_by_id = array();
+
+			foreach ($staged_products as $staged_product) {
+				$products_by_id[(int)$staged_product['supplier_product_id']] = $staged_product;
 			}
 
-			$row = $products_by_id[$supplier_product_id];
-			try {
-				$result = $this->importOneProduct($row, $markup, $existing_action, $default_category_id, $settings, $feed);
-				$counts[$result['count_key']]++;
-				$this->model_extension_module_activeshop_importer->logRunItem($run_id, array(
-					'supplier_product_id' => $supplier_product_id,
-					'external_id' => $row['external_id'],
-					'product_id' => $result['product_id'],
-					'action' => $result['action'],
-					'status' => $result['status'],
-					'before' => $result['before'],
-					'after' => $result['after'],
-					'message' => $result['message']
-				));
-			} catch (Throwable $e) {
-				$counts['failed']++;
-				$this->model_extension_module_activeshop_importer->logRunItem($run_id, array(
-					'supplier_product_id' => $supplier_product_id,
-					'external_id' => $row['external_id'],
-					'product_id' => !empty($row['product_id']) ? (int)$row['product_id'] : 0,
-					'action' => 'import',
-					'status' => 'failed',
-					'message' => $e->getMessage()
-				));
+			$new_product_count = 0;
+			foreach ($products_by_id as $staged_product) {
+				if ($this->resolveProductStatus($staged_product) === 'new') {
+					$new_product_count++;
+				}
 			}
+
+			if ($new_product_count > self::MAX_TRANSLATED_IMPORT_ITEMS) {
+				$this->respondToImportError(sprintf($this->language->get('error_translation_batch_limit'), self::MAX_TRANSLATED_IMPORT_ITEMS), $wants_json);
+				return;
+			}
+
+			$run_id = $this->model_extension_module_activeshop_importer->beginRun(array(
+				'type' => 'import',
+				'user_id' => $this->user->getId(),
+				'markup' => $markup,
+				'settings' => array_merge($settings, array('existing_action' => $existing_action, 'default_category_id' => $default_category_id))
+			));
+			$feed = $this->getFeedService();
+			$this->prepareLongRequest();
+
+			foreach ($selected as $supplier_product_id) {
+				if (empty($products_by_id[$supplier_product_id])) {
+					$item_error = $this->language->get('error_staged_missing');
+					$counts['failed']++;
+					$this->model_extension_module_activeshop_importer->logRunItem($run_id, array(
+						'supplier_product_id' => $supplier_product_id,
+						'action' => 'import',
+						'status' => 'failed',
+						'message' => $item_error
+					));
+					continue;
+				}
+
+				$row = $products_by_id[$supplier_product_id];
+				try {
+					$result = $this->importOneProduct($row, $markup, $existing_action, $default_category_id, $settings, $feed);
+					$counts[$result['count_key']]++;
+					$this->model_extension_module_activeshop_importer->logRunItem($run_id, array(
+						'supplier_product_id' => $supplier_product_id,
+						'external_id' => $row['external_id'],
+						'product_id' => $result['product_id'],
+						'action' => $result['action'],
+						'status' => $result['status'],
+						'before' => $result['before'],
+						'after' => $result['after'],
+						'message' => $result['message']
+					));
+				} catch (Throwable $e) {
+					$item_error = $e->getMessage();
+					$counts['failed']++;
+					$this->model_extension_module_activeshop_importer->logRunItem($run_id, array(
+						'supplier_product_id' => $supplier_product_id,
+						'external_id' => $row['external_id'],
+						'product_id' => !empty($row['product_id']) ? (int)$row['product_id'] : 0,
+						'action' => 'import',
+						'status' => 'failed',
+						'message' => $item_error
+					));
+				}
+			}
+
+			$status = $counts['failed'] ? 'completed_with_errors' : 'completed';
+			$this->model_extension_module_activeshop_importer->finishRun($run_id, $counts, $status);
+			$success_message = sprintf($this->language->get('text_import_success'), $counts['created'], $counts['updated'], $counts['skipped'], $counts['failed']);
+
+			if ($wants_json) {
+				$this->sendJson(array(
+					'success' => true,
+					'item_success' => !$counts['failed'],
+					'counts' => $counts,
+					'error' => $item_error,
+					'message' => $success_message,
+					'redirect' => $this->getProductsRedirectUrl()
+				));
+			} else {
+				$this->session->data['success'] = $success_message;
+				if ($counts['failed']) {
+					$this->session->data['warning'] = $this->language->get('text_import_has_errors');
+				}
+			}
+		} catch (Throwable $e) {
+			if ($run_id) {
+				try {
+					$this->model_extension_module_activeshop_importer->finishRun($run_id, $counts, 'failed', $e->getMessage());
+				} catch (Throwable $audit_error) {
+					// Preserve the original exception in the response or flash message.
+				}
+			}
+
+			$this->respondToImportError(sprintf($this->language->get('error_import'), $e->getMessage()), $wants_json);
+		} finally {
+			$this->releaseOperationLock($operation_lock);
 		}
 
-		$status = $counts['failed'] ? 'completed_with_errors' : 'completed';
-		$this->model_extension_module_activeshop_importer->finishRun($run_id, $counts, $status);
-		$this->session->data['success'] = sprintf($this->language->get('text_import_success'), $counts['created'], $counts['updated'], $counts['skipped'], $counts['failed']);
-		if ($counts['failed']) {
-			$this->session->data['warning'] = $this->language->get('text_import_has_errors');
+		if (!$wants_json && !$this->response->getOutput()) {
+			$this->redirectToProducts();
 		}
-
-		$this->releaseOperationLock($operation_lock);
-		$this->redirectToProducts();
 	}
 
 	public function categories() {
@@ -931,8 +982,36 @@ class ControllerExtensionModuleActiveshopImporter extends Controller {
 		$this->response->redirect($this->url->link($route, 'user_token=' . $this->session->data['user_token'], true));
 	}
 
+	private function wantsJsonResponse() {
+		return isset($this->request->post['ajax']) && (string)$this->request->post['ajax'] === '1';
+	}
+
+	private function sendJson($data) {
+		$this->response->addHeader('Content-Type: application/json');
+		$this->response->setOutput(json_encode($data));
+	}
+
+	private function respondToImportError($message, $wants_json) {
+		if ($wants_json) {
+			$this->sendJson(array(
+				'success' => false,
+				'item_success' => false,
+				'retryable' => false,
+				'error' => (string)$message
+			));
+			return;
+		}
+
+		$this->session->data['warning'] = (string)$message;
+		$this->redirectToProducts();
+	}
+
+	private function getProductsRedirectUrl() {
+		return html_entity_decode($this->url->link(self::ROUTE, 'user_token=' . $this->session->data['user_token'] . $this->buildFilterUrl(), true), ENT_QUOTES, 'UTF-8');
+	}
+
 	private function redirectToProducts() {
-		$this->response->redirect($this->url->link(self::ROUTE, 'user_token=' . $this->session->data['user_token'] . $this->buildFilterUrl(), true));
+		$this->response->redirect($this->getProductsRedirectUrl());
 	}
 
 	private function buildFilterUrl($exclude = array()) {
