@@ -4,6 +4,8 @@ class ControllerProductProduct extends Controller {
 
 	public function index() {
 		$this->load->language('product/product');
+		$this->load->language('product/anchor_price');
+		$this->load->library('anchor_price/formatter');
 
 		$data['breadcrumbs'] = array();
 
@@ -310,6 +312,8 @@ class ControllerProductProduct extends Controller {
 				  $data['priceeur'] ='';
 			}
 
+			$data = array_merge($data, $this->formatter->format($product_info));
+
 			if (!is_null($product_info['special']) && (float)$product_info['special'] >= 0) {
 				$data['special'] = $this->currency->format($this->tax->calculate($product_info['special'], $product_info['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
 
@@ -527,6 +531,8 @@ $data['weight'] = $weight;
 					$rating = false;
 				}
 
+				$anchor_price = $this->formatter->format($result);
+
 				$data['products'][] = array(
 					'product_id'  => $result['product_id'],
 					'thumb'       => $image,
@@ -534,6 +540,9 @@ $data['weight'] = $weight;
 					'description' => utf8_substr(trim(strip_tags(html_entity_decode($result['description'], ENT_QUOTES, 'UTF-8'))), 0, $this->config->get('theme_' . $this->config->get('config_theme') . '_product_description_length')) . '..',
 					'price'       => $price,
 					'special'     => $special,
+					'anchor_price' => $anchor_price['anchor_price'],
+					'anchor_price_date' => $anchor_price['anchor_price_date'],
+					'anchor_price_label' => $anchor_price['anchor_price_label'],
 					     'priceeur'       => $priceeur,
                     'specialeur'     => $specialeur,
 					'tax'         => $tax,

@@ -46,6 +46,9 @@ $_['column_model']                   = 'Model';
 $_['column_quantity']                = 'Quantity';
 $_['column_price']                   = 'Unit Price';
 $_['column_total']                   = 'Total';
+$_['text_legal_guarantee_link']      = 'Legal guarantee – at least 2 years';
+$_['text_withdrawal_rights_copy']    = 'Separate from the guarantee, consumers buying at a distance generally have a 14-day right to withdraw from the contract.';
+$_['text_withdrawal_rights_link']    = 'Open the withdrawal form';
 
 // Entry
 $_['entry_email_address']            = 'E-Mail Address';

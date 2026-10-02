@@ -460,6 +460,18 @@ class ControllerExtensionModuleProductQuickEdit extends Controller {
 		return $this->load->controller('extension/module/catalog/product/copy');
 	}
 
+	public function importAnchorPrices() {
+		$this->request->get['anchor_source'] = 'pqe';
+
+		return $this->load->controller('catalog/product/importAnchorPrices');
+	}
+
+	public function anchorPriceTemplate() {
+		$this->request->get['anchor_source'] = 'pqe';
+
+		return $this->load->controller('catalog/product/anchorPriceTemplate');
+	}
+
 	public function settings() {
 		return $this->load->controller('extension/module/catalog/product/settings');
 	}

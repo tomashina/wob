@@ -39,6 +39,8 @@ $_['text_tax_included']                 = '25% PDV uključeno';
 
 $_['text_rok']                 = 'Rok isporuke';
 $_['text_d']                 = 'dana';
+$_['text_anchor_price']       = 'Sidrena cijena:';
+$_['text_anchor_price_date']  = 'Sidrena cijena na dan %s:';
 
 
 // Entry

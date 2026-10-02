@@ -30,6 +30,7 @@ class ControllerExtensionModuleDigitalElephantFilterGetProduct extends Controlle
 
         $this->loadModel();
         $this->loadLanguage();
+        $this->load->library('anchor_price/formatter');
 
         $data = $this->getText();
         $data += $this->getFixCoreNotice();
@@ -102,6 +103,7 @@ class ControllerExtensionModuleDigitalElephantFilterGetProduct extends Controlle
     protected function loadLanguage()
     {
         $this->load->language('product/category');
+        $this->load->language('product/anchor_price');
         $this->load->language('extension/module/digitalElephantFilter');
 		$this->load->language('basel/basel_theme');
     }
@@ -225,6 +227,8 @@ class ControllerExtensionModuleDigitalElephantFilterGetProduct extends Controlle
                 $rating = false;
             }
 
+            $anchor_price = $this->formatter->format($result);
+
            if (VERSION >= '3.0.0.0') {
                 $description = utf8_substr(trim(strip_tags(html_entity_decode($result['description'], ENT_QUOTES, 'UTF-8'))), 0, $this->config->get('theme_' . $this->config->get('config_theme') . '_product_description_length')) . '..';
             } else {
@@ -240,6 +244,9 @@ class ControllerExtensionModuleDigitalElephantFilterGetProduct extends Controlle
 				'quantity'  => $result['quantity'],
                 'description' => $description,
                 'price'       => $price,
+                'anchor_price' => $anchor_price['anchor_price'],
+                'anchor_price_date' => $anchor_price['anchor_price_date'],
+                'anchor_price_label' => $anchor_price['anchor_price_label'],
                    'priceeur'       => $priceeur,
                     'specialeur'     => $specialeur,
 				'sale_badge'  => $sale_badge,

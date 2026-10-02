@@ -51,6 +51,9 @@ $_['column_model']                   = 'Model';
 $_['column_quantity']                = 'Količina';
 $_['column_price']                   = 'Cijena';
 $_['column_total']                   = 'Ukupno';
+$_['text_legal_guarantee_link']      = 'Zakonsko jamstvo – najmanje 2 godine';
+$_['text_withdrawal_rights_copy']    = 'Odvojeno od jamstva, potrošač pri kupnji na daljinu u pravilu ima pravo na jednostrani raskid ugovora u roku od 14 dana.';
+$_['text_withdrawal_rights_link']    = 'Otvori obrazac za jednostrani raskid';
 
 // Entry
 $_['entry_email_address']            = 'E-mail adresa';

@@ -12,7 +12,13 @@ $_['text_opened']         = 'Otvoren';
 $_['text_unopened']       = 'Neotvoren';
 $_['text_order']          = 'Informacije o narudžbi';
 $_['text_product']        = 'Informacije o artiklu i razlog za povrat artikala';
-$_['text_history']        = 'Dodaj u povijest povrata artikala';
+$_['text_history']        = 'Povijest povrata artikala';
+$_['text_history_add']    = 'Dodaj u povijest povrata artikala';
+$_['text_return_items']   = 'Artikli za povrat';
+$_['text_submitted_request'] = 'Podaci predani javnim obrascem';
+$_['text_type_withdrawal'] = 'Jednostrani raskid ugovora';
+$_['text_type_return']     = 'Povrat / zamjena / reklamacija artikala';
+$_['text_none']             = ' --- Nema --- ';
 
 // Column
 $_['column_return_id']     = 'Povrat artikla broj';
@@ -26,15 +32,23 @@ $_['column_date_modified'] = 'Datum izmjene';
 $_['column_comment']       = 'Komentar';
 $_['column_notify']        = 'Kupac obaviješten';
 $_['column_action']        = 'Akcija';
+$_['column_product_code']  = 'Šifra artikla';
+$_['column_quantity']      = 'Količina';
+$_['column_price']         = 'Cijena';
 
 // Entry
 $_['entry_customer']      = 'Kupac';
 $_['entry_order_id']      = 'Narudžba broj';
 $_['entry_date_ordered']  = 'Datum narudžbe';
+$_['entry_invoice_number'] = 'Broj računa/narudžbe';
+$_['entry_invoice_date']   = 'Datum računa';
+$_['entry_request_type']    = 'Vrsta zahtjeva';
+$_['entry_declaration_at']  = 'Nedvosmislena izjava potvrđena';
 $_['entry_firstname']     = 'Ime';
 $_['entry_lastname']      = 'Prezime';
 $_['entry_email']         = 'E-mail';
 $_['entry_telephone']     = 'Telefon';
+$_['entry_refund_iban']    = 'IBAN za povrat sredstava';
 $_['entry_product']       = 'Artikl';
 $_['entry_model']         = 'Model';
 $_['entry_quantity']      = 'Količina';
@@ -47,6 +61,9 @@ $_['entry_notify']        = 'Kupac obaviješten';
 $_['entry_return_id']     = 'Broj povrata artikala';
 $_['entry_date_added']    = 'Datum dodavanja';
 $_['entry_date_modified'] = 'Datum izmjene';
+
+// Button
+$_['button_export']       = 'Izvezi označeno';
 
 // Help
 $_['help_product']        = '(Autopopuna)';
@@ -61,3 +78,5 @@ $_['error_email']         = 'Čini se da je E-mail adresa neispravna!';
 $_['error_telephone']     = 'Telefon mora sadržavati između 3 i 32 znaka!';
 $_['error_product']       = 'Naziv artikla mora sadržavati između 3 i 255 znakova!';
 $_['error_model']         = 'Model artikla mora sadržavati između 3 i 64 znaka!';
+$_['error_export_selected'] = 'Odaberite barem jedan povrat za export!';
+$_['error_export_library']  = 'PhpSpreadsheet biblioteka nije dostupna za Excel export.';

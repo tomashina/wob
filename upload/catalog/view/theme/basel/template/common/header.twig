@@ -186,6 +186,30 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
 {% endif %}
 
+<div class="modal fade wob-legal-guarantee-modal" id="wob-legal-guarantee-modal" tabindex="-1" role="dialog" aria-labelledby="wob-legal-guarantee-title" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="{{ text_legal_guarantee_close }}"><span aria-hidden="true">&times;</span></button>
+        <h2 class="modal-title" id="wob-legal-guarantee-title">{{ text_legal_guarantee_title }}</h2>
+      </div>
+      <div class="modal-body">
+        <p class="wob-legal-guarantee-full-size"><a href="{{ legal_guarantee_image }}" target="_blank" rel="noopener noreferrer">{{ text_legal_guarantee_full_size }}</a></p>
+        <img src="{{ legal_guarantee_image }}" alt="{{ text_legal_guarantee_alt }}" class="wob-legal-guarantee-notice" loading="lazy" />
+        <p class="wob-legal-guarantee-more"><a href="{{ legal_guarantee_eu_url }}" target="_blank" rel="noopener noreferrer">{{ text_legal_guarantee_more }}</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+$(document).on('click', 'a.wob-legal-guarantee-trigger', function(event) {
+  if ($.fn.modal) {
+    event.preventDefault();
+    $('#wob-legal-guarantee-modal').modal('show');
+  }
+});
+</script>
+
 {% include 'basel/template/common/mobile-nav.twig' %}
 <div class="outer-container main-wrapper">
 {% if notification_status %}

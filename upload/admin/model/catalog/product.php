@@ -1,9 +1,12 @@
 <?php
 class ModelCatalogProduct extends Model {
 	public function addProduct($data) {
+		$this->ensureAnchorPriceColumns();
+
 		$this->db->query("INSERT INTO " . DB_PREFIX . "product SET model = '" . $this->db->escape($data['model']) . "', sku = '" . $this->db->escape($data['sku']) . "', upc = '" . $this->db->escape($data['upc']) . "', ean = '" . $this->db->escape($data['ean']) . "', jan = '" . $this->db->escape($data['jan']) . "', isbn = '" . $this->db->escape($data['isbn']) . "', mpn = '" . $this->db->escape($data['mpn']) . "', location = '" . $this->db->escape($data['location']) . "', quantity = '" . (int)$data['quantity'] . "', minimum = '" . (int)$data['minimum'] . "', subtract = '" . (int)$data['subtract'] . "', stock_status_id = '" . (int)$data['stock_status_id'] . "', date_available = '" . $this->db->escape($data['date_available']) . "', manufacturer_id = '" . (int)$data['manufacturer_id'] . "', shipping = '" . (int)$data['shipping'] . "', price = '" . (float)$data['price'] . "', points = '" . (int)$data['points'] . "', weight = '" . (float)$data['weight'] . "', weight_class_id = '" . (int)$data['weight_class_id'] . "', length = '" . (float)$data['length'] . "', width = '" . (float)$data['width'] . "', height = '" . (float)$data['height'] . "', length_class_id = '" . (int)$data['length_class_id'] . "', status = '" . (int)$data['status'] . "', tax_class_id = '" . (int)$data['tax_class_id'] . "', sort_order = '" . (int)$data['sort_order'] . "', date_added = NOW(), date_modified = NOW()");
 
 		$product_id = $this->db->getLastId();
+		$this->updateAnchorPriceFields($product_id, $data);
 
 		if (isset($data['image'])) {
 			$this->db->query("UPDATE " . DB_PREFIX . "product SET image = '" . $this->db->escape($data['image']) . "' WHERE product_id = '" . (int)$product_id . "'");
@@ -140,7 +143,10 @@ class ModelCatalogProduct extends Model {
 	}
 
 	public function editProduct($product_id, $data) {
+		$this->ensureAnchorPriceColumns();
+
 		$this->db->query("UPDATE " . DB_PREFIX . "product SET model = '" . $this->db->escape($data['model']) . "', sku = '" . $this->db->escape($data['sku']) . "', upc = '" . $this->db->escape($data['upc']) . "', ean = '" . $this->db->escape($data['ean']) . "', jan = '" . $this->db->escape($data['jan']) . "', isbn = '" . $this->db->escape($data['isbn']) . "', mpn = '" . $this->db->escape($data['mpn']) . "', location = '" . $this->db->escape($data['location']) . "', quantity = '" . (int)$data['quantity'] . "', minimum = '" . (int)$data['minimum'] . "', subtract = '" . (int)$data['subtract'] . "', stock_status_id = '" . (int)$data['stock_status_id'] . "', date_available = '" . $this->db->escape($data['date_available']) . "', manufacturer_id = '" . (int)$data['manufacturer_id'] . "', shipping = '" . (int)$data['shipping'] . "', price = '" . (float)$data['price'] . "', points = '" . (int)$data['points'] . "', weight = '" . (float)$data['weight'] . "', weight_class_id = '" . (int)$data['weight_class_id'] . "', length = '" . (float)$data['length'] . "', width = '" . (float)$data['width'] . "', height = '" . (float)$data['height'] . "', length_class_id = '" . (int)$data['length_class_id'] . "', status = '" . (int)$data['status'] . "', tax_class_id = '" . (int)$data['tax_class_id'] . "', sort_order = '" . (int)$data['sort_order'] . "', date_modified = NOW() WHERE product_id = '" . (int)$product_id . "'");
+		$this->updateAnchorPriceFields($product_id, $data);
 
 		if (isset($data['image'])) {
 			$this->db->query("UPDATE " . DB_PREFIX . "product SET image = '" . $this->db->escape($data['image']) . "' WHERE product_id = '" . (int)$product_id . "'");
@@ -450,6 +456,134 @@ class ModelCatalogProduct extends Model {
 		}
 
 		return $product_description_data;
+	}
+
+	public function ensureAnchorPriceColumns() {
+		$price_column = $this->db->query("SHOW COLUMNS FROM `" . DB_PREFIX . "product` LIKE 'anchor_price'");
+		$date_column = $this->db->query("SHOW COLUMNS FROM `" . DB_PREFIX . "product` LIKE 'anchor_price_date'");
+		$missing_price_column = !$price_column->num_rows;
+		$missing_date_column = !$date_column->num_rows;
+
+		if ($missing_price_column || $missing_date_column) {
+			$sql_mode_query = $this->db->query('SELECT @@SESSION.sql_mode AS sql_mode');
+			$old_sql_mode = isset($sql_mode_query->row['sql_mode']) ? $sql_mode_query->row['sql_mode'] : '';
+			$sql_modes = array_filter(explode(',', $old_sql_mode), function($mode) {
+				return !in_array($mode, array('NO_ZERO_IN_DATE', 'NO_ZERO_DATE'), true);
+			});
+			$temporary_sql_mode = implode(',', $sql_modes);
+			$this->db->query("SET SESSION sql_mode = '" . $this->db->escape($temporary_sql_mode) . "'");
+
+			try {
+				if ($missing_price_column) {
+					$this->db->query("ALTER TABLE `" . DB_PREFIX . "product` ADD `anchor_price` DECIMAL(15,4) NOT NULL DEFAULT 0.0000 AFTER `price`");
+				}
+
+				if ($missing_date_column) {
+					$this->db->query("ALTER TABLE `" . DB_PREFIX . "product` ADD `anchor_price_date` DATE NULL DEFAULT NULL AFTER `anchor_price`");
+				}
+
+			} finally {
+				$this->db->query("SET SESSION sql_mode = '" . $this->db->escape($old_sql_mode) . "'");
+			}
+		}
+	}
+
+	public function findProductsByAnchorIdentifiers(array $lookups) {
+		$allowed_fields = array('product_id', 'model', 'sku', 'ean');
+		$grouped_lookups = array();
+		$product_ids = array();
+
+		foreach ($lookups as $lookup) {
+			if (!isset($lookup['lookup_id'], $lookup['field'], $lookup['value']) || !in_array($lookup['field'], $allowed_fields, true)) {
+				continue;
+			}
+
+			$lookup_id = (int)$lookup['lookup_id'];
+
+			if ($lookup_id < 1) {
+				continue;
+			}
+
+			$grouped_lookups[$lookup['field']][] = array(
+				'lookup_id' => $lookup_id,
+				'value' => (string)$lookup['value']
+			);
+			$product_ids[$lookup_id] = array();
+		}
+
+		foreach ($grouped_lookups as $field => $field_lookups) {
+			foreach (array_chunk($field_lookups, 500) as $chunk) {
+				$identifier_rows = array();
+
+				foreach ($chunk as $lookup) {
+					$identifier_rows[] = "SELECT " . (int)$lookup['lookup_id'] . " AS `lookup_id`, '" . $this->db->escape($lookup['value']) . "' AS `identifier`";
+				}
+
+				$sql = "SELECT `identifiers`.`lookup_id`, `p`.`product_id` FROM (" . implode(' UNION ALL ', $identifier_rows) . ") AS `identifiers` INNER JOIN `" . DB_PREFIX . "product` AS `p` ON (`p`.`" . $field . "` = `identifiers`.`identifier`) ORDER BY `identifiers`.`lookup_id`, `p`.`product_id`";
+				$query = $this->db->query($sql);
+
+				foreach ($query->rows as $row) {
+					$lookup_id = (int)$row['lookup_id'];
+					$product_ids[$lookup_id][] = (int)$row['product_id'];
+				}
+			}
+		}
+
+		return $product_ids;
+	}
+
+	public function importAnchorPrices(array $rows) {
+		$this->ensureAnchorPriceColumns();
+		$product_ids = array();
+		$price_case = 'CASE `product_id`';
+		$date_case = 'CASE `product_id`';
+
+		foreach ($rows as $row) {
+			$product_id = (int)$row['product_id'];
+			$anchor_price = $this->normaliseAnchorPriceValue($row['anchor_price']);
+			$product_ids[] = $product_id;
+			$price_case .= ' WHEN ' . $product_id . " THEN '" . $this->db->escape($anchor_price) . "'";
+			$date_case .= ' WHEN ' . $product_id . ' THEN ' . ($row['anchor_price_date'] !== '' ? "'" . $this->db->escape($row['anchor_price_date']) . "'" : 'NULL');
+		}
+
+		$price_case .= ' ELSE `anchor_price` END';
+		$date_case .= ' ELSE `anchor_price_date` END';
+		$this->db->query("UPDATE `" . DB_PREFIX . "product` SET `anchor_price` = " . $price_case . ", `anchor_price_date` = " . $date_case . ", `date_modified` = NOW() WHERE `product_id` IN (" . implode(',', $product_ids) . ")");
+
+		$this->cache->delete('product');
+		$this->cache->delete('pqe.products');
+	}
+
+	private function updateAnchorPriceFields($product_id, array $data) {
+		$anchor_price = $this->normaliseAnchorPriceValue(isset($data['anchor_price']) ? $data['anchor_price'] : '0');
+		$anchor_price_date = isset($data['anchor_price_date']) ? trim((string)$data['anchor_price_date']) : '';
+		$date_sql = $anchor_price !== '0' && $anchor_price_date !== ''
+			? "'" . $this->db->escape($anchor_price_date) . "'"
+			: 'NULL';
+
+		$this->db->query("UPDATE `" . DB_PREFIX . "product` SET `anchor_price` = '" . $this->db->escape($anchor_price) . "', `anchor_price_date` = " . $date_sql . " WHERE `product_id` = '" . (int)$product_id . "'");
+	}
+
+	private function normaliseAnchorPriceValue($value) {
+		$value = str_replace(',', '.', str_replace(' ', '', trim((string)$value)));
+
+		if ($value === '') {
+			return '0';
+		}
+
+		if (!preg_match('/^(?:0|[1-9][0-9]{0,10})(?:\.[0-9]{1,4})?$/', $value)) {
+			throw new InvalidArgumentException('Invalid anchor price value.');
+		}
+
+		$parts = explode('.', $value, 2);
+
+		if (!isset($parts[1])) {
+			return $parts[0];
+		}
+
+		$decimal = rtrim($parts[1], '0');
+
+		return $decimal === '' ? $parts[0] : $parts[0] . '.' . $decimal;
 	}
 
 	public function getProductCategories($product_id) {

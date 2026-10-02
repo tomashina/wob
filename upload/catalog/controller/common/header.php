@@ -27,6 +27,8 @@ class ControllerCommonHeader extends Controller {
 			$server = $this->config->get('config_url');
 		}
 
+		$this->document->addStyle('catalog/view/theme/basel/stylesheet/wob-legal-guarantee.css?v=20261002a');
+
 		if (is_file(DIR_IMAGE . $this->config->get('config_icon'))) {
 			$this->document->addLink($server . 'image/' . $this->config->get('config_icon'), 'icon');
 		}
@@ -61,6 +63,14 @@ class ControllerCommonHeader extends Controller {
 		$data['text_search'] = $this->language->get('text_search');
 		$data['text_shopping_cart'] = $this->language->get('text_shopping_cart');
 		$data['text_account'] = $this->language->get('text_account');
+		$data['text_legal_guarantee_link'] = $this->language->get('text_legal_guarantee_link');
+		$data['text_legal_guarantee_title'] = $this->language->get('text_legal_guarantee_title');
+		$data['text_legal_guarantee_alt'] = $this->language->get('text_legal_guarantee_alt');
+		$data['text_legal_guarantee_more'] = $this->language->get('text_legal_guarantee_more');
+		$data['text_legal_guarantee_full_size'] = $this->language->get('text_legal_guarantee_full_size');
+		$data['text_legal_guarantee_close'] = $this->language->get('text_legal_guarantee_close');
+		$data['legal_guarantee_image'] = rtrim((string)$server, '/') . '/image/catalog/legal/eu-legal-guarantee-hr.png';
+		$data['legal_guarantee_eu_url'] = 'https://europa.eu/youreurope/citizens/consumers/shopping/guarantees/index_hr.htm';
 		$isCroatian = strpos(strtolower((string)$data['lang']), 'hr') === 0;
 		$data['text_menu'] = $isCroatian ? 'Izbornik' : 'Menu';
 		$data['text_close_menu'] = $isCroatian ? 'Zatvori izbornik' : 'Close menu';

@@ -6,6 +6,8 @@ class ControllerExtensionBlogBlog extends Controller {
 	public function index() { 
 	 
 		$this->language->load('blog/blog');
+		$this->load->language('product/anchor_price');
+		$this->load->library('anchor_price/formatter');
 		
 		$this->load->model('extension/blog/blog');
 
@@ -261,6 +263,8 @@ class ControllerExtensionBlogBlog extends Controller {
 					$is_new = false;
 				}
 
+				$anchor_price = $this->formatter->format($result);
+
 				$data['products'][] = array(
 					'product_id'  => $result['product_id'],
 					'quantity'  => $result['quantity'],
@@ -271,6 +275,9 @@ class ControllerExtensionBlogBlog extends Controller {
 					'description' => utf8_substr(strip_tags(html_entity_decode($result['description'], ENT_QUOTES, 'UTF-8')), 0, $this->config->get('config_product_description_length')) . '..',
 					'price'       => $price,
 					'special'     => $special,
+					'anchor_price' => $anchor_price['anchor_price'],
+					'anchor_price_date' => $anchor_price['anchor_price_date'],
+					'anchor_price_label' => $anchor_price['anchor_price_label'],
 					'tax'         => $tax,
 					'sale_badge' => $sale_badge,
 					'new_label'  => $is_new,

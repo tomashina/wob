@@ -2,9 +2,11 @@
 class ControllerExtensionModuleBaselProducts extends Controller {
 	public function index($setting) {
 
-    	$this->load->model('catalog/product');
+		$this->load->model('catalog/product');
 		$this->load->model('extension/basel/basel');
-		$this->load->language('basel/basel_theme');	
+		$this->load->language('basel/basel_theme');
+		$this->load->language('product/anchor_price');
+		$this->load->library('anchor_price/formatter');
   		
 		$data['basel_button_quickview'] = $this->language->get('basel_button_quickview');
 		$data['basel_text_new'] = $this->language->get('basel_text_new');
@@ -178,7 +180,9 @@ class ControllerExtensionModuleBaselProducts extends Controller {
 					} else {
 						$rating = false;
 					}
-					
+
+					$anchor_price = $this->formatter->format($result);
+
 					$products[] = array(
 						'product_id' => $result['product_id'],
 						'quantity'  => $result['quantity'],
@@ -187,6 +191,9 @@ class ControllerExtensionModuleBaselProducts extends Controller {
 						'sale_end_date' => $date_end['date_end'] ?? '',
 						'name'    	 => $result['name'],
 						'price'   	 => $price,
+						'anchor_price' => $anchor_price['anchor_price'],
+						'anchor_price_date' => $anchor_price['anchor_price_date'],
+						'anchor_price_label' => $anchor_price['anchor_price_label'],
 
 						  'priceeur'       => $priceeur,
                     'specialeur'     => $specialeur,

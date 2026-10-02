@@ -47,7 +47,10 @@
         <li><span class="price-old">{{ price }}</span><span class="live-price-new">{{ special }}<span></li>
         {% endif %}
       </ul>
-        
+      {% if anchor_price %}
+      <p class="wob-anchor-price"><strong>{{ anchor_price_label }}</strong> <span>{{ anchor_price }}</span></p>
+      {% endif %}
+
         {% if discounts %}
         <p class="discount">
         {% for discount in discounts %}

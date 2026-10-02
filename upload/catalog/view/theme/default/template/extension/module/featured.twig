@@ -30,6 +30,7 @@
           {% endif %}
         </p>
         {% endif %}
+        {% if product.anchor_price %}<p class="wob-anchor-price"><strong>{{ product.anchor_price_label }}</strong> <span>{{ product.anchor_price }}</span></p>{% endif %}
       </div>
       <div class="button-group">
         <button type="button" onclick="cart.add('{{ product.product_id }}');"><i class="fa fa-shopping-cart"></i> <span class="hidden-xs hidden-sm hidden-md">{{ button_cart }}</span></button>

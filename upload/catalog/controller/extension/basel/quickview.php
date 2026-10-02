@@ -9,6 +9,8 @@ class ControllerExtensionBaselQuickview extends Controller {
 		}
 		
 		$this->load->language('product/product');
+		$this->load->language('product/anchor_price');
+		$this->load->library('anchor_price/formatter');
 
 		$this->load->model('catalog/product');
 		
@@ -101,6 +103,8 @@ class ControllerExtensionBaselQuickview extends Controller {
 			} else {
 				$data['price'] = false;
 			}
+
+			$data = array_merge($data, $this->formatter->format($product_info));
 
 			if ((float)$product_info['special']) {
 				$data['special'] = $this->currency->format($this->tax->calculate($product_info['special'], $product_info['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);

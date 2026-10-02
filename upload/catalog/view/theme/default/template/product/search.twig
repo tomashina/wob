@@ -130,6 +130,7 @@
                   {% endif %}
                 </p>
                 {% endif %}
+                {% if product.anchor_price %}<p class="wob-anchor-price"><strong>{{ product.anchor_price_label }}</strong> <span>{{ product.anchor_price }}</span></p>{% endif %}
                 {% if product.rating %}
                 <div class="rating">
                   {% for i in 1..5 %}

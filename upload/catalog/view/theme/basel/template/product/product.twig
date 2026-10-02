@@ -97,9 +97,9 @@
         <li><span id="special_countdown"></span></li>
         {% endif %}
       </ul>
- {% if special %}
-      <p class="product-lowest-price">Najniža cijena u zadnjih 30 dana: <strong>{{ price }}</strong> <small>{{ text_tax_included }}</small></p>
-{% endif %}
+	{% if anchor_price %}
+      <p class="wob-anchor-price"><strong>{{ anchor_price_label }}</strong> <span>{{ anchor_price }}</span></p>
+	{% endif %}
 
     
       {% if price and tax %}

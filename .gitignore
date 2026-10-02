@@ -10,8 +10,15 @@ upload/config.php
 upload/admin/config.php
 upload/env.php
 
-# The production image library is transferred separately
-upload/image/
+# The production image library is transferred separately. Keep the official
+# legal-guarantee notice versioned because the storefront and order e-mails
+# depend on that exact file.
+upload/image/*
+!upload/image/catalog/
+upload/image/catalog/*
+!upload/image/catalog/legal/
+upload/image/catalog/legal/*
+!upload/image/catalog/legal/eu-legal-guarantee-hr.png
 
 # Runtime and generated data
 /error_log
@@ -24,12 +31,14 @@ upload/system/storage/session/
 upload/system/storage/upload/
 storagedijana/storagedijana/cache/
 storagedijana/storagedijana/backup/
+storagedijana/storagedijana/digital_pricelist/
 storagedijana/storagedijana/logs/
 storagedijana/storagedijana/modification/
 storagedijana/storagedijana/session/
 storagedijana/storagedijana/upload/
 storagedijana/cache/
 storagedijana/backup/
+storagedijana/digital_pricelist/
 storagedijana/logs/
 storagedijana/modification/
 storagedijana/session/
@@ -38,6 +47,7 @@ storagedijana/upload/
 # Local exports, backups and editor artefacts
 *.log
 *.sql
+!database/migrations/*.sql
 *.sql.gz
 *.zip
 *.bak

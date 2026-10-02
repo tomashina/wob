@@ -1,3 +1,6 @@
+<section class="wob-prefooter-guarantee" aria-label="{{ text_footer_guarantee }}">
+  <div class="container"><a class="wob-legal-guarantee-trigger" href="{{ footer_guarantee_url }}" aria-controls="wob-legal-guarantee-modal"><i class="fa fa-shield" aria-hidden="true"></i> <span>{{ text_footer_guarantee }}</span></a></div>
+</section>
 <footer>
   <div class="container">
     <div class="row">
@@ -39,6 +42,10 @@
       </div>
     </div>
     <hr>
+    <nav class="text-center wob-footer-compliance-links" aria-label="{{ text_information }}">
+      <a href="{{ footer_withdrawal_url }}">{{ text_footer_withdrawal }}</a>
+      {% if show_footer_pricelists %}<span aria-hidden="true"> · </span><a href="{{ footer_pricelists_url }}">{{ text_footer_pricelists }}</a>{% endif %}
+    </nav>
     <p>{{ powered }}</p>
   </div>
 </footer>

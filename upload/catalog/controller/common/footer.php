@@ -28,7 +28,16 @@ class ControllerCommonFooter extends Controller {
 		$data['order'] = $this->url->link('account/order', '', true);
 		$data['wishlist'] = $this->url->link('account/wishlist', '', true);
 		$data['newsletter'] = $this->url->link('account/newsletter', '', true);
+		$data['text_information'] = $this->language->get('text_information');
 		$data['text_cookie_settings'] = $this->language->get('text_cookie_settings');
+		$data['footer_withdrawal_url'] = $this->url->link('account/return/add', '', true);
+		$data['footer_pricelists_url'] = $this->url->link('extension/feed/digital_pricelist/page', '', true);
+		$data['show_footer_pricelists'] = (bool)$this->config->get('feed_digital_pricelist_status');
+		$server = !empty($this->request->server['HTTPS']) ? $this->config->get('config_ssl') : $this->config->get('config_url');
+		$data['footer_guarantee_url'] = rtrim((string)$server, '/') . '/image/catalog/legal/eu-legal-guarantee-hr.png';
+		$data['text_footer_withdrawal'] = $this->language->get('text_footer_withdrawal');
+		$data['text_footer_pricelists'] = $this->language->get('text_footer_pricelists');
+		$data['text_footer_guarantee'] = $this->language->get('text_footer_guarantee');
 
 		$data['powered'] = sprintf($this->language->get('text_powered'), $this->config->get('config_name'), date('Y', time()));
 

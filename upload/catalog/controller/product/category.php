@@ -2,6 +2,8 @@
 class ControllerProductCategory extends Controller {
 	public function index() {
 		$this->load->language('product/category');
+		$this->load->language('product/anchor_price');
+		$this->load->library('anchor_price/formatter');
 
 		$this->load->model('catalog/category');
 
@@ -195,6 +197,8 @@ class ControllerProductCategory extends Controller {
 					 $priceeur  ='';
 				}
 
+				$anchor_price = $this->formatter->format($result);
+
 				if (!is_null($result['special']) && (float)$result['special'] >= 0) {
 					$special = $this->currency->format($this->tax->calculate($result['special'], $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
 					 if($this->session->data['currency']=='HRK'){
@@ -230,6 +234,9 @@ class ControllerProductCategory extends Controller {
 					'description' => utf8_substr(trim(strip_tags(html_entity_decode($result['description'], ENT_QUOTES, 'UTF-8'))), 0, $this->config->get('theme_' . $this->config->get('config_theme') . '_product_description_length')) . '..',
 					'price'       => $price,
 					'special'     => $special,
+					'anchor_price' => $anchor_price['anchor_price'],
+					'anchor_price_date' => $anchor_price['anchor_price_date'],
+					'anchor_price_label' => $anchor_price['anchor_price_label'],
 					   'priceeur'       => $priceeur,
                     'specialeur'     => $specialeur,
 					'tax'         => $tax,

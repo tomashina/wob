@@ -56,6 +56,10 @@
     
 </div>
 
+{% if product.anchor_price %}
+<p class="wob-anchor-price"><strong>{{ product.anchor_price_label }}</strong> <span>{{ product.anchor_price }}</span></p>
+{% endif %}
+
 
  </div>
 

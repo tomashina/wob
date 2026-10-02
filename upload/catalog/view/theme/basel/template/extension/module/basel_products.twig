@@ -86,6 +86,9 @@
                 {% endif %}
              
  </div>
+            {% if product.anchor_price %}
+            <p class="wob-anchor-price"><strong>{{ product.anchor_price_label }}</strong> <span>{{ product.anchor_price }}</span></p>
+            {% endif %}
             </div><!-- .price -->
             {% endif %}
             <p class="description">{% if product.description %}{{ product.description }}{% endif %}</p>

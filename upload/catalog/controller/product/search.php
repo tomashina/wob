@@ -2,6 +2,8 @@
 class ControllerProductSearch extends Controller {
 	public function index() {
 		$this->load->language('product/search');
+		$this->load->language('product/anchor_price');
+		$this->load->library('anchor_price/formatter');
 
 		$this->load->model('catalog/category');
 
@@ -240,6 +242,8 @@ class ControllerProductSearch extends Controller {
 					$rating = false;
 				}
 
+				$anchor_price = $this->formatter->format($result);
+
 				$data['products'][] = array(
 					'product_id'  => $result['product_id'],
 					'thumb'       => $image,
@@ -247,6 +251,9 @@ class ControllerProductSearch extends Controller {
 					'description' => utf8_substr(trim(strip_tags(html_entity_decode($result['description'], ENT_QUOTES, 'UTF-8'))), 0, $this->config->get('theme_' . $this->config->get('config_theme') . '_product_description_length')) . '..',
 					'price'       => $price,
 					'special'     => $special,
+					'anchor_price' => $anchor_price['anchor_price'],
+					'anchor_price_date' => $anchor_price['anchor_price_date'],
+					'anchor_price_label' => $anchor_price['anchor_price_label'],
 					 'priceeur'       => $priceeur,
                     'specialeur'     => $specialeur,
 					'tax'         => $tax,
