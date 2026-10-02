@@ -149,13 +149,6 @@ class ControllerExtensionModuleDigitalElephantFilterGetProduct extends Controlle
                 $image = $this->model_tool_image->resize('placeholder.png', $image_width, $image_height);
             }
 			
-			$images = $this->model_catalog_product->getProductImages($result['product_id']);
-			if(isset($images[0]['image']) && !empty($images[0]['image'])){
-			$images =$images[0]['image'];
-			} else {
-			$images = false;
-			}
-
             if ($this->customer->isLogged() || !$this->config->get('config_customer_price')) {
                 $price = $this->currency->format($this->tax->calculate($result['price'], $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
 
@@ -186,11 +179,12 @@ class ControllerExtensionModuleDigitalElephantFilterGetProduct extends Controlle
                    $specialeur  ='';
             }
 			
-			$image2 = $this->model_catalog_product->getProductImages($result['product_id']);
-			if(isset($image2[0]['image']) && !empty($image2[0]['image']) && $this->config->get('basel_thumb_swap')){
-				$image2 = $image2[0]['image'];
-			} else {
-				$image2 = false;
+			$image2 = false;
+			if ($this->config->get('basel_thumb_swap')) {
+				$product_images = $this->model_catalog_product->getProductImages($result['product_id']);
+				if (isset($product_images[0]['image']) && !empty($product_images[0]['image'])) {
+					$image2 = $product_images[0]['image'];
+				}
 			}
 			
 			if ( (float)$result['special'] && ($this->config->get('salebadge_status')) ) {

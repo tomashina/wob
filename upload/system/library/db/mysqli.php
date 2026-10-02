@@ -2,6 +2,7 @@
 namespace DB;
 class MySQLi {
 	private $connection;
+	private $lookup_cache = [];
 
 	public function __construct($hostname, $username, $password, $database, $port = '3306') {
 		try {
@@ -21,6 +22,16 @@ class MySQLi {
 	}
 
 	public function query($sql) {
+		$cacheable_lookup = $this->isCacheableLookup($sql);
+
+		if ($cacheable_lookup && isset($this->lookup_cache[$sql])) {
+			return clone $this->lookup_cache[$sql];
+		}
+
+		if (!$cacheable_lookup && $this->touchesCachedLookupTable($sql)) {
+			$this->lookup_cache = [];
+		}
+
 		$query = $this->connection->query($sql);
 
 		if (!$this->connection->errno) {
@@ -36,6 +47,10 @@ class MySQLi {
 				$result->row = isset($data[0]) ? $data[0] : [];
 				$result->rows = $data;
 
+				if ($cacheable_lookup && $result->num_rows <= 10 && count($this->lookup_cache) < 512) {
+					$this->lookup_cache[$sql] = clone $result;
+				}
+
 				$query->close();
 
 				unset($data);
@@ -47,6 +62,37 @@ class MySQLi {
 		} else {
 			throw new \Exception('Error: ' . $this->connection->error  . '<br />Error No: ' . $this->connection->errno . '<br />' . $sql);
 		}
+	}
+
+	private function isCacheableLookup($sql) {
+		if (!defined('DB_PREFIX') || !preg_match('/^\s*SELECT\b/i', $sql)) {
+			return false;
+		}
+
+		$prefix = preg_quote(constant('DB_PREFIX'), '/');
+		$pattern = '/^\s*SELECT\b.*?\bFROM\s+`?' . $prefix . '(?:seo_url|hb_url)`?\s+WHERE\s+(.*)$/is';
+
+		if (!preg_match($pattern, $sql, $matches)) {
+			return false;
+		}
+
+		$where = $matches[1];
+
+		if (preg_match('/\b(?:LIKE|IN)\s*\(/i', $where) || stripos($where, ' LIKE ') !== false) {
+			return false;
+		}
+
+		return (bool)preg_match('/`?(?:query|keyword|route)`?\s*=\s*/i', $where);
+	}
+
+	private function touchesCachedLookupTable($sql) {
+		if (!defined('DB_PREFIX')) {
+			return false;
+		}
+
+		$prefix = preg_quote(constant('DB_PREFIX'), '/');
+
+		return (bool)preg_match('/`?' . $prefix . '(?:seo_url|hb_url)`?(?![A-Z0-9_])/i', $sql);
 	}
 
 	public function escape($value) {

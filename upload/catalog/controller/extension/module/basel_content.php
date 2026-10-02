@@ -110,7 +110,7 @@ class ControllerExtensionModuleBaselContent extends Controller {
             foreach($setting['columns'] as $column) {
                 $this->load->model('tool/image');
 				
-				if ($column['type'] != "testimonial") {
+				if ($column['type'] === 'tm') {
 					
 					$this->load->model('extension/basel/testimonial');
 					$results = $this->model_extension_basel_testimonial->getTestimonials($column['data1']);
