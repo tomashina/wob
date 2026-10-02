@@ -11,8 +11,15 @@ class Cart {
 		$this->tax = $registry->get('tax');
 		$this->weight = $registry->get('weight');
 
-		// Remove all the expired carts with no customer ID
-		$this->db->query("DELETE FROM " . DB_PREFIX . "cart WHERE (api_id > '0' OR customer_id = '0') AND date_added < DATE_SUB(NOW(), INTERVAL 1 HOUR)");
+		// Remove expired guest/API carts at most once per cache lifetime instead of
+		// running the same write query for every storefront request.
+		$cache = $registry->get('cache');
+
+		if (!$cache->get('wob.maintenance.cart_cleanup')) {
+			// Set the marker first so simultaneous requests do not all run the cleanup.
+			$cache->set('wob.maintenance.cart_cleanup', time());
+			$this->db->query("DELETE FROM " . DB_PREFIX . "cart WHERE (api_id > '0' OR customer_id = '0') AND date_added < DATE_SUB(NOW(), INTERVAL 1 HOUR)");
+		}
 
 		if ($this->customer->getId()) {
 			// We want to change the session ID on all the old items in the customers cart

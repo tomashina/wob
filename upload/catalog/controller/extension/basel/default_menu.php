@@ -3,6 +3,18 @@ class ControllerExtensionBaselDefaultMenu extends Controller {
 	public function index() {
 		$this->load->language('common/menu');
 
+		$cache_enabled = !$this->config->get('config_product_count');
+		$cache_key = 'category.menu.basel_default.'
+			. (int)$this->config->get('config_store_id') . '.'
+			. (int)$this->config->get('config_language_id') . '.'
+			. (!empty($this->request->server['HTTPS']) ? '1' : '0');
+
+		$cached_menu = $cache_enabled ? $this->cache->get($cache_key) : false;
+
+		if (is_string($cached_menu) && $cached_menu !== '') {
+			return $cached_menu;
+		}
+
 		// Menu
 		$this->load->model('catalog/category');
 
@@ -68,6 +80,12 @@ class ControllerExtensionBaselDefaultMenu extends Controller {
 			}
 		}
 
-		return $this->load->view('common/menu', $data);
+		$output = $this->load->view('common/menu', $data);
+
+		if ($cache_enabled) {
+			$this->cache->set($cache_key, $output);
+		}
+
+		return $output;
 	}
 }

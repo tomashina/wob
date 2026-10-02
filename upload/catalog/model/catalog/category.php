@@ -7,9 +7,33 @@ class ModelCatalogCategory extends Model {
 	}
 
 	public function getCategories($parent_id = 0) {
-		$query = $this->db->query("SELECT * FROM " . DB_PREFIX . "category c LEFT JOIN " . DB_PREFIX . "category_description cd ON (c.category_id = cd.category_id) LEFT JOIN " . DB_PREFIX . "category_to_store c2s ON (c.category_id = c2s.category_id) WHERE c.parent_id = '" . (int)$parent_id . "' AND cd.language_id = '" . (int)$this->config->get('config_language_id') . "' AND c2s.store_id = '" . (int)$this->config->get('config_store_id') . "'  AND c.status = '1' ORDER BY c.sort_order, LCASE(cd.name)");
+		$cache_key = 'category.tree.'
+			. (int)$this->config->get('config_store_id') . '.'
+			. (int)$this->config->get('config_language_id');
 
-		return $query->rows;
+		$categories_by_parent = $this->cache->get($cache_key);
+
+		if (!is_array($categories_by_parent)) {
+			$query = $this->db->query("SELECT * FROM " . DB_PREFIX . "category c LEFT JOIN " . DB_PREFIX . "category_description cd ON (c.category_id = cd.category_id) LEFT JOIN " . DB_PREFIX . "category_to_store c2s ON (c.category_id = c2s.category_id) WHERE cd.language_id = '" . (int)$this->config->get('config_language_id') . "' AND c2s.store_id = '" . (int)$this->config->get('config_store_id') . "' AND c.status = '1' ORDER BY c.parent_id, c.sort_order, LCASE(cd.name)");
+
+			$categories_by_parent = array();
+
+			foreach ($query->rows as $category) {
+				$category_parent_id = (int)$category['parent_id'];
+
+				if (!isset($categories_by_parent[$category_parent_id])) {
+					$categories_by_parent[$category_parent_id] = array();
+				}
+
+				$categories_by_parent[$category_parent_id][] = $category;
+			}
+
+			$this->cache->set($cache_key, $categories_by_parent);
+		}
+
+		$parent_id = (int)$parent_id;
+
+		return isset($categories_by_parent[$parent_id]) ? $categories_by_parent[$parent_id] : array();
 	}
 
 	public function getRepresentativeProductImage($category_id) {
