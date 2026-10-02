@@ -63,6 +63,7 @@ assertReturnRequest(strpos($csv, "'\r+SUM") !== false, 'CSV carriage-return-pref
 assertReturnRequest(strpos($csv, "'  @SUM") !== false, 'CSV whitespace-prefixed formula injection is neutralised.');
 
 $controller = file_get_contents(dirname(__DIR__) . '/upload/catalog/controller/account/return.php');
+$catalog_model = file_get_contents(dirname(__DIR__) . '/upload/catalog/model/account/return.php');
 $admin_controller = file_get_contents(dirname(__DIR__) . '/upload/admin/controller/sale/return.php');
 $migration = file_get_contents(dirname(__DIR__) . '/database/migrations/20261002_return_requests.sql');
 $croatian_language = file_get_contents(dirname(__DIR__) . '/upload/catalog/language/hr-hr/account/return.php');
@@ -74,6 +75,8 @@ $admin_form_template = file_get_contents(dirname(__DIR__) . '/upload/admin/view/
 $default_form_template = file_get_contents(dirname(__DIR__) . '/upload/catalog/view/theme/default/template/account/return_form.twig');
 $default_info_template = file_get_contents(dirname(__DIR__) . '/upload/catalog/view/theme/default/template/account/return_info.twig');
 assertReturnRequest(strpos($controller, 'hash_equals($session_token, $post_token)') !== false, 'Public form validates a session CSRF token.');
+assertReturnRequest(strpos($controller, 'getRecentSubmissionCount($submitted_ip, $post[\'email\'], 60) >= 5') !== false, 'Public form rate-limits successful submissions by IP or e-mail.');
+assertReturnRequest(strpos($catalog_model, 'DATE_SUB(NOW(), INTERVAL " . $minutes . " MINUTE)') !== false, 'The return model enforces the bounded recent-submission window.');
 assertReturnRequest(substr_count($controller, "\$this->error['email']") === 1, 'The public controller assigns the e-mail validation error once.');
 assertReturnRequest(substr_count($controller, '$this->sendMail(') >= 2, 'Submission sends customer and administrator messages.');
 assertReturnRequest(strpos($controller, "'information_id=5'") !== false, 'The public form links to the WOB general terms by default.');

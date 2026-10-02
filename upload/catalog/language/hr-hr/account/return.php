@@ -96,6 +96,7 @@ $_['error_refund_iban']     = 'Uneseni IBAN nije ispravan.';
 $_['error_comment']          = 'Napomena može sadržavati najviše 5000 znakova.';
 $_['error_declaration']     = 'Za slanje zahtjeva morate potvrditi nedvosmislenu izjavu.';
 $_['error_security']        = 'Sigurnosna provjera obrasca nije uspjela. Osvježite stranicu i pokušajte ponovno.';
+$_['error_rate_limit']      = 'Poslano je previše zahtjeva u kratkom vremenu. Pokušajte ponovno za približno jedan sat.';
 $_['error_form']            = 'Provjerite označena polja u obrascu.';
 // $_['error_captcha']      = 'Kod za provjeru (verifikaciju) ne odgovara onom sa slike!'; // postojalo u verziji OC 2.0.3.1
 $_['error_agree']        = 'Upozorenje: Morate prihvatiti (složiti se s) %s!';

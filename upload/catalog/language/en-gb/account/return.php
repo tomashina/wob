@@ -93,5 +93,6 @@ $_['error_refund_iban']     = 'The entered IBAN is not valid.';
 $_['error_comment']          = 'The note must not exceed 5000 characters.';
 $_['error_declaration']     = 'You must confirm the unequivocal declaration before submitting.';
 $_['error_security']        = 'The form security check failed. Refresh the page and try again.';
+$_['error_rate_limit']      = 'Too many requests were submitted in a short period. Please try again in about one hour.';
 $_['error_form']            = 'Please check the highlighted form fields.';
 $_['error_agree']        = 'Warning: You must agree to the %s!';

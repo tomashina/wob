@@ -246,6 +246,11 @@ class ControllerAccountReturn extends Controller {
 			$this->error['refund_iban'] = $this->language->get('error_refund_iban');
 		}
 
+		$submitted_ip = isset($this->request->server['REMOTE_ADDR']) ? (string)$this->request->server['REMOTE_ADDR'] : '';
+		if ($this->model_account_return->getRecentSubmissionCount($submitted_ip, $post['email'], 60) >= 5) {
+			$this->error['warning'] = $this->language->get('error_rate_limit');
+		}
+
 		if (!$this->return_request->validateComment($post['comment'])) {
 			$this->error['comment'] = $this->language->get('error_comment');
 		}
